@@ -1,380 +1,60 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RecruitFlow — Smart Interview & Recruitment Management</title>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RecruitFlow</title>
 <style>
-:root{
-  --bg:#f5f7fb;--surface:#fff;--surface2:#f8f9fd;--ink:#172033;--muted:#6f7890;
-  --line:#e5e9f2;--primary:#5b5ce2;--primary2:#746cff;--dark:#10162b;
-  --green:#13a56e;--amber:#d98b00;--red:#dc4c64;--shadow:0 12px 35px rgba(27,39,76,.08)
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-a{text-decoration:none;color:inherit}
-.app{min-height:100vh}
-.sidebar{position:fixed;z-index:20;left:0;top:0;bottom:0;width:252px;background:linear-gradient(180deg,#10162b 0%,#171d38 100%);color:#fff;padding:22px 16px;display:flex;flex-direction:column}
-.logo{display:flex;align-items:center;gap:11px;padding:4px 10px 26px;font-weight:850;font-size:21px;letter-spacing:-.5px}
-.logo-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#8c86ff,#514de0);display:grid;place-items:center;box-shadow:0 8px 20px rgba(102,94,255,.28)}
-.logo-mark:after{content:"R";font-weight:900}
-.logo span{color:#9b96ff}
-.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;color:#77809d;padding:0 11px;margin:7px 0}
-.nav button{width:100%;border:0;background:transparent;color:#aeb6d0;padding:11px 12px;border-radius:10px;text-align:left;display:flex;align-items:center;gap:11px;margin:3px 0;font-weight:650}
-.nav button:hover,.nav button.active{background:rgba(255,255,255,.09);color:#fff}
-.nav button.active{box-shadow:inset 3px 0 var(--primary2)}
-.nav .ico{width:22px;text-align:center;opacity:.9}
-.sidebar-bottom{margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding-top:15px}
-.event-mini{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);padding:13px;border-radius:12px;font-size:12px;color:#bdc4d9;line-height:1.5}
-.event-mini b{display:block;color:#fff;margin-bottom:3px}
-.main{margin-left:252px;min-height:100vh}
-.topbar{height:74px;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 30px;position:sticky;top:0;z-index:10}
-.crumb{font-size:13px;color:var(--muted)}
-.crumb b{color:var(--ink)}
-.top-actions{display:flex;align-items:center;gap:10px}
-.avatar{width:36px;height:36px;border-radius:50%;background:#ecebff;color:#514de0;display:grid;place-items:center;font-weight:800}
-.content{padding:30px;max-width:1600px;margin:auto}
-.page{display:none}
-.page.active{display:block}
-.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px}
-.page-head h1{font-size:28px;letter-spacing:-.8px;margin:0 0 5px}
-.page-head p{margin:0;color:var(--muted)}
-.actions{display:flex;gap:9px;flex-wrap:wrap}
-.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:750;transition:.18s}
-.btn:hover{transform:translateY(-1px)}
-.primary{background:var(--primary);color:#fff;box-shadow:0 7px 18px rgba(91,92,226,.18)}
-.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}
-.success{background:#e7f8f1;color:#087b54}
-.warning{background:#fff4dc;color:#9a6500}
-.danger{background:#ffe8ed;color:#b62943}
-.icon-btn{width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:10px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:20px}
-.grid{display:grid;gap:16px}
-.grid-2{grid-template-columns:1.55fr 1fr}
-.grid-3{grid-template-columns:repeat(3,1fr)}
-.grid-4{grid-template-columns:repeat(4,1fr)}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:18px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:var(--shadow)}
-.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
-.stat-icon{width:34px;height:34px;border-radius:9px;background:#f0efff;color:var(--primary);display:grid;place-items:center;font-weight:800}
-.stat b{display:block;font-size:28px;margin-top:12px;letter-spacing:-1px}
-.stat small{color:var(--muted)}
-.card-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
-.card-title h2{font-size:16px;margin:0}
-.card-title span{font-size:12px;color:var(--muted)}
-.kpi-row{display:flex;gap:10px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:750;background:#f0f2f7;color:#5d667b}
-.pill.green{background:#e8f8f1;color:#087b54}.pill.blue{background:#ecebff;color:#504be0}.pill.amber{background:#fff3dc;color:#986000}.pill.red{background:#ffe8ed;color:#b62a44}
-.muted{color:var(--muted)}
-.small{font-size:12px}
-.table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse}
-th,td{padding:12px 10px;text-align:left;border-bottom:1px solid #edf0f5;vertical-align:middle;font-size:13px}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.55px;color:#7b8498;font-weight:800}
-tr:last-child td{border-bottom:0}
-.person{display:flex;align-items:center;gap:10px}
-.person-avatar{width:34px;height:34px;border-radius:9px;background:#eef0ff;color:#514de0;display:grid;place-items:center;font-weight:800;font-size:12px}
-.person b{display:block}.person span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
-.progress{height:7px;border-radius:999px;background:#edf0f5;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#5b5ce2,#8b85ff);border-radius:999px}
-.panel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.panel-card{border:1px solid var(--line);border-radius:13px;padding:15px;background:#fff}
-.panel-card.busy{border-color:#d9d7ff;background:#fafaff}
-.panel-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
-.panel-name{font-weight:800;font-size:13px}
-.panel-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--green)}
-.panel-status.busy{color:var(--amber)}
-.panel-candidate{min-height:50px;margin:14px 0 10px;color:#566075;font-size:12px}
-.queue-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f5}
-.queue-item:last-child{border-bottom:0}
-.queue-rank{width:28px;height:28px;border-radius:8px;background:#f0efff;color:#554fe0;display:grid;place-items:center;font-weight:850;font-size:12px}
-.queue-left{display:flex;align-items:center;gap:10px;min-width:0}
-.queue-info{min-width:0}.queue-info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.queue-info span{font-size:11px;color:var(--muted)}
-.empty{padding:25px;text-align:center;color:var(--muted);background:var(--surface2);border-radius:11px}
-.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.search{position:relative;flex:1;min-width:220px}
-.search input{width:100%;padding-left:38px}
-.search:before{content:"⌕";position:absolute;left:13px;top:9px;color:#9098aa;font-size:18px}
-input,select,textarea{width:100%;border:1px solid #dfe4ed;border-radius:9px;padding:11px 12px;background:#fff;color:var(--ink);outline:0}
-input:focus,select:focus,textarea:focus{border-color:#8b87ef;box-shadow:0 0 0 3px rgba(91,92,226,.09)}
-label{display:block;font-size:12px;font-weight:750;margin-bottom:7px}
-.field{margin-bottom:14px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
-.full{grid-column:1/-1}
-.notice{padding:12px 14px;background:#f0f3ff;border:1px solid #dfe2ff;border-radius:10px;color:#4e5570;font-size:12px}
-.steps{display:flex;gap:8px;margin-bottom:20px}
-.step{flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fafbfe;color:#8a92a5;font-size:11px;font-weight:750}
-.step b{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#e9ecf4;color:#737c91}
-.step.active{background:#f0efff;border-color:#d7d4ff;color:#504be0}.step.active b{background:var(--primary);color:#fff}
-.choice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.choice{position:relative}.choice small{position:absolute;right:9px;top:9px;color:#8c93a4;font-weight:800}
-.hero{background:linear-gradient(135deg,#11162c 0%,#252b57 55%,#514de0 100%);color:#fff;border-radius:18px;padding:30px;position:relative;overflow:hidden;margin-bottom:18px}
-.hero:after{content:"";position:absolute;width:330px;height:330px;border-radius:50%;right:-120px;top:-150px;background:rgba(255,255,255,.08)}
-.hero h2{font-size:29px;max-width:620px;line-height:1.15;margin:0 0 10px;letter-spacing:-1px}
-.hero p{color:#c8cee1;max-width:620px;line-height:1.65;margin:0 0 20px}
-.feature-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:24px}.feature{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px}.feature b{display:block;font-size:14px}.feature span{font-size:11px;color:#c5cbe0}
-.public-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.public-links{display:flex;gap:18px;font-size:12px;color:#667089}
-.landing{max-width:1150px;margin:auto;padding:28px}
-.landing-logo{font-size:21px;font-weight:850}.landing-logo span{color:var(--primary)}
-.landing .hero{padding:58px 50px;min-height:390px;display:flex;align-items:center}.hero-copy{position:relative;z-index:1}.hero-tag{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);font-size:11px;font-weight:800;margin-bottom:15px}
-.public-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:15px}.public-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}.public-card b{display:block;margin-bottom:5px}.public-card span{font-size:12px;color:var(--muted);line-height:1.5}
-.entry-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.scanner{min-height:270px;border:2px dashed #d8dcf0;border-radius:15px;background:#fafbff;display:grid;place-items:center;text-align:center;padding:25px}.qr{width:135px;height:135px;border-radius:12px;background:repeating-linear-gradient(45deg,#172033 0 5px,#fff 5px 10px);border:10px solid #fff;box-shadow:0 8px 25px rgba(0,0,0,.08);margin:auto}
-.interview-layout{display:grid;grid-template-columns:300px 1fr;gap:16px}.candidate-summary{border:1px solid var(--line);border-radius:13px;padding:17px;background:#fbfbfe}.score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.score-box{border:1px solid var(--line);border-radius:11px;padding:13px;background:#fff}.score-box label{margin-bottom:8px}.score-box input{text-align:center;font-size:22px;font-weight:800}.total-box{background:#f0efff;border:1px solid #dad7ff;border-radius:11px;padding:13px;text-align:center}.total-box b{display:block;font-size:26px;color:#514de0}
-.allocation-row.selected{background:#fafaff}
-.allocation-score{font-weight:800;color:#514de0}
-.mobile-menu{display:none}
-.toast{position:fixed;right:25px;bottom:25px;z-index:100;padding:13px 16px;border-radius:11px;background:#172033;color:#fff;box-shadow:0 15px 40px rgba(0,0,0,.2);font-size:12px;display:none}
-@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.panel-grid{grid-template-columns:repeat(3,1fr)}.grid-2{grid-template-columns:1fr}.public-cards{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:850px){.sidebar{width:72px;padding:18px 8px}.logo{padding:4px 7px 20px}.logo>span{display:none}.nav-label,.nav button span,.event-mini{display:none}.nav button{justify-content:center;padding:12px}.main{margin-left:72px}.content{padding:20px}.topbar{padding:0 18px}.panel-grid{grid-template-columns:repeat(2,1fr)}.form-grid,.entry-layout,.interview-layout{grid-template-columns:1fr}.choice-grid,.score-grid{grid-template-columns:repeat(2,1fr)}.feature-strip{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.panel-grid{grid-template-columns:1fr}.page-head{flex-direction:column}.form-grid,.choice-grid,.score-grid{grid-template-columns:1fr}.public-cards{grid-template-columns:1fr}.landing{padding:15px}.landing .hero{padding:30px 22px}.public-links{display:none}.topbar{height:62px}.content{padding:15px}.feature-strip{grid-template-columns:1fr 1fr}.hero h2{font-size:24px}}
-</style>
-</head>
-<body>
-<div id="publicPage" style="display:none">
-  <div class="landing">
-    <div class="public-nav">
-      <div class="landing-logo">Recruit<span>Flow</span></div>
-      <div class="public-links"><a href="#about">About</a><a href="#domains">Domains</a><a href="#process">Process</a><a href="#contact">Contact</a></div>
-      <button class="btn primary" onclick="openRegistration()">Register Now</button>
-    </div>
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="hero-tag">SMART CLUB RECRUITMENT • FUSION / CAMPUS EVENTS</div>
-        <h2>Find Your Domain.<br>Build What Matters.</h2>
-        <p>One streamlined platform for candidate registration, venue check-in, waiting rooms, panel interviews and transparent domain allocation.</p>
-        <div class="actions"><button class="btn primary" onclick="openRegistration()">Register Now →</button><button class="btn" style="background:rgba(255,255,255,.1);color:#fff" onclick="openAdmin()">Organizer Login</button></div>
-        <div class="feature-strip">
-          <div class="feature"><b>11+ Domains</b><span>Multiple tracks and panels</span></div>
-          <div class="feature"><b>Fair & Transparent</b><span>Marks + choice priority</span></div>
-          <div class="feature"><b>Live Movement</b><span>Track candidates in real time</span></div>
-          <div class="feature"><b>Fast Interviews</b><span>Panel-aware waiting queues</span></div>
-        </div>
-      </div>
-    </section>
-    <div class="public-cards" id="about">
-      <div class="public-card"><b>1. Register</b><span>Submit your academic details, skills and up to four preferred domains.</span></div>
-      <div class="public-card"><b>2. Check In</b><span>Reach the venue and get moved into the first waiting room.</span></div>
-      <div class="public-card"><b>3. Interview</b><span>Meet the relevant panel and receive a structured evaluation.</span></div>
-      <div class="public-card"><b>4. Get Allocated</b><span>Final domain allocation uses marks with preference order as tie-breaker.</span></div>
-    </div>
-  </div>
-</div>
-
-<div class="app" id="app">
-<aside class="sidebar">
-  <div class="logo"><div class="logo-mark"></div><span>Recruit<span>Flow</span></span></div>
-  <div class="nav-label">Management</div>
-  <div class="nav" id="nav"></div>
-  <div class="sidebar-bottom">
-    <div class="event-mini"><b>Recruitment Event</b>11 domains • 4-choice preference<br><span>Smart Interview Management</span></div>
-  </div>
-</aside>
-<main class="main">
-  <header class="topbar">
-    <div class="crumb">RecruitFlow / <b id="title">Dashboard</b></div>
-    <div class="top-actions"><button class="icon-btn" onclick="openPublic()" title="Public registration">⌂</button><div class="avatar">GA</div></div>
-  </header>
-  <div class="content">
-
-    <section id="dashboard" class="page active">
-      <div class="page-head"><div><h1>Good evening, Organizer 👋</h1><p>Monitor candidate flow, panels and interview progress from one place.</p></div><div class="actions"><button class="btn secondary" onclick="showPage('entry')">Venue Entry</button><button class="btn primary" onclick="showPage('candidateEntry')">+ Register Candidate</button></div></div>
-      <div id="stats" class="stats"></div>
-      <div class="grid grid-2">
-        <div class="card"><div class="card-title"><h2>Panel Status</h2><span>11 active domains</span></div><div id="panelStatus" class="panel-grid"></div></div>
-        <div class="card"><div class="card-title"><h2>W2 Priority Queue</h2><span>Oldest waiting first</span></div><div id="queue"></div></div>
-      </div>
-      <div class="card" style="margin-top:16px"><div class="card-title"><h2>Live Candidate Movement</h2><span id="lastUpdated"></span></div><div class="table-wrap"><table id="live"></table></div></div>
-    </section>
-
-    <section id="candidateEntry" class="page">
-      <div class="page-head"><div><h1>Candidate Registration</h1><p>Create a complete candidate profile for the recruitment process.</p></div></div>
-      <div class="steps"><div class="step active"><b>1</b> Personal Details</div><div class="step"><b>2</b> Academic Details</div><div class="step"><b>3</b> Skills & Preferences</div><div class="step"><b>4</b> Review & Submit</div></div>
-      <div class="card">
-        <form id="candidateForm" onsubmit="submitCandidate(event)">
-          <div class="form-grid">
-            <div class="field"><label>Full Name *</label><input id="fName" required placeholder="Candidate full name"></div>
-            <div class="field"><label>Email Address *</label><input id="fEmail" type="email" required placeholder="name@example.com"></div>
-            <div class="field"><label>Mobile Number *</label><input id="fPhone" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div>
-            <div class="field"><label>College / Institute *</label><input id="fCollege" required placeholder="College name"></div>
-            <div class="field"><label>Branch *</label><select id="fBranch" required><option value="">Select branch</option><option>IT</option><option>CSE</option><option>AI&DS</option><option>ENTC</option><option>Mechanical</option><option>Civil</option><option>Other</option></select></div>
-            <div class="field"><label>Year *</label><select id="fYear" required><option value="">Select year</option><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
-            <div class="field"><label>Registration / Roll Number</label><input id="fRoll" placeholder="Optional"></div>
-            <div class="field"><label>GitHub / Portfolio</label><input id="fPortfolio" type="url" placeholder="https://..."></div>
-            <div class="field full"><label>Skills / Technologies *</label><input id="fSkills" required placeholder="Java, Python, React, SQL..."></div>
-            <div class="field full"><label>Domain Preferences *</label><div class="notice" style="margin-bottom:12px">Choose up to four different domains in priority order. Choice 1 has the highest preference.</div><div class="choice-grid" id="choiceFields"></div></div>
-            <div class="field full"><label>Why do you want to join the club?</label><textarea id="fReason" rows="4" placeholder="Tell us briefly about your interest..."></textarea></div>
-            <div class="field full"><label style="font-weight:600"><input id="fAgree" type="checkbox" required style="width:auto;margin-right:7px"> I confirm that the information provided is correct. *</label></div>
-          </div>
-          <div id="formMessage"></div>
-          <div class="actions" style="margin-top:8px"><button type="button" class="btn secondary" onclick="resetCandidateForm()">Reset</button><button type="submit" class="btn primary">Save & Submit Registration →</button></div>
-        </form>
-      </div>
-      <div class="card" style="margin-top:16px"><div class="card-title"><h2>Recently Registered</h2><span>Latest 10 candidates</span></div><div class="table-wrap"><table id="recentCandidates"></table></div></div>
-    </section>
-
-    <section id="candidates" class="page">
-      <div class="page-head"><div><h1>All Candidates</h1><p>Search and review every registered participant.</p></div><button class="btn primary" onclick="showPage('candidateEntry')">+ Add Candidate</button></div>
-      <div class="card"><div class="toolbar" style="margin-bottom:15px"><div class="search"><input id="search" placeholder="Search by name or candidate ID" oninput="render()"></div><select id="statusFilter" onchange="render()" style="max-width:190px"><option value="">All statuses</option><option>Registered</option><option>Waiting Room 1</option><option>Waiting Room 2</option><option>Interviewing</option><option>Completed</option></select></div><div class="table-wrap"><table id="ct"></table></div></div>
-    </section>
-
-    <section id="entry" class="page">
-      <div class="page-head"><div><h1>Venue Check-In</h1><p>Verify a candidate and move them to Waiting Room 1.</p></div></div>
-      <div class="entry-layout">
-        <div class="card"><div class="card-title"><h2>QR / Candidate Scan</h2><span>Prototype scanner</span></div><div class="scanner"><div><div class="qr"></div><h3 style="margin:14px 0 5px">Ready to scan</h3><p class="muted small">Connect a QR scanner later or use manual candidate lookup.</p></div></div><div class="toolbar" style="margin-top:14px"><div class="search"><input id="entrySearch" placeholder="Candidate ID or name"></div><button class="btn primary" onclick="findEntry()">Find Candidate</button></div><div id="entryResult"></div></div>
-        <div class="card"><div class="card-title"><h2>Recent Check-ins</h2><span>Live</span></div><div id="recentCheckins"></div></div>
-      </div>
-    </section>
-
-    <section id="waiting1" class="page">
-      <div class="page-head"><div><h1>Waiting Room 1</h1><p>Newly arrived candidates waiting for their first panel assignment.</p></div><span class="pill blue" id="w1Count"></span></div>
-      <div id="w1"></div>
-    </section>
-
-    <section id="waiting2" class="page">
-      <div class="page-head"><div><h1>Waiting Room 2</h1><p>Candidates returning after an interview. Queue is reset after every completed interview.</p></div><span class="pill amber">Priority queue</span></div>
-      <div class="card"><div id="w2"></div></div>
-    </section>
-
-    <section id="panels" class="page">
-      <div class="page-head"><div><h1>Interview Panels</h1><p>Each domain has its own panel queue and live candidate status.</p></div></div>
-      <div class="card"><div id="pc" class="panel-grid"></div></div>
-    </section>
-
-    <section id="interviewer" class="page">
-      <div class="page-head"><div><h1>Interviewer Panel</h1><p>Evaluate the current candidate using a consistent 40-mark rubric.</p></div><div style="width:230px"><select id="domain" onchange="render()"></select></div></div>
-      <div id="iv"></div>
-    </section>
-
-    <section id="allocation" class="page">
-      <div class="page-head"><div><h1>Final Domain Allocation</h1><p>Highest total marks determine allocation; preference order breaks ties.</p></div><button class="btn primary" onclick="render()">Refresh Allocation</button></div>
-      <div class="card"><div class="notice" style="margin-bottom:14px"><b>Allocation rule:</b> compare marks across the candidate's completed domain interviews. Highest marks are considered first; when marks are equal, Choice 1 → Choice 4 is used as the tie-breaker.</div><div class="table-wrap"><table id="at"></table></div></div>
-    </section>
-
-  </div>
+*{box-sizing:border-box}body{margin:0;font:14px Arial;background:#f5f7fb;color:#172033}.side{position:fixed;inset:0 auto 0 0;width:220px;background:#11152a;color:#fff;padding:22px}.brand{font-size:22px;font-weight:800;margin-bottom:25px}.brand span{color:#8175ff}.nav button{display:block;width:100%;margin:5px 0;padding:11px;border:0;border-radius:8px;background:transparent;color:#b8c0d6;text-align:left;cursor:pointer}.nav button:hover,.nav button.active{background:#292f4e;color:#fff}.main{margin-left:220px;padding:25px}.page{display:none}.page.active{display:block}.cards,.panels{display:grid;gap:12px}.cards{grid-template-columns:repeat(5,1fr)}.panels{grid-template-columns:repeat(4,1fr)}.card,.stat,.panel{background:#fff;border:1px solid #e2e7ef;border-radius:12px;padding:16px;margin-bottom:14px}.stat small,.muted{color:#6b7485}.stat b{display:block;font-size:27px;margin-top:7px}.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}input,select,textarea{padding:9px;border:1px solid #d8deea;border-radius:7px;background:#fff}.btn{padding:9px 12px;border:0;border-radius:7px;cursor:pointer;font-weight:700}.primary{background:#5b5ce2;color:#fff}.green{background:#e5f8ef;color:#087452}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:9px;border-bottom:1px solid #e7eaf0;text-align:left}.notice{padding:11px;background:#eef3ff;border-radius:8px;margin-bottom:10px}@media(max-width:850px){.side{width:65px}.brand{font-size:0}.brand span{font-size:18px}.nav button{font-size:0;text-align:center}.main{margin-left:65px}.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.panels{grid-template-columns:repeat(2,1fr)}}
+</style></head><body>
+<aside class="side"><div class="brand">Recruit<span>Flow</span></div><div class="nav" id="nav"></div></aside>
+<main class="main"><h1 id="title">Dashboard</h1>
+<section id="dashboard" class="page active"><div id="stats" class="cards"></div><div class="grid"><div class="card"><h2>11 Panel Status</h2><div id="panelStatus" class="panels"></div></div><div class="card"><h2>W2 Priority Queue</h2><div id="queue"></div></div></div><div class="card"><h2>Live Candidate Movement</h2><table id="live" class="table"></table></div></section>
+<section id="candidateEntry" class="page"><div class="card"><h2>Candidate Registration</h2><p class="muted">Enter candidate details and submit the registration. Required fields are marked with *.</p><form id="candidateForm" onsubmit="submitCandidate(event)">
+<div class="grid" style="grid-template-columns:1fr 1fr">
+<div><label>Full Name *</label><input id="fName" required placeholder="Candidate full name"></div><div><label>Email *</label><input id="fEmail" type="email" required placeholder="name@example.com"></div>
+<div><label>Mobile Number *</label><input id="fPhone" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div><div><label>College / Institute *</label><input id="fCollege" required placeholder="College name"></div>
+<div><label>Branch *</label><select id="fBranch" required><option value="">Select branch</option><option>IT</option><option>CSE</option><option>AI&DS</option><option>ENTC</option><option>Mechanical</option><option>Civil</option><option>Other</option></select></div>
+<div><label>Year *</label><select id="fYear" required><option value="">Select year</option><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
+<div><label>Registration / Roll Number</label><input id="fRoll" placeholder="Optional"></div><div><label>GitHub / Portfolio</label><input id="fPortfolio" type="url" placeholder="https://..."></div>
+<div style="grid-column:1/-1"><label>Skills / Technologies *</label><input id="fSkills" required placeholder="Java, Python, React, SQL..."></div>
+<div style="grid-column:1/-1"><label>Domain Preferences *</label><p class="muted">Select up to 4 different domains in priority order.</p><div class="toolbar" id="choiceFields"></div></div>
+<div style="grid-column:1/-1"><label>Why do you want to join the club?</label><textarea id="fReason" rows="4" placeholder="Tell us briefly..."></textarea></div>
+<div style="grid-column:1/-1"><label>Declaration *</label><label style="font-weight:normal"><input id="fAgree" type="checkbox" required> I confirm that the information provided is correct.</label></div>
+</div><div class="toolbar" style="margin-top:16px"><button type="submit" class="btn primary">Submit Candidate Registration</button><button type="button" class="btn" onclick="resetCandidateForm()">Reset</button></div><div id="formMessage"></div></form></div>
+<div class="card"><h2>Recently Registered Candidates</h2><table id="recentCandidates" class="table"></table></div></section>
+<section id="candidates" class="page"><div class="card"><h2>Candidates</h2><div class="toolbar"><input id="search" placeholder="Search name / ID" oninput="render()"><button class="btn primary" onclick="show('candidateEntry')">+ Add Candidate</button></div><table id="ct" class="table"></table></div></section>
+<section id="entry" class="page"><div class="card"><h2>Venue Entry</h2><div class="notice">Search a candidate and mark entry to Waiting Room 1.</div><div class="toolbar"><input id="entrySearch" placeholder="ID or name"><button class="btn primary" onclick="findEntry()">Find</button></div><div id="entryResult"></div></div></section>
+<section id="waiting1" class="page"><div class="card"><h2>Waiting Room 1</h2><div id="w1"></div></div></section>
+<section id="waiting2" class="page"><div class="card"><h2>Waiting Room 2</h2><p class="muted">Candidates are ordered by current waiting time and are eligible only for domains they still need.</p><div id="w2"></div></div></section>
+<section id="panels" class="page"><div class="card"><h2>11 Interview Panels</h2><div id="pc" class="panels"></div></div></section>
+<section id="interviewer" class="page"><div class="card"><h2>Interviewer</h2><div class="toolbar"><select id="domain" onchange="render()"></select></div><div id="iv"></div></div></section>
+<section id="allocation" class="page"><div class="card"><h2>Final Domain Allocation</h2><p class="muted">Highest marks win; choice order breaks ties.</p><table id="at" class="table"></table></div></section>
 </main>
-</div>
-<div id="toast" class="toast"></div>
-
 <script>
-const D=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
-const defaultCandidates=[
-{id:"RF-1001",name:"Aarav Patil",email:"aarav@example.com",college:"SKNCOE",branch:"IT",year:"3rd",phone:"9876543210",skills:"Java, SQL, Web",choices:["AI","Web Development","Cybersecurity","Robotics"],status:"Waiting Room 2",wait:Date.now()-1080000,active:"",marks:{},registeredAt:Date.now()-86400000},
-{id:"RF-1002",name:"Sneha Joshi",email:"sneha@example.com",college:"SKNCOE",branch:"CSE",year:"3rd",phone:"9876543211",skills:"Python, ML, UI",choices:["AI","Healthcare","Design","IoT"],status:"Waiting Room 2",wait:Date.now()-720000,active:"",marks:{},registeredAt:Date.now()-76000000},
-{id:"RF-1003",name:"Rohan Kulkarni",email:"rohan@example.com",college:"SKNCOE",branch:"ENTC",year:"2nd",phone:"9876543212",skills:"C++, Robotics, Arduino",choices:["Robotics","IoT","SpaceTech","AI"],status:"Waiting Room 1",wait:Date.now()-420000,active:"",marks:{},registeredAt:Date.now()-64000000},
-{id:"RF-1004",name:"Isha Deshmukh",email:"isha@example.com",college:"SKNCOE",branch:"IT",year:"2nd",phone:"9876543213",skills:"HTML, CSS, JS",choices:["Web Development","Design","App Development","Management"],status:"Registered",wait:null,active:"",marks:{},registeredAt:Date.now()-50000000}
+var D=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
+var C=JSON.parse(localStorage.getItem("recruitflow")||"null")||[
+{id:"RF-1001",name:"Aarav Patil",branch:"IT",year:"3rd",phone:"9876543210",skills:"Java, SQL, Web",choices:["AI","Web Development","Cybersecurity","Robotics"],status:"Waiting Room 2",wait:Date.now()-1080000,active:"",marks:{}},
+{id:"RF-1002",name:"Sneha Joshi",branch:"CSE",year:"3rd",phone:"9876543211",skills:"Python, ML, UI",choices:["AI","Healthcare","Design","IoT"],status:"Waiting Room 2",wait:Date.now()-720000,active:"",marks:{}},
+{id:"RF-1003",name:"Rohan Kulkarni",branch:"ENTC",year:"2nd",phone:"9876543212",skills:"C++, Robotics, Arduino",choices:["Robotics","IoT","SpaceTech","AI"],status:"Waiting Room 1",wait:Date.now()-420000,active:"",marks:{}},
+{id:"RF-1004",name:"Isha Deshmukh",branch:"IT",year:"2nd",phone:"9876543213",skills:"HTML, CSS, JS",choices:["Web Development","Design","App Development","Management"],status:"Registered",wait:null,active:"",marks:{}}
 ];
-let C=JSON.parse(localStorage.getItem("recruitflow")||"null")||defaultCandidates;
-const navItems=[
-["Dashboard","⌂"],["Candidate Registration","＋"],["Candidates","♙"],["Venue Entry","✓"],["Waiting Room 1","①"],["Waiting Room 2","②"],["Interview Panels","▦"],["Interviewer","✦"],["Allocation","◆"]
-];
-const ids=["dashboard","candidateEntry","candidates","entry","waiting1","waiting2","panels","interviewer","allocation"];
-const nav=document.getElementById("nav");
-navItems.forEach((item,i)=>{const b=document.createElement("button");b.innerHTML='<span class="ico">'+item[1]+'</span><span>'+item[0]+'</span>';b.onclick=()=>showPage(ids[i],b);if(i===0)b.classList.add("active");nav.appendChild(b)});
-const domainSelect=document.getElementById("domain");
-D.forEach(x=>domainSelect.innerHTML+="<option>"+x+"</option>");
-
-function initials(name){return name.split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase()}
-function save(){localStorage.setItem("recruitflow",JSON.stringify(C))}
-function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.style.display="block";clearTimeout(window._toast);window._toast=setTimeout(()=>t.style.display="none",2800)}
-function showPage(id,btn){
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
-  if(btn)btn.classList.add("active");else{
-    const idx=ids.indexOf(id);if(idx>=0)nav.children[idx].classList.add("active")
-  }
-  document.getElementById("title").textContent=navItems[ids.indexOf(id)]?.[0]||"Dashboard";
-  render()
-}
-function openPublic(){document.getElementById("app").style.display="none";document.getElementById("publicPage").style.display="block";window.scrollTo(0,0)}
-function openAdmin(){document.getElementById("publicPage").style.display="none";document.getElementById("app").style.display="block";showPage("dashboard")}
-function openRegistration(){document.getElementById("publicPage").style.display="none";document.getElementById("app").style.display="block";showPage("candidateEntry");window.scrollTo(0,0)}
-function buildChoiceFields(){
-  const box=document.getElementById("choiceFields");if(!box)return;
-  box.innerHTML="";
-  for(let i=1;i<=4;i++){
-    const wrap=document.createElement("div");wrap.className="choice";
-    const s=document.createElement("select");s.id="fChoice"+i;s.required=i===1;
-    s.innerHTML="<option value=''>Choice "+i+"</option>"+D.map(d=>"<option>"+d+"</option>").join("");
-    s.onchange=validateChoices;wrap.innerHTML="<small>"+i+"</small>";wrap.appendChild(s);box.appendChild(wrap)
-  }
-}
-function validateChoices(){
-  const vals=[1,2,3,4].map(i=>document.getElementById("fChoice"+i)?.value).filter(Boolean);
-  const ok=vals.length===new Set(vals).size;
-  document.getElementById("formMessage").innerHTML=ok?"":"<div class='notice' style='margin-bottom:12px'>Please select a different domain for each choice.</div>";
-  return ok
-}
-function submitCandidate(e){
-  e.preventDefault();if(!validateChoices())return;
-  const choices=[1,2,3,4].map(i=>document.getElementById("fChoice"+i).value).filter(Boolean);
-  const phone=document.getElementById("fPhone").value.trim(),email=document.getElementById("fEmail").value.trim();
-  if(!/^[0-9]{10}$/.test(phone)){document.getElementById("formMessage").innerHTML="<div class='notice' style='margin-bottom:12px'>Enter a valid 10-digit mobile number.</div>";return}
-  if(C.some(x=>x.phone===phone||x.email===email)){document.getElementById("formMessage").innerHTML="<div class='notice' style='margin-bottom:12px'>This phone number or email is already registered.</div>";return}
-  const id="RF-"+String(1001+C.length).padStart(4,"0");
-  const candidate={id,name:document.getElementById("fName").value.trim(),email,phone,college:document.getElementById("fCollege").value.trim(),branch:document.getElementById("fBranch").value,year:document.getElementById("fYear").value,roll:document.getElementById("fRoll").value.trim(),portfolio:document.getElementById("fPortfolio").value.trim(),skills:document.getElementById("fSkills").value.trim(),choices,reason:document.getElementById("fReason").value.trim(),status:"Registered",wait:null,active:"",marks:{},registeredAt:Date.now()};
-  C.push(candidate);save();document.getElementById("formMessage").innerHTML="<div class='notice' style='margin-bottom:12px'><b>Registration successful!</b> Candidate ID: <b>"+id+"</b>. Save this ID for venue entry.</div>";document.getElementById("candidateForm").reset();buildChoiceFields();render();toast("Candidate "+id+" registered successfully")}
+var nav=["Dashboard","Candidate Registration","Candidates","Venue Entry","Waiting Room 1","Waiting Room 2","11 Panels","Interviewer","Allocation"],ids=["dashboard","candidateEntry","candidates","entry","waiting1","waiting2","panels","interviewer","allocation"];
+nav.forEach(function(x,i){var b=document.createElement("button");b.textContent=x;b.onclick=function(){show(ids[i],b)};if(i===0)b.className="active";document.getElementById("nav").appendChild(b)});
+D.forEach(function(x){domain.innerHTML+="<option>"+x+"</option>"});
+function buildChoiceFields(){var box=document.getElementById("choiceFields");if(!box)return;box.innerHTML="";for(var i=1;i<=4;i++){var s=document.createElement("select");s.id="fChoice"+i;s.required=i===1;s.innerHTML="<option value=''>Choice "+i+"</option>"+D.map(function(d){return "<option>"+d+"</option>"}).join("");s.onchange=validateChoices;box.appendChild(s)}}
+function validateChoices(){var vals=[1,2,3,4].map(function(i){return document.getElementById("fChoice"+i)?.value}).filter(Boolean),ok=vals.length===new Set(vals).size;document.getElementById("formMessage").innerHTML=ok?"":"<div class=notice>Please select a different domain for each choice.</div>";return ok}
+function submitCandidate(e){e.preventDefault();if(!validateChoices())return;var choices=[1,2,3,4].map(function(i){return document.getElementById("fChoice"+i).value}).filter(Boolean),phone=document.getElementById("fPhone").value.trim(),email=document.getElementById("fEmail").value.trim();if(!/^[0-9]{10}$/.test(phone)){document.getElementById("formMessage").innerHTML="<div class=notice>Enter a valid 10-digit mobile number.</div>";return}if(C.some(function(x){return x.phone===phone||x.email===email})){document.getElementById("formMessage").innerHTML="<div class=notice>This phone number or email is already registered.</div>";return}var id="RF-"+String(1001+C.length).padStart(4,"0"),c={id:id,name:document.getElementById("fName").value.trim(),email:email,phone:phone,college:document.getElementById("fCollege").value.trim(),branch:document.getElementById("fBranch").value,year:document.getElementById("fYear").value,roll:document.getElementById("fRoll").value.trim(),portfolio:document.getElementById("fPortfolio").value.trim(),skills:document.getElementById("fSkills").value.trim(),choices:choices,reason:document.getElementById("fReason").value.trim(),status:"Registered",wait:null,active:"",marks:{},registeredAt:Date.now()};C.push(c);save();document.getElementById("formMessage").innerHTML="<div class=notice><b>Registration successful!</b> Candidate ID: <b>"+id+"</b>.</div>";document.getElementById("candidateForm").reset();buildChoiceFields();render()}
 function resetCandidateForm(){document.getElementById("candidateForm").reset();buildChoiceFields();document.getElementById("formMessage").innerHTML=""}
-function renderRecentCandidates(){
-  const el=document.getElementById("recentCandidates");if(!el)return;
-  const a=C.slice().sort((x,y)=>(y.registeredAt||0)-(x.registeredAt||0)).slice(0,10);
-  el.innerHTML="<tr><th>Candidate</th><th>College</th><th>Branch / Year</th><th>Preferences</th><th>Status</th></tr>"+a.map(c=>"<tr><td><div class='person'><div class='person-avatar'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+" · "+(c.email||"")+"</span></div></div></td><td>"+(c.college||"—")+"</td><td>"+c.branch+" · "+c.year+"</td><td>"+c.choices.map((d,i)=>"<span class='pill "+(i===0?"blue":"")+"'>"+(i+1)+" "+d+"</span> ").join("")+"</td><td>"+statusPill(c.status)+"</td></tr>").join("")
-}
-function statusPill(s){const map={"Registered":"blue","Waiting Room 1":"amber","Waiting Room 2":"amber","Interviewing":"blue","Completed":"green"};return "<span class='pill "+(map[s]||"")+"'>"+s+"</span>"}
-function remaining(c){return c.choices.filter(x=>c.marks[x]===undefined)}
-function eligible(d){return C.filter(c=>c.status==="Waiting Room 2"&&!c.active&&remaining(c).includes(d)).sort((a,b)=>(a.wait||0)-(b.wait||0))}
-function minutes(c){return c.wait?Math.max(0,Math.floor((Date.now()-c.wait)/60000)):0}
-function render(){
-  const counts={Registered:0,"Waiting Room 1":0,"Waiting Room 2":0,Interviewing:0,Completed:0};C.forEach(c=>counts[c.status]=(counts[c.status]||0)+1);
-  const stats=[["Total Candidates",C.length,"#", "blue"],["Checked In",counts["Waiting Room 1"]+counts["Waiting Room 2"]+counts.Interviewing+counts.Completed,"✓","green"],["Waiting Room 1",counts["Waiting Room 1"],"①","amber"],["Interviews Done",counts.Completed,"✓","green"],["Active Interviews",counts.Interviewing,"✦","blue"]];
-  document.getElementById("stats").innerHTML=stats.map(x=>"<div class='stat'><div class='stat-top'><span>"+x[0]+"</span><span class='stat-icon'>"+x[2]+"</span></div><b>"+x[1]+"</b><small>"+(x[0]==="Active Interviews"?"Panels currently occupied":"Live event count")+"</small></div>").join("");
-  document.getElementById("panelStatus").innerHTML=D.map(d=>{
-    const a=C.find(c=>c.active===d),e=eligible(d)[0];
-    return "<div class='panel-card "+(a?"busy":"")+"'><div class='panel-head'><div class='panel-name'>"+d+"</div><span class='panel-status "+(a?"busy":"")+"'>"+(a?"Busy":"Available")+"</span></div><div class='panel-candidate'>"+(a?"<b>"+a.name+"</b><br><span class='muted'>"+a.id+"</span>":e?"Next: <b>"+e.name+"</b><br><span class='muted'>"+minutes(e)+" min waiting</span>":"No eligible candidate")+"</div><div class='progress'><i style='width:"+(a?"72":"0")+"%'></i></div></div>"
-  }).join("");
-  const q=C.filter(c=>c.status==="Waiting Room 2").sort((a,b)=>(a.wait||0)-(b.wait||0));
-  document.getElementById("queue").innerHTML=q.length?q.slice(0,8).map((c,i)=>"<div class='queue-item'><div class='queue-left'><div class='queue-rank'>"+(i+1)+"</div><div class='queue-info'><b>"+c.name+"</b><span>"+c.id+" · "+minutes(c)+" min · needs "+remaining(c).join(", ")+"</span></div></div><span class='pill amber'>W2</span></div>").join(""):"<div class='empty'>No candidates are waiting in W2.</div>";
-  document.getElementById("lastUpdated").textContent="Updated "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-  document.getElementById("live").innerHTML="<tr><th>Candidate</th><th>Status</th><th>Current panel</th><th>Remaining domains</th></tr>"+C.map(c=>"<tr><td><div class='person'><div class='person-avatar'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+" · "+c.branch+" · "+c.year+"</span></div></div></td><td>"+statusPill(c.status)+"</td><td>"+(c.active||"—")+"</td><td>"+(remaining(c).join(" · ")||"All interviews completed")+"</td></tr>").join("");
-  const search=(document.getElementById("search")?.value||"").toLowerCase(),filter=document.getElementById("statusFilter")?.value||"";
-  const filtered=C.filter(c=>(!search||c.name.toLowerCase().includes(search)||c.id.toLowerCase().includes(search))&&(!filter||c.status===filter));
-  document.getElementById("ct").innerHTML="<tr><th>Candidate</th><th>College</th><th>Preferences</th><th>Status</th><th>Progress</th></tr>"+filtered.map(c=>"<tr><td><div class='person'><div class='person-avatar'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+" · "+c.email+"</span></div></div></td><td>"+(c.college||"—")+"<br><span class='muted small'>"+c.branch+" · "+c.year+"</span></td><td>"+c.choices.map((d,i)=>"<span class='pill "+(i===0?"blue":"")+"'>"+(i+1)+" "+d+"</span> ").join("")+"</td><td>"+statusPill(c.status)+"</td><td>"+c.choices.filter(d=>c.marks[d]!==undefined).length+" / "+c.choices.length+" done</td></tr>").join("");
-  const w1=C.filter(c=>c.status==="Waiting Room 1");
-  document.getElementById("w1Count").textContent=w1.length+" candidate"+(w1.length===1?"":"s");
-  document.getElementById("w1").innerHTML=w1.length?"<div class='grid grid-3'>"+w1.map(c=>"<div class='card'><div class='person'><div class='person-avatar'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+" · "+c.branch+" · "+c.year+"</span></div></div><div class='notice' style='margin:14px 0'>Preferences: "+c.choices.join(" → ")+"</div><button class='btn primary' onclick=move2('"+c.id+"')>Move to Waiting Room 2 →</button></div>").join("")+"</div>":"<div class='empty'>Waiting Room 1 is empty.</div>";
-  document.getElementById("w2").innerHTML=q.length?q.map((c,i)=>"<div class='queue-item'><div class='queue-left'><div class='queue-rank'>"+(i+1)+"</div><div class='queue-info'><b>"+c.name+" <span class='pill amber'>"+minutes(c)+" min</span></b><span>"+c.id+" · Remaining: "+remaining(c).join(", ")+"</span></div></div><div class='small muted'>Eligible panels: "+remaining(c).length+"</div></div>").join(""):"<div class='empty'>Waiting Room 2 is empty.</div>";
-  document.getElementById("pc").innerHTML=D.map(d=>{const a=C.find(c=>c.active===d),e=eligible(d)[0];return "<div class='panel-card "+(a?"busy":"")+"'><div class='panel-head'><div class='panel-name'>"+d+"</div><span class='panel-status "+(a?"busy":"")+"'>"+(a?"Busy":"Available")+"</span></div><div class='panel-candidate'>"+(a?"<b>"+a.name+"</b><br><span class='muted'>"+a.id+"</span>":e?"Next: <b>"+e.name+"</b><br><span class='muted'>"+minutes(e)+" min waiting</span>":"No eligible candidate")+"</div>"+(e&&!a?"<button class='btn primary' style='width:100%' onclick=startInterview('"+e.id+"','"+d+"')>Call Candidate</button>":a?"<span class='pill blue'>Interview in progress</span>":"<span class='pill'>Queue empty</span>")+"</div>"}).join("");
-  const d=document.getElementById("domain").value,a=C.find(c=>c.active===d),e=eligible(d)[0];document.getElementById("iv").innerHTML=a?interviewCard(a,d):e?"<div class='card'><div class='notice'>Next candidate for <b>"+d+"</b>: <b>"+e.name+"</b> · "+minutes(e)+" min waiting.</div><button class='btn primary' style='margin-top:12px' onclick=startInterview('"+e.id+"','"+d+"')>Start Interview →</button></div>":"<div class='card empty'>No eligible candidate for this panel.</div>";
-  const done=C.filter(c=>Object.keys(c.marks).length);document.getElementById("at").innerHTML="<tr><th>Candidate</th><th>Choice 1</th><th>Choice 2</th><th>Choice 3</th><th>Choice 4</th><th>Interview Scores</th><th>Selected Domain</th></tr>"+done.map(c=>{const z=best(c);return "<tr class='allocation-row "+(z?"selected":"")+"'><td><div class='person'><div class='person-avatar'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+" · "+c.branch+"</span></div></div></td>"+[0,1,2,3].map(i=>"<td>"+(c.choices[i]||"—")+"<br><span class='muted'>"+(c.choices[i]&&c.marks[c.choices[i]]!==undefined?c.marks[c.choices[i]]+"/40":"Pending")+"</span></td>").join("")+"<td>"+c.choices.filter(d=>c.marks[d]!==undefined).map(d=>"<span class='pill'>"+d+" <b>"+c.marks[d]+"</b></span>").join(" ")+"</td><td>"+(z?"<b class='allocation-score'>"+z.d+"</b>":"<span class='muted'>Pending</span>")+"</td></tr>"}).join("")||"<tr><td colspan='7'><div class='empty'>No completed interview scores yet.</div></td></tr>";
-  renderRecentCandidates();renderRecentCheckins()
-}
-function interviewCard(c,d){
-  return "<div class='interview-layout'><div class='candidate-summary'><div class='person'><div class='person-avatar' style='width:46px;height:46px'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+"</span></div></div><hr style='border:0;border-top:1px solid var(--line);margin:16px 0'><div class='small muted'>ACADEMIC</div><p style='margin:6px 0 14px'><b>"+c.branch+" · "+c.year+"</b><br>"+(c.college||"College not provided")+"</p><div class='small muted'>SKILLS</div><p style='margin:6px 0 14px'>"+(c.skills||"Not provided")+"</p><div class='small muted'>PREFERENCES</div><p style='margin:6px 0'>"+c.choices.map((x,i)=>(i+1)+". "+x).join("<br>")+"</p></div><div class='card'><div class='card-title'><h2>Evaluate: "+d+"</h2><span>Maximum 40 marks</span></div><div class='score-grid'>"+["Technical Skills","Communication","Problem Solving","Domain Knowledge"].map((x,i)=>"<div class='score-box'><label>"+x+" / 10</label><input id='s"+i+"' type='number' min='0' max='10' value='"+(c._draft?.[i]||0)+"' oninput='updateTotal()'></div>").join("")+"</div><div class='total-box' style='margin-top:14px'>Current Total<b id='scoreTotal'>0 / 40</b></div><div class='field' style='margin-top:15px'><label>Interviewer Feedback</label><textarea id='feedback' rows='5' placeholder='Key strengths, concerns, observations...'></textarea></div><div class='actions'><button class='btn secondary' onclick='cancelInterview(""+d+"")'>Release Candidate</button><button class='btn success' onclick='finishInterview(""+c.id+"",""+d+"")'>Submit Evaluation & Continue →</button></div></div></div>"
-}
-function updateTotal(){let s=0;for(let i=0;i<4;i++)s+=Number(document.getElementById("s"+i)?.value||0);const x=document.getElementById("scoreTotal");if(x)x.textContent=s+" / 40"}
-function startInterview(id,d){
-  const c=C.find(x=>x.id===id);if(!c||c.active||c.status!=="Waiting Room 2")return toast("Candidate is no longer available");
-  if(C.some(x=>x.active===d))return toast("Panel is already busy");
-  c.active=d;c.status="Interviewing";save();render();toast(c.name+" called to "+d)
-}
-function cancelInterview(d){const c=C.find(x=>x.active===d);if(!c)return;c.active="";c.status="Waiting Room 2";c.wait=Date.now();save();render();toast("Candidate returned to W2")}
-function finishInterview(id,d){
-  const c=C.find(x=>x.id===id);if(!c)return;
-  let total=0;for(let i=0;i<4;i++){const v=Number(document.getElementById("s"+i)?.value||0);if(v<0||v>10)return toast("Each score must be between 0 and 10");total+=v}
-  c.marks[d]=total;c.feedback=c.feedback||{};c.feedback[d]=document.getElementById("feedback")?.value||"";c.active="";const rem=remaining(c);c.status=rem.length?"Waiting Room 2":"Completed";c.wait=rem.length?Date.now():null;save();render();toast("Evaluation saved: "+total+"/40")
-}
-function move2(id){const c=C.find(x=>x.id===id);if(!c)return;c.status="Waiting Room 2";c.wait=Date.now();save();render();toast(c.name+" moved to W2")}
-function findEntry(){
-  const q=document.getElementById("entrySearch").value.toLowerCase().trim();const c=C.find(x=>x.id.toLowerCase()===q||x.name.toLowerCase().includes(q));
-  document.getElementById("entryResult").innerHTML=c?"<div class='card' style='margin-top:14px;border-color:#d8d7ff'><div class='person'><div class='person-avatar'>"+initials(c.name)+"</div><div><b>"+c.name+"</b><span>"+c.id+" · "+c.branch+" · "+c.year+"</span></div></div><div class='kpi-row' style='margin:14px 0'>"+c.choices.map((d,i)=>"<span class='pill "+(i===0?"blue":"")+"'>"+(i+1)+" "+d+"</span>").join("")+"</div>"+(c.status==="Registered"?"<button class='btn primary' onclick=arrive('"+c.id+"')>Verify & Move to Waiting Room 1 →</button>":"<div class='notice'>Current status: <b>"+c.status+"</b>. Entry has already been processed.</div>")+"</div>":"<div class='notice' style='margin-top:14px'>Candidate not found. Check the ID or name.</div>"
-}
-function arrive(id){const c=C.find(x=>x.id===id);if(!c)return;c.status="Waiting Room 1";c.wait=Date.now();save();findEntry();render();toast(c.name+" checked in")}
-function renderRecentCheckins(){const el=document.getElementById("recentCheckins");if(!el)return;const a=C.filter(c=>c.status!=="Registered").sort((x,y)=>(y.wait||0)-(x.wait||0)).slice(0,6);el.innerHTML=a.length?a.map(c=>"<div class='queue-item'><div class='queue-left'><div class='person-avatar'>"+initials(c.name)+"</div><div class='queue-info'><b>"+c.name+"</b><span>"+c.id+" · "+c.status+"</span></div></div>"+statusPill(c.status)+"</div>").join(""):"<div class='empty'>No check-ins yet.</div>"}
-function best(c){return c.choices.map((d,i)=>({d,s:c.marks[d],i})).filter(x=>x.s!==undefined).sort((a,b)=>b.s-a.s||a.i-b.i)[0]}
-function addCandidate(){showPage("candidateEntry")}
+function save(){localStorage.setItem("recruitflow",JSON.stringify(C))}
+function rem(c){return c.choices.filter(function(x){return c.marks[x]===undefined})}
+function elig(d){return C.filter(function(c){return c.status==="Waiting Room 2"&&!c.active&&rem(c).indexOf(d)>=0}).sort(function(a,b){return a.wait-b.wait})}
+function minutes(c){return c.wait?Math.floor((Date.now()-c.wait)/60000):0}
+function show(id,b){document.querySelectorAll(".page").forEach(function(x){x.classList.remove("active")});document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(function(x){x.classList.remove("active")});if(b)b.classList.add("active");document.getElementById("title").textContent=(b||{}).textContent||nav[ids.indexOf(id)];render()}
+function render(){var n={Registered:0,"Waiting Room 1":0,"Waiting Room 2":0,Interviewing:0,Completed:0};C.forEach(function(c){n[c.status]=(n[c.status]||0)+1});stats.innerHTML="";[["Total",C.length],["Registered",n.Registered],["Waiting Room 1",n["Waiting Room 1"]],["Waiting Room 2",n["Waiting Room 2"]],["Completed",n.Completed]].forEach(function(x){stats.innerHTML+="<div class=stat><small>"+x[0]+"</small><b>"+x[1]+"</b></div>"});panelStatus.innerHTML="";D.forEach(function(d){var a=C.find(function(c){return c.active===d});panelStatus.innerHTML+="<div class=panel><b>"+d+"</b><p>"+(a?"Interviewing: "+a.name:"Available")+"</p><span class=muted>"+elig(d).length+" eligible</span></div>"});var q=C.filter(function(c){return c.status==="Waiting Room 2"}).sort(function(a,b){return a.wait-b.wait});queue.innerHTML=q.length?q.map(function(c,i){return "<div style=padding:8px;border-bottom:1px solid #eee><b>#"+(i+1)+" "+c.name+"</b><br><span class=muted>"+minutes(c)+" min · "+rem(c).join(", ")+"</span></div>"}).join(""):"No candidates waiting.";live.innerHTML="<tr><th>Candidate</th><th>Status</th><th>Current / Remaining</th></tr>"+C.map(function(c){return "<tr><td><b>"+c.name+"</b><br><span class=muted>"+c.id+"</span></td><td>"+c.status+"</td><td>"+(c.active||rem(c).join(", ")||"Done")+"</td></tr>"}).join("");var s=(document.getElementById("search")||{}).value||"";s=s.toLowerCase();ct.innerHTML="<tr><th>ID</th><th>Candidate</th><th>Choices</th><th>Status</th></tr>"+C.filter(function(c){return !s||c.name.toLowerCase().indexOf(s)>=0||c.id.toLowerCase().indexOf(s)>=0}).map(function(c){return "<tr><td>"+c.id+"</td><td><b>"+c.name+"</b><br><span class=muted>"+c.branch+" · "+c.year+"</span></td><td>"+c.choices.join(" → ")+"</td><td>"+c.status+"</td></tr>"}).join("");w1.innerHTML=C.filter(function(c){return c.status==="Waiting Room 1"}).map(function(c){return "<div class=card><b>"+c.name+"</b> · "+c.id+"<br><span class=muted>"+c.choices.join(", ")+"</span><br><button class='btn primary' onclick=move2('"+c.id+"')>Seat in W2</button></div>"}).join("")||"Empty";w2.innerHTML=q.map(function(c,i){return "<div class=card><b>#"+(i+1)+" "+c.name+"</b> · "+minutes(c)+" min<br><span class=muted>Remaining: "+rem(c).join(", ")+"</span></div>"}).join("")||"Empty";pc.innerHTML=D.map(function(d){var a=C.find(function(c){return c.active===d}),e=elig(d)[0];return "<div class=panel><b>"+d+"</b><p>"+(a?"Busy: "+a.name:"Available")+"</p>"+(e?"<button class='btn primary' onclick=start('"+e.id+"','"+d+"')>Call "+e.name+"</button>":"")+"</div>"}).join("");var d=domain.value,a=C.find(function(c){return c.active===d}),e=elig(d)[0];iv.innerHTML=a?form(a,d):e?"<div class=notice>Next: <b>"+e.name+"</b> · "+minutes(e)+" min waiting</div><button class='btn primary' onclick=start('"+e.id+"','"+d+"')>Start Interview</button>":"<div class=notice>No eligible candidate.</div>";renderRecentCandidates();var done=C.filter(function(c){return Object.keys(c.marks).length});at.innerHTML="<tr><th>Candidate</th><th>Scores</th><th>Selected</th></tr>"+done.map(function(c){var z=best(c);return "<tr><td>"+c.name+"</td><td>"+c.choices.map(function(d){return d+": "+(c.marks[d]===undefined?"—":c.marks[d])}).join(" · ")+"</td><td><b>"+(z?z.d:"Pending")+"</b></td></tr>"}).join("")}
+function renderRecentCandidates(){var el=document.getElementById("recentCandidates");if(!el)return;var a=C.slice().sort(function(x,y){return(y.registeredAt||0)-(x.registeredAt||0)}).slice(0,10);el.innerHTML="<tr><th>Candidate ID</th><th>Name</th><th>Branch / Year</th><th>Choices</th><th>Status</th></tr>"+a.map(function(c){return "<tr><td><b>"+c.id+"</b></td><td>"+c.name+"<br><span class=muted>"+(c.email||"")+"</span></td><td>"+c.branch+" · "+c.year+"</td><td>"+c.choices.join(" → ")+"</td><td>"+c.status+"</td></tr>"}).join("")}
+function form(c,d){return "<div class=notice><b>"+c.name+"</b> · "+c.id+"<br>"+c.branch+" · "+c.year+"<br>Skills: "+c.skills+"<br>Choices: "+c.choices.join(" → ")+"</div>"+["Technical","Communication","Problem Solving","Domain Knowledge"].map(function(x,i){return "<label>"+x+" <input id=s"+i+" type=number min=0 max=10 value=0></label><br>"}).join("")+"<textarea id=fb style=width:100%;margin-top:10px placeholder='Feedback'></textarea><br><button class='btn green' onclick=finish('"+c.id+"','"+d+"')>Submit Interview</button>"}
+function start(id,d){var c=C.find(function(x){return x.id===id});if(!c||c.active||c.status!=="Waiting Room 2")return alert("Candidate unavailable");if(C.some(function(x){return x.active===d}))return alert("Panel is busy");c.active=d;c.status="Interviewing";save();render()}
+function finish(id,d){var c=C.find(function(x){return x.id===id}),s=0;for(var i=0;i<4;i++)s+=Number(document.getElementById("s"+i).value||0);c.marks[d]=s;c.active="";c.status=rem(c).length?"Waiting Room 2":"Completed";c.wait=rem(c).length?Date.now():null;save();render();alert("Saved "+s+"/40")}
+function move2(id){var c=C.find(function(x){return x.id===id});c.status="Waiting Room 2";c.wait=Date.now();save();render()}
+function findEntry(){var q=entrySearch.value.toLowerCase().trim(),c=C.find(function(x){return x.id.toLowerCase()===q||x.name.toLowerCase().indexOf(q)>=0});entryResult.innerHTML=c?"<div class=card><b>"+c.name+"</b> · "+c.id+"<p>"+c.branch+" · "+c.year+"<br>"+c.choices.join(" → ")+"</p>"+(c.status==="Registered"?"<button class='btn primary' onclick=arrive('"+c.id+"')>Mark Entry → W1</button>":"Entry already processed.")+"</div>":"<div class=notice>Candidate not found.</div>"}
+function arrive(id){var c=C.find(function(x){return x.id===id});c.status="Waiting Room 1";c.wait=Date.now();save();findEntry();render()}
+function best(c){return c.choices.map(function(d,i){return{d:d,s:c.marks[d],i:i}}).filter(function(x){return x.s!==undefined}).sort(function(a,b){return b.s-a.s||a.i-b.i})[0]}
 buildChoiceFields();render();setInterval(render,30000);
-</script>
-</body>
-</html>
+</script></body></html>
