@@ -1,0 +1,1448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RecruitFlow — Organizer Dashboard 5.2</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#737c90;--line:#e5e9f1;--p:#5b5ce2;--dark:#11162b;--g:#16a673;--a:#d98b00;--r:#d84c5b}
+*{box-sizing:border-box}body{margin:0;font:14px Inter,system-ui;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}
+.sidebar{position:fixed;inset:0 auto 0 0;width:240px;background:linear-gradient(180deg,#10152a,#1b2140);color:#fff;padding:20px 14px;z-index:20}.logo{font-size:22px;font-weight:900;padding:5px 12px 24px}.logo span{color:#8d87ff}.nav-title{font-size:10px;color:#79819b;text-transform:uppercase;letter-spacing:1.4px;padding:0 12px;margin:12px 0 7px}.nav button{display:flex;gap:10px;width:100%;border:0;background:transparent;color:#aeb6d0;padding:10px 12px;border-radius:9px;margin:3px 0;text-align:left;font-weight:700;cursor:pointer}.nav button.active,.nav button:hover{background:#2a3051;color:#fff}
+.main{margin-left:240px}.top{height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}.topright{display:flex;align-items:center;gap:10px}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#ecebff;color:#504be0;font-weight:800}.content{padding:28px;max-width:1600px;margin:auto}.page{display:none}.page.active{display:block}.head{display:flex;justify-content:space-between;gap:15px;margin-bottom:18px}.head h1{margin:0 0 4px;font-size:27px}.head p,.section p{margin:0;color:var(--muted);font-size:12px}.card,.stat,.panel,.queue,.timeline{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 25px #14203b0a}.card{padding:18px}.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:15px}.stat{padding:15px;min-height:100px}.stat small{color:var(--muted);font-size:10px}.stat b{display:block;font-size:27px;margin-top:8px}.grid2{display:grid;grid-template-columns:1.35fr .85fr;gap:15px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.section{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section h2,.section h3{margin:0}.btn{border:0;border-radius:9px;padding:9px 13px;font-weight:750;cursor:pointer}.primary{background:var(--p);color:#fff}.secondary{background:#fff;border:1px solid var(--line)}.danger{background:#fff0f2;color:var(--r);border:1px solid #ffd2d9}.pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef0f5;color:#626b7f;font-size:9px;font-weight:900}.blue{background:#eeedff;color:#514be0}.green{background:#e6f8f0;color:#087b54}.amber{background:#fff3db;color:#986000}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}.search{flex:1;min-width:220px}input,select,textarea{width:100%;border:1px solid #dfe4ed;border-radius:9px;padding:10px;background:#fff;outline:0}table{width:100%;border-collapse:collapse}th,td{padding:11px 9px;border-bottom:1px solid #edf0f5;text-align:left;font-size:12px}th{font-size:10px;color:#7c8496;text-transform:uppercase}.person{display:flex;gap:8px;align-items:center}.person-icon{width:34px;height:34px;border-radius:9px;background:#eeefff;color:#514be0;display:grid;place-items:center;font-size:10px;font-weight:900}.person span{display:block;color:var(--muted);font-size:10px;margin-top:2px}.panel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.panel{padding:13px}.panel.busy{background:#faf9ff;border-color:#d9d6ff}.panel h3{margin:0;font-size:12px}.panel p{font-size:10px;color:var(--muted);min-height:28px}.status{font-size:9px;font-weight:900;color:var(--g)}.status.busy{color:var(--a)}.queue-list{display:grid;gap:7px}.queue{padding:10px}.queue b{display:block}.queue span{font-size:10px;color:var(--muted)}.alert{padding:10px;border-radius:9px;background:#fff5e1;border:1px solid #ffe0a4;font-size:10px;margin-bottom:7px}.alert.ok{background:#eaf9f2;border-color:#c7edda}.alert.danger{background:#fff0f2;border-color:#ffd0d7}.smart{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}.recommend{padding:15px;border-radius:12px;background:#f7f6ff;border:1px solid #dad7ff}.recommend strong{color:#514be0}.rolebar{display:flex;gap:7px;align-items:center}.role{padding:6px 9px;border-radius:999px;background:#eeedff;color:#514be0;font-size:9px;font-weight:900}.qrgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.qrbox{text-align:center;padding:14px;background:#f8f7ff;border:1px solid #dad7ff;border-radius:12px}.qrpreview{width:190px;height:190px;margin:12px auto;background:#fff;display:grid;place-items:center}.qrpreview img{width:100%;height:100%}.scanner{border:2px dashed #c9c5ff;border-radius:12px;padding:18px;text-align:center;background:#faf9ff}.scoregrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.score{padding:10px;border:1px solid var(--line);border-radius:10px}.score input{text-align:center;font-size:20px;font-weight:800}.total{margin-top:12px;text-align:center;padding:12px;border-radius:10px;background:#efeeff;color:#514be0}.total b{display:block;font-size:24px}.timeline{padding:14px}.event{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #edf0f5}.event:last-child{border:0}.dot{width:9px;height:9px;border-radius:50%;background:var(--p);margin-top:4px;flex:none}.event small{color:var(--muted)}.modal{position:fixed;inset:0;background:#0d132a99;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.modal-card{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;padding:20px}.empty{text-align:center;padding:28px;color:var(--muted)}.mini{font-size:10px;color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap}
+@media(max-width:1200px){.stats{grid-template-columns:repeat(4,1fr)}.panel-grid{grid-template-columns:repeat(3,1fr)}.grid2,.smart{grid-template-columns:1fr}}@media(max-width:900px){.sidebar{width:68px}.logo{font-size:0}.logo span{font-size:17px}.nav-title,.nav button span{display:none}.nav button{justify-content:center}.main{margin-left:68px}.content{padding:16px}.stats{grid-template-columns:repeat(2,1fr)}.panel-grid,.scoregrid,.qrgrid{grid-template-columns:1fr 1fr}}@media(max-width:560px){.stats,.panel-grid,.scoregrid,.qrgrid{grid-template-columns:1fr}.head{flex-direction:column}.top{padding:0 14px}.rolebar select{display:none}}
+
+/* RecruitFlow 4.2 — Authentication */
+body.rf-locked{overflow:hidden}
+body.rf-locked>.sidebar,body.rf-locked>.main{display:none}
+.rf37-login{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#0e1327,#20264a)}
+.rf37-login-card{width:min(430px,100%);background:#fff;border-radius:20px;padding:30px;box-shadow:0 30px 90px #0007}
+.rf37-brand{text-align:center;font-size:27px;font-weight:900;color:#172033}
+.rf37-brand span{color:#5b5ce2}
+.rf37-sub{text-align:center;color:#737c90;font-size:12px;margin:7px 0 24px}
+.rf37-field{margin-bottom:14px}
+.rf37-field label{display:block;font-size:11px;font-weight:800;color:#4f586b;margin-bottom:7px}
+.rf37-field input{width:100%;padding:12px;border:1px solid #dfe4ed;border-radius:10px;outline:0}
+.rf37-field input:focus{border-color:#5b5ce2;box-shadow:0 0 0 3px #5b5ce214}
+.rf37-login-btn{width:100%;padding:12px;border:0;border-radius:10px;background:#5b5ce2;color:#fff;font-weight:850;cursor:pointer}
+.rf37-error{display:none;padding:10px 12px;border-radius:9px;background:#fff0f2;border:1px solid #ffd0d7;color:#b23a4c;font-size:11px;margin-bottom:12px}
+.rf37-demo{margin-top:18px;padding:12px;border-radius:10px;background:#f7f8fc;border:1px solid #e5e9f1;font-size:10px;color:#687187;line-height:1.6}
+.rf37-demo b{color:#30394c}
+.rf37-session{font-size:10px;color:#687187}
+.rf37-logout{background:#fff;border:1px solid #e5e9f1;border-radius:8px;padding:8px 11px;font-size:11px;font-weight:800;cursor:pointer;color:#4e576b}
+@media(max-width:560px){.rf37-login{padding:15px}.rf37-login-card{padding:22px}}
+
+</style>
+</head>
+<body class="rf-locked">
+<aside class="sidebar"><div class="logo">Recruit<span>Flow</span></div><button class="btn secondary" style="width:100%;margin:0 0 12px;background:#2a3051;color:#fff;border-color:#3a4165" onclick="goHome()">⌂ Home</button><div class="nav-title">Operations</div><nav class="nav" id="nav"></nav><div class="nav-title">System</div><nav class="nav" id="sys"></nav></aside>
+
+<div class="rf37-login" id="rf37Login">
+  <div class="rf37-login-card">
+    <div class="rf37-brand">Recruit<span>Flow</span></div>
+    <div class="rf37-sub">Smart Interview & Recruitment Management System</div>
+    <div class="rf37-error" id="rf37Error">Invalid User ID or Password.</div>
+    <form onsubmit="return rf37LoginSubmit(event)">
+      <div class="rf37-field"><label>User ID</label><input id="rf37User" autocomplete="username" placeholder="Enter your user ID" required></div>
+      <div class="rf37-field"><label>Password</label><input id="rf37Pass" type="password" autocomplete="current-password" placeholder="Enter your password" required></div>
+      <button class="rf37-login-btn" type="submit">Login to Organizer Dashboard</button>
+    </form>
+    <div class="rf37-demo">
+      <b>Prototype Login Accounts</b><br>
+      Admin: <b>admin / admin123</b><br>
+      Entry: <b>entry / entry123</b><br>
+      W1: <b>w1 / w1123</b><br>
+      W2: <b>w2 / w2123</b><br>
+      Interviewer: <b>interviewer / interviewer123</b>
+    </div>
+    <div style="text-align:center;margin-top:15px"><button type="button" class="btn secondary" onclick="window.location.href='home.html'">← Back to Home</button></div>
+  </div>
+</div>
+<main class="main"><header class="top"><div>Organizer / <b id="pageTitle">Dashboard</b><span id="globalTimer" style="margin-left:12px" class="pill amber">No active interview</span></div><div class="topright"><span class="mini" id="liveText">Live</span><div class="rolebar"><span class="role" id="rolePill">Admin</span><span class="rf37-session" id="rf37SessionUser"></span><button class="rf37-logout" onclick="rf37Logout()">Logout</button><select id="roleSelect" style="width:auto" onchange="setRole(this.value)"><option>Admin</option><option>Entry Volunteer</option><option>W1 Volunteer</option><option>W2 Volunteer</option><option>Interviewer</option></select></div><div class="avatar">GA</div></div></header>
+<div class="content">
+<section class="page active" id="dashboard">
+<div class="card" style="margin-bottom:15px"><div class="section"><div><h2>Live Command Center</h2><p>Monitor queues, panels and candidate movement from one place.</p></div><button class="btn secondary" onclick="refresh()">↻ Refresh</button></div><div class="smart"><div class="recommend" id="recommend"></div><div><div class="section"><div><h3>Operational Alerts</h3><p>Live attention items.</p></div></div><div id="alerts"></div></div></div><div style="margin-top:15px"><div class="section"><div><h3>Panel Control</h3><p>Current candidate and next eligible candidate.</p></div></div><div class="panel-grid" id="commandPanels"></div></div></div>
+<div class="head"><div><h1>Live Overview</h1><p>Real-time recruitment operations.</p></div></div><div class="stats" id="stats"></div>
+<div class="grid2"><div class="card"><div class="section"><div><h2>Interview Panels</h2><p>11 domain panels with double-booking protection.</p></div></div><div class="panel-grid" id="panels"></div></div><div class="card"><div class="section"><div><h2>W2 Priority Queue</h2><p>Returned candidates are prioritized by wait time.</p></div></div><div id="w2mini"></div></div></div>
+<div class="card" style="margin-top:15px"><div class="section"><div><h2>Recent Activity</h2><p>Latest operational events.</p></div></div><div id="activity"></div></div>
+</section>
+<section class="page" id="candidates"><div class="head"><div><h1>Candidate Management</h1><p>Search, inspect, QR-generate and track candidates.</p></div></div><div class="card"><div class="toolbar"><input class="search" id="search" placeholder="Search ID, name, email or phone" oninput="renderCandidates()"><select id="filter" onchange="renderCandidates()"><option value="">All statuses</option><option>Registered</option><option>Waiting Room 1</option><option>Waiting Room 2</option><option>Interviewing</option><option>Completed</option></select></div><div id="candidateTable"></div></div></section>
+<section class="page" id="entry"><div class="head"><div><h1>Venue Entry</h1><p>Verify a registered candidate and move them to Waiting Room 1.</p></div></div><div class="qrgrid"><div class="card"><div class="section"><div><h2>QR Check-In</h2><p>Scan or enter a Candidate ID.</p></div><span class="pill green">Live</span></div><div class="scanner"><video id="video" playsinline style="width:100%;max-height:240px;display:none;border-radius:10px"></video><div id="scannerIdle"><b>Scanner Ready</b><div class="mini">Camera starts only after you press the button.</div></div><p id="scanStatus" class="mini">Scanner idle</p></div><div class="actions" style="margin-top:10px"><button class="btn primary" onclick="toggleScanner()" id="scanBtn">Start Camera Scanner</button><button class="btn secondary" onclick="document.getElementById('entryId').focus()">Manual Entry</button></div><input id="entryId" style="margin-top:12px" placeholder="RF-1001" onkeydown="if(event.key==='Enter')verifyEntry()"><button class="btn primary" style="width:100%;margin-top:8px" onclick="verifyEntry()">Verify Candidate</button><div id="entryResult"></div></div><div class="card"><div class="section"><div><h2>Venue Attendance</h2><p>All registered participants and their check-in status.</p></div></div><div id="entryAttendance"></div></div><div class="card" style="margin-top:14px"><div class="section"><div><h2>Recent Check-Ins</h2><p>Latest venue entries.</p></div></div><div id="entryHistory"></div></div></div></section>
+<section class="page" id="waiting1"><div class="head"><div><h1>Waiting Room 1</h1><p>Freshly checked-in candidates waiting for their first interview.</p></div></div><div class="card"><div id="w1"></div></div></section>
+<section class="page" id="waiting2"><div class="head"><div><h1>Waiting Room 2</h1><p>Candidates who still have selected domains remaining.</p></div></div><div class="card"><div id="w2"></div></div></section>
+<section class="page" id="livequeue">
+<div class="head">
+  <div><h1>Live Queue Display</h1><p>Real-time panel status and candidate queue for interview-day operations.</p></div>
+  <div class="actions"><span class="pill green" id="rf39LiveStatus">● LIVE</span><button class="btn secondary" onclick="rf39RenderQueue()">↻ Refresh</button></div>
+</div>
+<div class="card" style="margin-bottom:15px">
+  <div class="section"><div><h2>Queue Overview</h2><p>Waiting Room 2 candidates are prioritized before Waiting Room 1.</p></div><span class="mini" id="rf39Updated">Updated just now</span></div>
+  <div class="stats" id="rf39QueueStats"></div>
+</div>
+<div class="card" style="margin-bottom:15px">
+  <div class="section"><div><h2>Active Interviews</h2><p>Currently occupied panels.</p></div></div>
+  <div id="rf39Active"></div>
+</div>
+<div class="card">
+  <div class="section"><div><h2>Panel Queues</h2><p>Each panel shows only candidates who still need that domain.</p></div></div>
+  <div class="panel-grid" id="rf39PanelQueues"></div>
+</div>
+</section>
+<section class="page" id="panels"><div class="head"><div><h1>Interview Panels</h1><p>Open or manage any active panel.</p></div></div><div class="card"><div class="panel-grid" id="fullPanels"></div></div></section>
+<section class="page" id="interviewcontrol">
+<div class="head"><div><h1>Interview Control</h1><p>Control panel interviews, enforce panel locks and complete interviews safely.</p></div><div class="actions"><span class="pill green" id="rf40ControlStatus">● READY</span><button class="btn secondary" onclick="rf40Render()">↻ Refresh</button></div></div>
+<div class="card" style="margin-bottom:15px"><div class="section"><div><h2>Control Center</h2><p>Only one candidate can occupy a domain panel at a time.</p></div></div><div id="rf40ControlGrid" class="panel-grid"></div></div>
+<div class="card"><div class="section"><div><h2>Interview Rules</h2><p>Automatic validation applied before starting or completing an interview.</p></div></div>
+<div class="grid3">
+<div><b>Panel Lock</b><p>Prevents two candidates from entering the same domain panel.</p></div>
+<div><b>Time Tracking</b><p>25-minute maximum with a 20-minute warning.</p></div>
+<div><b>W2 Return</b><p>Candidates with remaining domains automatically return to Waiting Room 2.</p></div>
+</div></div>
+</section>
+<section class="page" id="interviewers">
+<div class="head"><div><h1>Interviewer Assignment</h1><p>Assign interviewers to domain panels and monitor panel ownership.</p></div>
+<div class="actions"><span class="pill green" id="rf41AssignedCount">0 Assigned</span><button class="btn primary" onclick="rf41OpenForm()">+ Assign Interviewer</button></div></div>
+<div class="stats" id="rf41Stats"></div>
+<div class="card" style="margin-bottom:15px"><div class="section"><div><h2>Panel Assignments</h2><p>Each domain can have one active assigned interviewer in this prototype.</p></div></div><div id="rf41Assignments"></div></div>
+<div class="card"><div class="section"><div><h2>Interviewer Workload</h2><p>Live view of assigned panel and current interview.</p></div></div><div id="rf41Workload"></div></div>
+</section><section class="page" id="interviewer"><div class="head"><div><h1>Interviewer</h1><p>Score the active candidate and complete the interview.</p></div><select id="interviewDomain" style="width:220px" onchange="renderInterview()"></select></div><div class="card"><div id="interview"></div></div></section>
+<section class="page" id="allocation"><div class="head"><div><h1>Final Allocation</h1><p>Highest interview score wins; choice priority breaks ties.</p></div><button class="btn secondary" onclick="exportCSV()">Export CSV</button></div><div class="card"><div id="allocation"></div></div></section>
+<section class="page" id="analytics"><div class="head"><div><h1>Analytics</h1><p>Operational snapshot and domain demand.</p></div></div><div class="grid3" id="analyticsStats"></div><div class="card" style="margin-top:15px"><div class="section"><h2>Domain Demand</h2></div><div id="domainStats"></div></div></section>
+<section class="page" id="advancedanalytics">
+<div class="head">
+  <div><h1>Advanced Analytics & Reports</h1><p>Operational performance, domain demand, panel utilization and interviewer workload.</p></div>
+  <div class="actions"><span class="pill green" id="rf42Updated">LIVE</span><button class="btn secondary" onclick="rf42Render()">↻ Refresh</button><button class="btn primary" onclick="rf42Export()">Export Report CSV</button></div>
+</div>
+<div class="stats" id="rf42Kpis"></div>
+<div class="grid2">
+  <div class="card"><div class="section"><div><h2>Domain Performance</h2><p>Demand, interviews, average score and completion by domain.</p></div></div><div id="rf42Domain"></div></div>
+  <div class="card"><div class="section"><div><h2>Panel Utilization</h2><p>Active time versus the current event session.</p></div></div><div id="rf42Panels"></div></div>
+</div>
+<div class="grid2" style="margin-top:15px">
+  <div class="card"><div class="section"><div><h2>Interviewer Workload</h2><p>Assigned panel, active interview and completed interviews.</p></div></div><div id="rf42Interviewers"></div></div>
+  <div class="card"><div class="section"><div><h2>Waiting Time Analysis</h2><p>Current queue pressure and average wait by room.</p></div></div><div id="rf42Waiting"></div></div>
+</div>
+<div class="card" style="margin-top:15px"><div class="section"><div><h2>Selection Readiness</h2><p>Candidate progress toward final allocation.</p></div></div><div id="rf42Readiness"></div></div>
+</section>
+<section class="page" id="selection">
+<div class="head">
+  <div><h1>Final Selection & Allocation</h1><p>Finalize candidates using interview score and choice priority.</p></div>
+  <div class="actions"><span class="pill green" id="rf43Status">DRAFT</span><button class="btn secondary" onclick="rf43Render()">↻ Refresh</button><button class="btn primary" onclick="rf43Finalize()">Finalize Allocation</button><button class="btn secondary" onclick="rf43Export()">Export Results CSV</button></div>
+</div>
+<div class="stats" id="rf43Stats"></div>
+<div class="card" style="margin-bottom:15px">
+  <div class="section"><div><h2>Domain Capacity</h2><p>Set the maximum number of selected candidates per domain. Use 0 for unlimited.</p></div></div>
+  <div id="rf43Capacity"></div>
+</div>
+<div class="card" style="margin-bottom:15px">
+  <div class="section"><div><h2>Allocation Ranking</h2><p>Eligible candidates are ranked by highest domain score, then Choice 1 → Choice 4.</p></div></div>
+  <div class="toolbar"><input class="search" id="rf43Search" placeholder="Search candidate or domain" oninput="rf43Render()"><select id="rf43Filter" onchange="rf43Render()"><option value="">All Results</option><option value="Selected">Selected</option><option value="Waitlisted">Waitlisted</option><option value="Not Selected">Not Selected</option><option value="Pending">Pending</option></select></div>
+  <div id="rf43Results"></div>
+</div>
+<div class="card">
+  <div class="section"><div><h2>Selection Rules</h2><p>RecruitFlow's final allocation logic.</p></div></div>
+  <div class="grid3">
+    <div><b>1. Eligibility</b><p>Candidate must have completed at least one selected-domain interview.</p></div>
+    <div><b>2. Score</b><p>Higher interview total is ranked first for the candidate's possible domains.</p></div>
+    <div><b>3. Choice Priority</b><p>If scores are tied, the earlier domain choice is preferred.</p></div>
+  </div>
+</div>
+</section><section class="page" id="backend">
+<div class="head"><div><h1>Production Backend & Database</h1><p>Shared API sync for candidates, interviews, panels, notifications and allocations.</p></div><div class="actions"><span class="pill amber" id="rf45Status">LOCAL MODE</span><button class="btn secondary" onclick="rf45Check()">↻ Check API</button><button class="btn primary" onclick="rf50SyncNow()">⇅ Sync Now</button></div></div>
+<div class="stats" id="rf45Stats"></div><div class="card" style="margin-bottom:15px"><div class="section"><div><h2>Live Data Sync</h2><p id="rf50SyncText">LocalStorage fallback is active.</p></div><span class="pill amber" id="rf50SyncStatus">LOCAL</span></div><div class="actions"><button class="btn primary" onclick="rf50Pull()">↓ Pull from Server</button><button class="btn secondary" onclick="rf50Push()">↑ Push to Server</button></div></div>
+<div class="grid2">
+<div class="card"><div class="section"><div><h2>API Configuration</h2><p>Configure the RecruitFlow backend endpoint.</p></div></div>
+<label class="mini">API Base URL</label><input id="rf45Api" placeholder="http://localhost:3000/api">
+<div class="actions" style="margin-top:12px"><button class="btn primary" onclick="rf45SaveConfig()">Save API URL</button><button class="btn secondary" onclick="rf45Check()">Test Connection</button></div>
+<div id="rf45Message" style="margin-top:12px"></div></div>
+<div class="card"><div class="section"><div><h2>Database Model</h2><p>Core persistent entities prepared for the backend.</p></div></div>
+<div class="grid3">
+<div><b>Users</b><p>Accounts, roles and status.</p></div><div><b>Candidates</b><p>Registration and preferences.</p></div><div><b>Interviews</b><p>Panel, scores and feedback.</p></div>
+<div><b>Panels</b><p>Domain and interviewer assignment.</p></div><div><b>Notifications</b><p>Messages and delivery status.</p></div><div><b>Allocations</b><p>Final selection records.</p></div>
+</div></div>
+</div>
+<div class="card" style="margin-top:15px"><div class="section"><div><h2>Migration Status</h2><p>LocalStorage remains available as a prototype fallback until the API is connected.</p></div></div><div id="rf45Migration"></div></div>
+</section><section class="page" id="notifications">
+<div class="head">
+  <div><h1>Candidate Notifications</h1><p>Create and track interview-day notifications for candidates.</p></div>
+  <div class="actions"><span class="pill green" id="rf44Unread">0 Unread</span><button class="btn primary" onclick="rf44OpenForm()">+ New Notification</button></div>
+</div>
+<div class="stats" id="rf44Stats"></div>
+<div class="grid2">
+  <div class="card">
+    <div class="section"><div><h2>Notification Center</h2><p>Recent messages and delivery status.</p></div><button class="btn secondary" onclick="rf44MarkAll()">Mark All Read</button></div>
+    <div class="toolbar"><input class="search" id="rf44Search" placeholder="Search candidate, ID or message" oninput="rf44Render()"><select id="rf44Filter" onchange="rf44Render()"><option value="">All</option><option value="unread">Unread</option><option value="read">Read</option></select></div>
+    <div id="rf44List"></div>
+  </div>
+  <div class="card">
+    <div class="section"><div><h2>Quick Templates</h2><p>Use standard event messages.</p></div></div>
+    <div id="rf44Templates"></div>
+  </div>
+</div>
+<div class="card" style="margin-top:15px">
+  <div class="section"><div><h2>Notification History</h2><p>Local prototype history for audit and testing.</p></div><button class="btn secondary" onclick="rf44Export()">Export CSV</button></div>
+  <div id="rf44History"></div>
+</div>
+</section><section class="page" id="users">
+<div class="head"><div><h1>User Management</h1><p>Admin-only management of RecruitFlow organizer accounts.</p></div>
+<button class="btn primary" onclick="rf38OpenUserForm()">+ Add User</button></div>
+<div class="stats" id="rf38UserStats"></div>
+<div class="card" style="margin-bottom:15px">
+  <div class="toolbar">
+    <input class="search" id="rf38UserSearch" placeholder="Search username, name or role" oninput="rf38RenderUsers()">
+    <select id="rf38UserRoleFilter" onchange="rf38RenderUsers()">
+      <option value="">All Roles</option><option>Admin</option><option>Entry Volunteer</option><option>W1 Volunteer</option><option>W2 Volunteer</option><option>Interviewer</option>
+    </select>
+    <select id="rf38UserStatusFilter" onchange="rf38RenderUsers()"><option value="">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+  </div>
+  <div id="rf38UserTable"></div>
+</div>
+<div class="card">
+  <div class="section"><div><h2>Account Policy</h2><p>Prototype accounts are stored locally in this browser.</p></div><span class="pill amber">Prototype</span></div>
+  <div class="grid3">
+    <div><b>Admin</b><p>Full access, including user management.</p></div>
+    <div><b>Volunteers</b><p>Only their assigned operational pages.</p></div>
+    <div><b>Interviewer</b><p>Interview scoring and completion.</p></div>
+  </div>
+</div>
+</section>
+<section class="page" id="settings"><div class="head"><div><h1>Settings & Backup</h1><p>Event configuration, backup and recovery.</p></div></div><div class="card"><div class="toolbar"><input id="eventName" placeholder="Event name"><input id="adminName" placeholder="Organizer name"></div><div class="actions"><button class="btn primary" onclick="saveSettings()">Save Settings</button><button class="btn secondary" onclick="backup()">Download JSON Backup</button><label class="btn secondary" style="display:inline-block;cursor:pointer">Import JSON Backup<input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(event)"></label><button class="btn danger" onclick="resetDemo()">Reset Demo Data</button></div><div id="settingsMsg" style="margin-top:10px"></div></div></section>
+</div></main>
+<div class="modal" id="rf41Modal"><div class="modal-card" style="max-width:560px">
+<div class="section"><h2 id="rf41ModalTitle">Assign Interviewer</h2><button class="btn secondary" onclick="rf41CloseForm()">Close</button></div>
+<form onsubmit="return rf41SaveAssignment(event)">
+<input type="hidden" id="rf41EditKey">
+<div class="grid2"><div><label class="mini">Interviewer</label><select id="rf41User" required></select></div>
+<div><label class="mini">Domain Panel</label><select id="rf41Domain" required></select></div></div>
+<div style="margin-top:12px"><label class="mini">Status</label><select id="rf41Status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+<div id="rf41Msg" style="margin-top:10px"></div>
+<div class="actions" style="margin-top:14px;justify-content:flex-end"><button type="button" class="btn secondary" onclick="rf41CloseForm()">Cancel</button><button class="btn primary">Save Assignment</button></div>
+</form></div></div><div class="modal" id="rf38UserModal">
+  <div class="modal-card" style="max-width:560px">
+    <div class="section"><h2 id="rf38UserModalTitle">Add User</h2><button class="btn secondary" onclick="rf38CloseUserForm()">Close</button></div>
+    <form onsubmit="return rf38SaveUser(event)">
+      <input type="hidden" id="rf38EditUser">
+      <div class="grid2">
+        <div><label class="mini">User ID</label><input id="rf38Username" placeholder="e.g. interviewer2" required></div>
+        <div><label class="mini">Display Name</label><input id="rf38Name" placeholder="e.g. Rahul Patil" required></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label class="mini">Password</label><input id="rf38Password" type="password" placeholder="Minimum 6 characters" required></div>
+        <div><label class="mini">Role</label><select id="rf38Role" required><option>Admin</option><option>Entry Volunteer</option><option>W1 Volunteer</option><option>W2 Volunteer</option><option>Interviewer</option></select></div>
+      </div>
+      <div style="margin-top:12px"><label class="mini">Status</label><select id="rf38Status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      <div id="rf38FormMsg" style="margin-top:10px"></div>
+      <div class="actions" style="margin-top:14px;justify-content:flex-end"><button type="button" class="btn secondary" onclick="rf38CloseUserForm()">Cancel</button><button class="btn primary" type="submit">Save User</button></div>
+    </form>
+  </div>
+</div>
+<div class="modal" id="rf44Modal"><div class="modal-card" style="max-width:620px">
+<div class="section"><h2>New Candidate Notification</h2><button class="btn secondary" onclick="rf44CloseForm()">Close</button></div>
+<form onsubmit="return rf44Send(event)">
+<label class="mini">Candidate</label><select id="rf44Candidate" required></select>
+<div style="margin-top:12px"><label class="mini">Notification Type</label><select id="rf44Type"><option>Interview Reminder</option><option>Queue Update</option><option>Interview Completed</option><option>Final Result</option><option>General Announcement</option></select></div>
+<div style="margin-top:12px"><label class="mini">Message</label><textarea id="rf44Message" rows="5" required placeholder="Enter notification message..."></textarea></div>
+<div id="rf44Msg" style="margin-top:10px"></div>
+<div class="actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="btn secondary" onclick="rf44CloseForm()">Cancel</button><button class="btn primary">Create Notification</button></div>
+</form></div></div><div class="modal" id="modal"><div class="modal-card"><div class="section"><h2 id="modalTitle">Candidate</h2><button class="btn secondary" onclick="closeModal()">Close</button></div><div id="modalBody"></div></div></div>
+<script>
+function goHome(){ window.location.href='home.html'; }
+const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
+const ROLES={Admin:["dashboard","candidates","entry","waiting1","waiting2","panels","livequeue","interviewcontrol","interviewers","interviewer","allocation","analytics","advancedanalytics","selection","notifications","backend","users","settings"],"Entry Volunteer":["entry"],"W1 Volunteer":["waiting1","panels"],"W2 Volunteer":["waiting2","panels"],Interviewer:["interviewer"]};
+const STORE="recruitflow-interface",ACT="rf-activity-log";
+let candidates=[],scanner=null,scanFrame=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+function initials(n){return String(n||"?").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase()}
+function demo(){return[{id:"RF-1001",name:"Aarav Patil",email:"aarav@example.com",phone:"9876543210",branch:"IT",year:"3rd Year",skills:"Java, Python, SQL",choices:["AI","Web Development","Robotics","Management"],status:"Waiting Room 1",wait:Date.now()-420000,checkedInAt:new Date(Date.now()-420000).toISOString(),interviews:[],marks:{},feedback:{}},{id:"RF-1002",name:"Sneha Kulkarni",email:"sneha@example.com",phone:"9876543211",branch:"CSE",year:"3rd Year",skills:"React, JavaScript, UI",choices:["Web Development","Design","AI"],status:"Waiting Room 2",wait:Date.now()-180000,checkedInAt:new Date(Date.now()-600000).toISOString(),interviews:[],marks:{},feedback:{}},{id:"RF-1003",name:"Rohan Jadhav",email:"rohan@example.com",phone:"9876543212",branch:"ENTC",year:"2nd Year",skills:"Arduino, C++, IoT",choices:["IoT","Robotics","SpaceTech"],status:"Interviewing",activeDomain:"IoT",interviewStartedAt:new Date(Date.now()-480000).toISOString(),wait:null,checkedInAt:new Date(Date.now()-900000).toISOString(),interviews:[],marks:{},feedback:{}},{id:"RF-1004",name:"Priya Shah",email:"priya@example.com",phone:"9876543213",branch:"IT",year:"3rd Year",skills:"Cybersecurity, Linux",choices:["Cybersecurity","Blockchain"],status:"Completed",wait:null,checkedInAt:new Date(Date.now()-3600000).toISOString(),interviews:[{domain:"Cybersecurity",total:36,priority:1,completedAt:new Date(Date.now()-1200000).toISOString()}],marks:{Cybersecurity:{technical:9,communication:9,problemSolving:9,domainKnowledge:9,total:36}},feedback:{Cybersecurity:"Strong technical understanding."},finalAllocation:"Cybersecurity"}]}
+function normalize(a){return (Array.isArray(a)?a:[]).map((c,i)=>({...c,id:c.id||("RF-"+String(i+1).padStart(4,"0")),choices:Array.isArray(c.choices)?c.choices.slice(0,4):[],interviews:Array.isArray(c.interviews)?c.interviews:[],marks:c.marks||{},feedback:c.feedback||{}}))}
+function load(){try{let a=JSON.parse(localStorage.getItem(STORE)||"null");candidates=normalize(a&&a.length?a:demo());if(!a||!a.length)save()}catch(e){candidates=demo();save()}}
+function save(){localStorage.setItem(STORE,JSON.stringify(candidates))}
+function log(action,id){let a=[];try{a=JSON.parse(localStorage.getItem(ACT)||"[]")}catch(e){}a.unshift({action,id,time:new Date().toISOString()});localStorage.setItem(ACT,JSON.stringify(a.slice(0,80)))}
+function activity(){try{return JSON.parse(localStorage.getItem(ACT)||"[]")}catch(e){return[]}}
+function remaining(c){let done=new Set((c.interviews||[]).map(x=>x.domain));return (c.choices||[]).filter(d=>!done.has(d))}
+function wait(t){if(!t)return"—";return Math.max(0,Math.floor((Date.now()-t)/60000))+" min"}
+function busyDomain(d){return candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===d)}
+function eligible(d){return candidates.filter(c=>["Waiting Room 1","Waiting Room 2"].includes(c.status)&&remaining(c).includes(d)).sort((a,b)=>(a.status==="Waiting Room 2"?0:1)-(b.status==="Waiting Room 2"?0:1)||(a.wait||0)-(b.wait||0))}
+function recommend(){for(const d of DOMAINS){if(!busyDomain(d)){const c=eligible(d)[0];if(c)return{c,d}}}return null}
+function nav(){const items=[["dashboard","📊","Dashboard"],["candidates","👥","Candidates"],["entry","🎫","Venue Entry"],["waiting1","🕐","Waiting Room 1"],["waiting2","🔁","Waiting Room 2"],["panels","▦","Interview Panels"],["interviewer","📝","Interviewer"],["allocation","✓","Final Allocation"],["analytics","▥","Analytics"],["advancedanalytics","◈","Advanced Analytics"],["selection","★","Final Selection"],["notifications","🔔","Notifications"],["backend","▣","Backend & Database"]];$("nav").innerHTML=items.map(x=>"<button data-page='"+x[0]+"' onclick=\"openPage('"+x[0]+"')\"><span>"+x[1]+"</span><span>"+x[2]+"</span></button>").join("");$("sys").innerHTML="<button data-page='settings' onclick=\"openPage('settings')\"><span>⚙</span><span>Settings</span></button>"}
+function openPage(id){
+  const role=localStorage.getItem("rf-role")||"Admin";
+  if(!ROLES[role].includes(id)){alert("Your role does not have access to this page.");return}
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  $(id)?.classList.add("active");
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+  $("pageTitle").textContent=id==="panels"?"Panels":id.replace(/(^|\s)\S/g,m=>m.toUpperCase());
+  try{renderAll()}catch(err){
+    console.error("RecruitFlow render error:",err);
+    if(id==="panels") renderPanelsPage();
+  }
+  if(id==="panels") renderPanelsPage();
+}
+function setRole(r){localStorage.setItem("rf-role",r);$("rolePill").textContent=r;document.querySelectorAll(".nav button").forEach(b=>b.style.display=ROLES[r].includes(b.dataset.page)?"flex":"none");const current=document.querySelector(".page.active")?.id;if(current&&!ROLES[r].includes(current))openPage(ROLES[r][0]);renderAll()}
+function stats(){const vals=[["Registered",candidates.length],["Checked In",candidates.filter(c=>c.checkedInAt).length],["Waiting Room 1",candidates.filter(c=>c.status==="Waiting Room 1").length],["Waiting Room 2",candidates.filter(c=>c.status==="Waiting Room 2").length],["Interviewing",candidates.filter(c=>c.status==="Interviewing").length],["Completed",candidates.filter(c=>c.status==="Completed").length],["Allocated",candidates.filter(c=>c.finalAllocation).length]];$("stats").innerHTML=vals.map(v=>"<div class='stat'><small>"+v[0]+"</small><b>"+v[1]+"</b></div>").join("")}
+function panelHTML(d){const c=busyDomain(d);return "<div class='panel "+(c?"busy":"")+"'><div class='section'><h3>"+esc(d)+"</h3><span class='status "+(c?"busy":"")+"'>"+(c?"BUSY":"AVAILABLE")+"</span></div><p>"+(c?esc(c.name)+"<br>"+esc(c.id)+" · "+wait(c.interviewStartedAt):"No active interview")+"</p>"+(c?"<button class='btn secondary' onclick=\"openPage('interviewer');$('interviewDomain').value='"+esc(d)+"';renderInterview()\">Open</button>":"")+"</div>"}
+function renderPanels(){const h=DOMAINS.map(panelHTML).join("");$("panels").innerHTML=h;$("fullPanels").innerHTML=h}
+function renderCommand(){const r=recommend();$("recommend").innerHTML=r?"<b>Next recommended interview</b><h3>"+esc(r.c.name)+"</h3><p>"+esc(r.c.id)+" · <strong>"+esc(r.d)+"</strong></p><p class='mini'>"+(r.c.status==="Waiting Room 2"?"W2 priority":"W1 first interview")+" · waiting "+wait(r.c.wait)+"</p><button class='btn primary' onclick=\"sendToPanel('"+esc(r.c.id)+"','"+esc(r.d)+"')\">Send to Panel</button>":"<b>All panels are busy or no eligible candidate is waiting.</b><p class='mini'>The system will recommend the next eligible candidate automatically.</p>";let alerts=[];DOMAINS.forEach(d=>{const q=eligible(d);if(q.length>4)alerts.push("<div class='alert'>"+esc(d)+" panel queue has "+q.length+" candidates.</div>")});candidates.filter(c=>c.status==="Interviewing"&&c.interviewStartedAt).forEach(c=>{if(Date.now()-new Date(c.interviewStartedAt)>1200000)alerts.push("<div class='alert danger'>"+esc(c.id)+" has been interviewing for over 20 minutes.</div>")});$("alerts").innerHTML=alerts.join("")||"<div class='alert ok'>No operational alerts.</div>";$("commandPanels").innerHTML=DOMAINS.map(d=>{const c=busyDomain(d),q=eligible(d)[0];return"<div class='panel "+(c?"busy":"")+"'><div class='section'><h3>"+esc(d)+"</h3><span class='status "+(c?"busy":"")+"'>"+(c?"BUSY":"FREE")+"</span></div><p>"+(c?esc(c.name):q?"Next: "+esc(q.name):"No queue")+"</p></div>"}).join("")}
+function renderW2Mini(){const a=candidates.filter(c=>c.status==="Waiting Room 2"&&remaining(c).length).sort((x,y)=>(x.wait||0)-(y.wait||0));$("w2mini").innerHTML=a.length?a.slice(0,8).map((c,i)=>"<div class='queue'><b>#"+(i+1)+" "+esc(c.name)+"</b><span>"+esc(c.id)+" · "+esc(remaining(c).join(" → "))+" · "+wait(c.wait)+"</span></div>").join(""):"<div class='empty'>W2 is empty.</div>"}
+function renderActivity(){const a=activity().slice(0,8);$("activity").innerHTML=a.length?a.map(x=>"<div class='event'><span class='dot'></span><div><b>"+esc(x.action)+"</b><br><small>"+esc(x.id||"System")+" · "+new Date(x.time).toLocaleString("en-IN")+"</small></div></div>").join(""):"<div class='empty'>No activity yet.</div>"}
+function renderCandidates(){const q=($("search").value||"").toLowerCase(),f=$("filter").value,a=candidates.filter(c=>(!f||c.status===f)&&[c.id,c.name,c.email,c.phone].some(v=>String(v||"").toLowerCase().includes(q)));$("candidateTable").innerHTML=a.length?"<table><thead><tr><th>Candidate</th><th>Branch/Year</th><th>Choices</th><th>Status</th><th>Interviews</th><th>Actions</th></tr></thead><tbody>"+a.map(c=>"<tr><td><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+"</span></div></div></td><td>"+esc(c.branch)+" · "+esc(c.year)+"</td><td>"+esc((c.choices||[]).join(" → "))+"</td><td><span class='pill "+(c.status==="Completed"?"green":c.status==="Interviewing"?"amber":"blue")+"'>"+esc(c.status)+"</span></td><td>"+(c.interviews||[]).length+"</td><td><button class='btn secondary' onclick=\"profile('"+esc(c.id)+"')\">View</button><button class='btn secondary' onclick=\"qr('"+esc(c.id)+"')\">QR</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>No candidates found.</div>"}
+function qr(id){const c=candidates.find(x=>x.id===id);if(!c)return;const url="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data="+encodeURIComponent("RECRUITFLOW|"+c.id);$("modalTitle").textContent="Candidate QR · "+c.id;$("modalBody").innerHTML="<div class='qrbox'><div class='qrpreview'><img src='"+url+"' alt='Candidate QR'></div><b>"+esc(c.name)+"</b><p class='mini'>Scan this at venue entry.</p><button class='btn primary' onclick=\"window.open('"+url+"','_blank')\">Open / Download QR</button></div>";$("modal").classList.add("open")}
+function verifyEntry(){const raw=($("entryId").value||"").trim().replace(/^RECRUITFLOW\|/i,"");const c=candidates.find(x=>x.id.toLowerCase()===raw.toLowerCase());if(!c){$("entryResult").innerHTML="<div class='alert danger' style='margin-top:10px'>Candidate not found.</div>";return}if(c.checkedInAt){$("entryResult").innerHTML="<div class='alert' style='margin-top:10px'>Already checked in. Current status: <b>"+esc(c.status)+"</b>.</div>";return}$("entryResult").innerHTML="<div class='card' style='margin-top:10px'><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+" · "+esc(c.branch)+" · "+esc(c.year)+"</span></div></div><p class='mini'>"+esc(c.email)+" · "+esc(c.phone)+"</p><button class='btn primary' style='width:100%' onclick=\"checkIn('"+esc(c.id)+"')\">✓ Verify & Check In</button></div>"}
+function checkIn(id){const c=candidates.find(x=>x.id===id);if(!c||c.checkedInAt)return;c.checkedInAt=new Date().toISOString();c.status="Waiting Room 1";c.wait=Date.now();save();log("Checked in at venue",id);renderAll();verifyEntry();renderEntryHistory()}
+function renderEntryHistory(){const a=candidates.filter(c=>c.checkedInAt).sort((x,y)=>new Date(y.checkedInAt)-new Date(x.checkedInAt)).slice(0,15);$("entryHistory").innerHTML=a.length?a.map(c=>"<div class='event'><span class='dot'></span><div><b>"+esc(c.name)+"</b><br><small>"+esc(c.id)+" · "+new Date(c.checkedInAt).toLocaleTimeString("en-IN")+"</small></div></div>").join(""):"<div class='empty'>No check-ins yet.</div>"}
+function renderW1(){const a=candidates.filter(c=>c.status==="Waiting Room 1").sort((x,y)=>(x.wait||0)-(y.wait||0));$("w1").innerHTML=a.length?"<table><thead><tr><th>Candidate</th><th>Choices</th><th>Waiting</th><th>Action</th></tr></thead><tbody>"+a.map(c=>"<tr><td><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+"</span></div></div></td><td>"+esc(c.choices.join(" → "))+"</td><td>"+wait(c.wait)+"</td><td><select id='w1-"+esc(c.id)+"'>"+c.choices.map(d=>"<option>"+esc(d)+"</option>").join("")+"</select><button class='btn primary' style='margin-top:5px' onclick=\"sendToPanel('"+esc(c.id)+"',$('w1-"+esc(c.id)+"').value)\">Send</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>Waiting Room 1 is empty.</div>"}
+function renderW2(){const a=candidates.filter(c=>c.status==="Waiting Room 2"&&remaining(c).length).sort((x,y)=>(x.wait||0)-(y.wait||0));$("w2").innerHTML=a.length?"<table><thead><tr><th>Priority</th><th>Candidate</th><th>Remaining</th><th>Waiting</th><th>Action</th></tr></thead><tbody>"+a.map((c,i)=>"<tr><td><span class='pill blue'>#"+(i+1)+"</span></td><td><b>"+esc(c.name)+"</b><br><span class='mini'>"+esc(c.id)+"</span></td><td>"+esc(remaining(c).join(" → "))+"</td><td>"+wait(c.wait)+"</td><td><select id='w2-"+esc(c.id)+"'>"+remaining(c).map(d=>"<option>"+esc(d)+"</option>").join("")+"</select><button class='btn primary' style='margin-top:5px' onclick=\"sendToPanel('"+esc(c.id)+"',$('w2-"+esc(c.id)+"').value)\">Send</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>Waiting Room 2 is empty.</div>"}
+function sendToPanel(id,d){const c=candidates.find(x=>x.id===id);if(!c||!remaining(c).includes(d))return;if(busyDomain(d)){alert(d+" panel is busy.");return}c.status="Interviewing";c.activeDomain=d;c.interviewStartedAt=new Date().toISOString();save();log("Sent to "+d+" interview panel",id);renderAll();openPage("interviewer");$("interviewDomain").value=d;renderInterview()}
+function renderInterviewOptions(){
+  const s=$("interviewDomain");
+  if(!s)return;
+  const current=s.value;
+  const active=candidates.find(c=>c.status==="Interviewing"&&c.activeDomain);
+  s.innerHTML=DOMAINS.map(d=>"<option>"+esc(d)+"</option>").join("");
+  if(current && DOMAINS.includes(current)) s.value=current;
+  else if(active && DOMAINS.includes(active.activeDomain)) s.value=active.activeDomain;
+}
+function renderInterview(){
+  const d=$("interviewDomain").value;
+  const c=candidates.find(x=>x.status==="Interviewing"&&x.activeDomain===d);
+  if(!c){$("interview").innerHTML="<div class='empty'>No candidate assigned to the "+esc(d)+" panel.</div>";return}
+  const previous=document.querySelector("#interview [data-interview-candidate]");
+  const preserve=previous && previous.dataset.interviewCandidate===c.id && previous.dataset.interviewDomain===d;
+  const draftValues=preserve?Object.fromEntries([...document.querySelectorAll("#interview [data-score]")].map(i=>[i.dataset.score,i.value])):{};
+  const draftFeedback=preserve?($("feedback")?.value||""):"";
+  const m=c.marks[d]||{};
+  const field=(l,k)=>"<div class='score'><label>"+l+" / 10</label><input type='number' min='0' max='10' data-score='"+k+"' value='"+(draftValues[k]??m[k]??"")+"' oninput='liveScore()'></div>";$("interview").innerHTML="<div class='grid2' data-interview-candidate='"+esc(c.id)+"' data-interview-domain='"+esc(d)+"'><div class='card'><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+" · "+esc(c.branch)+" · "+esc(c.year)+"</span></div></div><p><b>Skills</b><br>"+esc(c.skills||"—")+"</p><p><b>Choices</b><br>"+esc(c.choices.join(" → "))+"</p><p><b>Interviewing For</b><br>"+esc(d)+"</p></div><div><div class='scoregrid'>"+field("Technical Skills","technical")+field("Communication","communication")+field("Problem Solving","problemSolving")+field("Domain Knowledge","domainKnowledge")+"</div><textarea id='feedback' rows='5' style='margin-top:12px' placeholder='Interview feedback...'>"+esc(preserve?draftFeedback:(c.feedback[d]||""))+"</textarea><div class='total'>Total Score<b id='total'>"+score(m)+" / 40</b></div><div class='actions' style='margin-top:12px'><button class='btn secondary' onclick=\"draftInterview('"+esc(c.id)+"','"+esc(d)+"')\">Save Draft</button><button class='btn primary' onclick=\"completeInterview('"+esc(c.id)+"','"+esc(d)+"')\">Complete Interview</button></div></div></div>"}
+function readScores(){const o={};document.querySelectorAll("[data-score]").forEach(i=>o[i.dataset.score]=Math.max(0,Math.min(10,Number(i.value)||0)));o.total=score(o);return o}
+function score(m){return ["technical","communication","problemSolving","domainKnowledge"].reduce((a,k)=>a+Number(m?.[k]||0),0)}
+function liveScore(){$("total").textContent=score(readScores())+" / 40"}
+function draftInterview(id,d){const c=candidates.find(x=>x.id===id);c.marks[d]=readScores();c.feedback[d]=$("feedback").value;save();log("Saved draft for "+d,id);renderInterview();alert("Draft saved.")}
+function completeInterview(id,d){const c=candidates.find(x=>x.id===id);if(!c)return;const m=readScores();c.marks[d]=m;c.feedback[d]=$("feedback").value;c.interviews.push({domain:d,total:m.total,priority:c.choices.indexOf(d)+1,completedAt:new Date().toISOString()});c.activeDomain=null;c.interviewStartedAt=null;const rem=remaining(c);if(rem.length){c.status="Waiting Room 2";c.wait=Date.now();log("Completed "+d+" and returned to Waiting Room 2",id)}else{c.status="Completed";c.wait=null;log("Completed all selected interviews",id)}save();renderAll();alert(rem.length?rem.length+" domain(s) remaining. Candidate returned to W2.":"All selected interviews completed.");openPage(rem.length?"waiting2":"allocation")}
+function renderAllocation(){const a=candidates.filter(c=>c.status==="Completed");$("allocation").innerHTML=a.length?"<table><thead><tr><th>Candidate</th><th>Scores</th><th>Final Allocation</th><th>Action</th></tr></thead><tbody>"+a.map(c=>"<tr><td><b>"+esc(c.name)+"</b><br><span class='mini'>"+esc(c.id)+"</span></td><td>"+c.interviews.map(i=>esc(i.domain)+": "+i.total).join(" · ")+"</td><td>"+(c.finalAllocation?"<span class='pill green'>"+esc(c.finalAllocation)+"</span>":"Not allocated")+"</td><td><button class='btn primary' onclick=\"allocate('"+esc(c.id)+"')\">Allocate</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>No fully completed candidates yet.</div>"}
+function allocate(id){const c=candidates.find(x=>x.id===id);const a=c.interviews.slice().sort((x,y)=>y.total-x.total||x.priority-y.priority);c.finalAllocation=a[0]?.domain||null;save();log("Final allocation: "+(c.finalAllocation||"—"),id);renderAll()}
+function renderAnalytics(){const vals=[["Registered",candidates.length],["Checked In",candidates.filter(c=>c.checkedInAt).length],["Interviewing",candidates.filter(c=>c.status==="Interviewing").length],["Completed",candidates.filter(c=>c.status==="Completed").length],["Allocated",candidates.filter(c=>c.finalAllocation).length],["W2",candidates.filter(c=>c.status==="Waiting Room 2").length]];$("analyticsStats").innerHTML=vals.map(v=>"<div class='card'><small class='mini'>"+v[0]+"</small><b style='display:block;font-size:27px;margin-top:7px'>"+v[1]+"</b></div>").join("");$("domainStats").innerHTML=DOMAINS.map(d=>"<div style='padding:9px 0;border-bottom:1px solid #edf0f5;display:flex;justify-content:space-between'><b>"+esc(d)+"</b><span>"+candidates.filter(c=>c.choices.includes(d)).length+"</span></div>").join("")}
+function profile(id){const c=candidates.find(x=>x.id===id);if(!c)return;$("modalTitle").textContent=c.name+" · "+c.id;$("modalBody").innerHTML="<div class='grid3'><div class='card'><b>Status</b><p>"+esc(c.status)+"</p></div><div class='card'><b>Academic</b><p>"+esc(c.branch)+" · "+esc(c.year)+"</p></div><div class='card'><b>Choices</b><p>"+esc(c.choices.join(" → "))+"</p></div></div><div class='timeline' style='margin-top:12px'><b>Candidate Timeline</b>"+(c.interviews||[]).map(i=>"<div class='event'><span class='dot'></span><div><b>"+esc(i.domain)+" interview completed · "+i.total+"/40</b><br><small>"+new Date(i.completedAt).toLocaleString("en-IN")+"</small></div></div>").join("")+"</div>";$("modal").classList.add("open")}
+function closeModal(){$("modal").classList.remove("open")}
+function exportCSV(){const rows=[["ID","Name","Allocation","Score","Priority"]];candidates.filter(c=>c.finalAllocation).forEach(c=>{const i=c.interviews.find(x=>x.domain===c.finalAllocation);rows.push([c.id,c.name,c.finalAllocation,i?.total||"",i?.priority||""])});const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="recruitflow-allocation.csv";a.click()}
+function saveSettings(){localStorage.setItem("rf-event-name",$("eventName").value);localStorage.setItem("rf-admin-name",$("adminName").value);$("settingsMsg").innerHTML="<div class='alert ok'>Settings saved.</div>"}
+function backup(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({version:"2.6",exportedAt:new Date().toISOString(),candidates,activity:activity()},null,2)],{type:"application/json"}));a.download="recruitflow-backup-2.6.json";a.click()}
+function resetDemo(){if(!confirm("Reset local candidate data to demo data?"))return;candidates=demo();save();localStorage.removeItem(ACT);log("Reset demo data");renderAll()}
+function refresh(){load();renderAll()}
+function renderAll(){stats();renderCommand();renderPanels();renderW2Mini();renderActivity();renderCandidates();renderEntryHistory();renderW1();renderW2();renderInterviewOptions();renderInterview();renderAllocation();renderAnalytics();$("liveText").textContent="Live · "+candidates.length+" candidates"}
+function toggleScanner(){if(scanner){stopScanner();return}if(!("BarcodeDetector" in window)){ $("scanStatus").textContent="QR camera scanning is not supported here. Use manual entry.";return }navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false}).then(stream=>{scanner=stream;$("video").srcObject=stream;$("video").style.display="block";$("scannerIdle").style.display="none";$("scanBtn").textContent="Stop Scanner";const detector=new BarcodeDetector({formats:["qr_code"]});const scan=async()=>{if(!scanner)return;try{const r=await detector.detect($("video"));if(r.length){$("entryId").value=r[0].rawValue;verifyEntry();stopScanner();return}}catch(e){}scanFrame=requestAnimationFrame(scan)};$("video").play();scan()}).catch(()=>$("scanStatus").textContent="Camera permission unavailable. Use manual entry.")}
+function stopScanner(){if(scanFrame)cancelAnimationFrame(scanFrame);scanFrame=null;if(scanner){scanner.getTracks().forEach(t=>t.stop());scanner=null}$("video").srcObject=null;$("video").style.display="none";$("scannerIdle").style.display="block";$("scanBtn").textContent="Start Camera Scanner"}
+document.addEventListener("DOMContentLoaded",()=>{nav();load();setRole(localStorage.getItem("rf-role")||"Admin");$("eventName").value=localStorage.getItem("rf-event-name")||"RecruitFlow Recruitment Event";$("adminName").value=localStorage.getItem("rf-admin-name")||"Organizer";openPage("dashboard");setInterval(()=>{load();renderAll()},2000);});
+</script>
+
+<script>
+/* RecruitFlow 2.7 — Interview Operations & Reliability layer; 2.9 UI stability fixes */
+const RF27_DURATION=25*60*1000, RF27_WARN=20*60*1000;
+function rf27Now(){return Date.now()}
+function rf27Elapsed(c){return c&&c.interviewStartedAt?Math.max(0,rf27Now()-new Date(c.interviewStartedAt).getTime()):0}
+function rf27Fmt(ms){let s=Math.floor(ms/1000),m=Math.floor(s/60),sec=s%60;return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}
+function rf27PanelBusy(d,excludeId){return candidates.some(c=>c.status==='Interviewing'&&c.activeDomain===d&&c.id!==excludeId)}
+function rf27Eligible(d){
+  return candidates.filter(c=>['Waiting Room 1','Waiting Room 2'].includes(c.status)&&remaining(c).includes(d))
+    .sort((a,b)=>{
+      const aw=a.status==='Waiting Room 2'?0:1,bw=b.status==='Waiting Room 2'?0:1;
+      if(aw!==bw)return aw-bw;
+      const ap=(a.choices||[]).indexOf(d),bp=(b.choices||[]).indexOf(d);
+      if(ap!==bp)return ap-bp;
+      return (a.wait||Infinity)-(b.wait||Infinity);
+    });
+}
+function rf27QueueForPanel(d){return rf27Eligible(d).slice(0,20)}
+function rf27Recommendation(){
+  const options=[];
+  DOMAINS.forEach(d=>{
+    if(rf27PanelBusy(d))return;
+    rf27Eligible(d).forEach(c=>{
+      const choice=Math.max(0,(c.choices||[]).indexOf(d));
+      const w=Date.now()-(c.wait||Date.now());
+      const w2=c.status==='Waiting Room 2'?100000:0;
+      options.push({c,d,score:w2+(4-choice)*20000+w});
+    });
+  });
+  options.sort((a,b)=>b.score-a.score);
+  return options[0]||null;
+}
+function renderPanelsPage(){
+  const target=document.getElementById('fullPanels');
+  if(!target)return;
+  target.innerHTML=DOMAINS.map(d=>{
+    const active=candidates.find(c=>c.status==='Interviewing'&&c.activeDomain===d);
+    const queue=rf27QueueForPanel(d);
+    const next=queue[0];
+    return '<div class="panel '+(active?'busy':'')+'">'+
+      '<div class="section"><h3>'+esc(d)+'</h3><span class="status '+(active?'busy':'')+'">'+(active?'BUSY':'AVAILABLE')+'</span></div>'+
+      '<p>'+(active?esc(active.name)+'<br><span class="mini">'+esc(active.id)+' · '+rf27Fmt(rf27Elapsed(active))+'</span>':queue.length+' waiting')+'</p>'+
+      '<div class="queue-list">'+
+      (queue.length?queue.slice(0,4).map((c,i)=>'<div class="queue"><b>#'+(i+1)+' '+esc(c.name)+'</b><span>'+esc(c.id)+' · '+(c.status==='Waiting Room 2'?'W2 priority':'W1')+' · Choice '+((c.choices||[]).indexOf(d)+1)+' · '+wait(c.wait)+'</span></div>').join(''):'<div class="mini">No eligible candidates</div>')+
+      '</div>'+
+      (active?'<button class="btn secondary" style="margin-top:7px" onclick="openPage(\'interviewer\');$(\'interviewDomain\').value=\''+esc(d)+\';renderInterview()">Open Active</button>':
+       next?'<button class="btn primary" style="margin-top:7px" onclick="sendToPanel(\''+esc(next.id)+\',\''+esc(d)+\')">Send Next</button>':'')+
+      '</div>';
+  }).join('');
+}
+function renderPanelQueues(){
+  const target=document.getElementById('fullPanels');
+  if(!target)return;
+  target.innerHTML=DOMAINS.map(d=>{
+    const active=busyDomain(d), q=rf27QueueForPanel(d);
+    return '<div class="panel '+(active?'busy':'')+'"><div class="section"><h3>'+esc(d)+'</h3><span class="status '+(active?'busy':'')+'">'+(active?'BUSY':'AVAILABLE')+'</span></div>'+
+      '<p>'+(active?esc(active.name)+'<br>'+rf27Fmt(rf27Elapsed(active)):q.length+' waiting')+'</p>'+
+      '<div class="queue-list">'+(q.length?q.slice(0,4).map((c,i)=>'<div class="queue"><b>#'+(i+1)+' '+esc(c.name)+'</b><span>'+esc(c.id)+' · '+(c.status==='Waiting Room 2'?'W2 priority':'W1')+' · Choice '+((c.choices||[]).indexOf(d)+1)+' · '+wait(c.wait)+'</span></div>').join(''):'<div class="mini">No eligible candidates</div>')+'</div>'+
+      (active?'<button class="btn secondary" style="margin-top:7px" onclick="openPage(\'interviewer\');$(\'interviewDomain\').value=\''+esc(d)+'\';renderInterview()">Open Active</button>':q.length?'<button class="btn primary" style="margin-top:7px" onclick="sendToPanel(\''+esc(q[0].id)+'\',\''+esc(d)+'\')">Send Next</button>':'')+
+      '</div>';
+  }).join('');
+}
+function rf27RenderGlobalTimer(){
+  const active=candidates.find(c=>c.status==='Interviewing'&&c.interviewStartedAt);
+  const el=document.getElementById('globalTimer');
+  if(!el)return;
+  if(!active){el.className='pill';el.textContent='No active interview';return}
+  const e=rf27Elapsed(active);
+  el.className='pill '+(e>=RF27_DURATION?'danger':e>=RF27_WARN?'amber':'green');
+  el.textContent=active.id+' · '+rf27Fmt(e)+(e>=RF27_DURATION?' · OVERDUE':e>=RF27_WARN?' · 20 MIN WARNING':'');
+}
+function renderCommand(){
+  const r=rf27Recommendation();
+  document.getElementById('recommend').innerHTML=r?
+    '<b>Next recommended interview</b><h3>'+esc(r.c.name)+'</h3><p>'+esc(r.c.id)+' · <strong>'+esc(r.d)+'</strong></p><p class="mini">'+(r.c.status==='Waiting Room 2'?'W2 priority':'W1 first interview')+' · Choice '+((r.c.choices||[]).indexOf(r.d)+1)+' · waiting '+wait(r.c.wait)+'</p><button class="btn primary" onclick="sendToPanel(\''+esc(r.c.id)+'\',\''+esc(r.d)+'\')">Send to Panel</button>':
+    '<b>All panels are busy or no eligible candidate is waiting.</b><p class="mini">The next eligible candidate will appear automatically.</p>';
+  let alerts=[];
+  DOMAINS.forEach(d=>{const q=rf27QueueForPanel(d);if(q.length>4)alerts.push('<div class="alert">'+esc(d)+' panel queue has '+q.length+' candidates.</div>')});
+  candidates.filter(c=>c.status==='Interviewing'&&c.interviewStartedAt).forEach(c=>{
+    const e=rf27Elapsed(c);
+    if(e>=RF27_DURATION)alerts.push('<div class="alert danger">'+esc(c.id)+' is overdue: '+rf27Fmt(e)+'.</div>');
+    else if(e>=RF27_WARN)alerts.push('<div class="alert">'+esc(c.id)+' reached the 20-minute warning.</div>');
+  });
+  candidates.filter(c=>['Waiting Room 1','Waiting Room 2'].includes(c.status)&&c.wait).forEach(c=>{
+    if(Date.now()-c.wait>=30*60*1000)alerts.push('<div class="alert">'+esc(c.id)+' has waited over 30 minutes.</div>');
+  });
+  document.getElementById('alerts').innerHTML=alerts.join('')||'<div class="alert ok">No operational alerts.</div>';
+  document.getElementById('commandPanels').innerHTML=DOMAINS.map(d=>{
+    const c=busyDomain(d),q=rf27Eligible(d)[0];
+    return '<div class="panel '+(c?'busy':'')+'"><div class="section"><h3>'+esc(d)+'</h3><span class="status '+(c?'busy':'')+'">'+(c?'BUSY':'FREE')+'</span></div><p>'+(c?esc(c.name)+'<br>'+rf27Fmt(rf27Elapsed(c)):(q?'Next: '+esc(q.name):'No queue'))+'</p></div>';
+  }).join('');
+}
+function sendToPanel(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c||!remaining(c).includes(d)){alert('Candidate no longer needs this domain.');return}
+  if(rf27PanelBusy(d)){alert(d+' panel is already busy.');return}
+  if(c.status==='Interviewing'){alert('Candidate is already interviewing.');return}
+  c.status='Interviewing';c.activeDomain=d;c.interviewStartedAt=new Date().toISOString();c.wait=null;save();log('Sent to '+d+' interview panel',id);renderAll();openPage('interviewer');document.getElementById('interviewDomain').value=d;renderInterview();
+}
+function completeInterview(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c||c.status!=='Interviewing'||c.activeDomain!==d){alert('Interview state changed. Refreshing.');load();renderAll();return}
+  const m=readScores();c.marks[d]=m;c.feedback[d]=document.getElementById('feedback').value;
+  c.interviews.push({domain:d,total:m.total,priority:c.choices.indexOf(d)+1,completedAt:new Date().toISOString()});
+  c.activeDomain=null;c.interviewStartedAt=null;
+  const rem=remaining(c);
+  if(rem.length){c.status='Waiting Room 2';c.wait=Date.now();log('Completed '+d+' and returned to Waiting Room 2',id)}
+  else{c.status='Completed';c.wait=null;log('Completed all selected interviews',id)}
+  save();renderAll();alert(rem.length?rem.length+' domain(s) remaining. Candidate returned to W2.':'All selected interviews completed.');openPage(rem.length?'waiting2':'allocation');
+}
+function renderW2(){
+  const a=candidates.filter(c=>c.status==='Waiting Room 2'&&remaining(c).length).sort((x,y)=>{
+    const aw=Date.now()-(x.wait||Date.now()),bw=Date.now()-(y.wait||Date.now());
+    const ar=Math.min((x.choices||[]).filter(d=>remaining(x).includes(d)).length,4);
+    const br=Math.min((y.choices||[]).filter(d=>remaining(y).includes(d)).length,4);
+    return -((x.status==='Waiting Room 2'?100000:0)+aw+(4-ar)*1000)+((y.status==='Waiting Room 2'?100000:0)+bw+(4-br)*1000);
+  });
+  document.getElementById('w2').innerHTML=a.length?'<table><thead><tr><th>Priority</th><th>Candidate</th><th>Remaining</th><th>Waiting</th><th>Best Panel</th><th>Action</th></tr></thead><tbody>'+
+    a.map((c,i)=>{
+      const d=(c.choices||[]).find(x=>remaining(c).includes(x)&&!rf27PanelBusy(x));
+      return '<tr><td><span class="pill blue">#'+(i+1)+'</span></td><td><b>'+esc(c.name)+'</b><br><span class="mini">'+esc(c.id)+'</span></td><td>'+esc(remaining(c).join(' → '))+'</td><td>'+wait(c.wait)+'</td><td>'+esc(d||'All busy')+'</td><td>'+(d?'<button class="btn primary" onclick="sendToPanel(\''+esc(c.id)+'\',\''+esc(d)+'\')">Send Next</button>':'<span class="mini">Waiting</span>')+'</td></tr>';
+    }).join('')+'</tbody></table>':'<div class="empty">Waiting Room 2 is empty.</div>';
+}
+function profile(id){
+  const c=candidates.find(x=>x.id===id);if(!c)return;
+  const events=[];
+  if(c.checkedInAt)events.push({t:c.checkedInAt,s:'Venue check-in'});
+  (c.interviews||[]).forEach(i=>{events.push({t:i.completedAt,s:i.domain+' interview completed · '+i.total+'/40'})});
+  if(c.finalAllocation)events.push({t:c.interviews?.at(-1)?.completedAt||new Date().toISOString(),s:'Final allocation · '+c.finalAllocation});
+  events.sort((a,b)=>new Date(a.t)-new Date(b.t));
+  document.getElementById('modalTitle').textContent=c.name+' · '+c.id;
+  document.getElementById('modalBody').innerHTML='<div class="grid3"><div class="card"><b>Status</b><p>'+esc(c.status)+'</p></div><div class="card"><b>Academic</b><p>'+esc(c.branch)+' · '+esc(c.year)+'</p></div><div class="card"><b>Choices</b><p>'+esc(c.choices.join(' → '))+'</p></div></div><div class="timeline" style="margin-top:12px"><b>Candidate Timeline</b>'+
+    (events.length?events.map(e=>'<div class="event"><span class="dot"></span><div><b>'+esc(e.s)+'</b><br><small>'+new Date(e.t).toLocaleString('en-IN')+'</small></div></div>').join(''):'<div class="empty">No timeline events yet.</div>')+'</div>';
+  document.getElementById('modal').classList.add('open');
+}
+function backup(){
+  const payload={version:'3.0',exportedAt:new Date().toISOString(),candidates,activity:activity(),settings:{eventName:localStorage.getItem('rf-event-name')||'',adminName:localStorage.getItem('rf-admin-name')||''}};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));a.download='recruitflow-backup-3.3.json';a.click();
+}
+function importBackup(ev){
+  const input=ev.target;
+  const file=input?.files?.[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onerror=()=>alert('Could not read the selected JSON file.');
+  reader.onload=()=>{
+    try{
+      const raw=JSON.parse(String(reader.result||''));
+      // Accept both RecruitFlow backup objects and plain candidate-array JSON files.
+      const list=Array.isArray(raw)?raw:(Array.isArray(raw.candidates)?raw.candidates:null);
+      if(!list)throw new Error('JSON must contain a candidates array or be a candidate array.');
+      if(!list.length)throw new Error('The JSON contains 0 candidates.');
+      const cleaned=list.map((x,i)=>{
+        const c={...x};
+        c.id=c.id||c.candidateId||c.candidateID||('RF-'+String(i+1).padStart(4,'0'));
+        c.name=c.name||c.fullName||c.participantName||'Unnamed Candidate';
+        c.email=c.email||'';
+        c.phone=c.phone||c.mobile||'';
+        c.branch=c.branch||'';
+        c.year=c.year||'';
+        c.skills=c.skills||'';
+        c.choices=Array.isArray(c.choices)?c.choices:(Array.isArray(c.domains)?c.domains:(Array.isArray(c.domainChoices)?c.domainChoices:[c.choice1,c.choice2,c.choice3,c.choice4].filter(Boolean)));
+        return c;
+      });
+      if(!confirm('Import '+cleaned.length+' candidates and replace current local candidate data?'))return;
+      candidates=normalize(cleaned);
+      save();
+      if(Array.isArray(raw.activity))localStorage.setItem(ACT,JSON.stringify(raw.activity.slice(0,80)));
+      if(raw.settings){
+        localStorage.setItem('rf-event-name',raw.settings.eventName||'');
+        localStorage.setItem('rf-admin-name',raw.settings.adminName||'');
+      }
+      load();
+      renderAll();
+      alert('Successfully imported '+candidates.length+' candidates.');
+    }catch(e){
+      alert('Import failed: '+e.message);
+    }finally{
+      if(input)input.value='';
+    }
+  };
+  reader.readAsText(file);
+}
+function resetDemo(){if(!confirm('Reset local candidate data to demo data? This cannot be undone unless you have a backup.'))return;candidates=demo();save();localStorage.removeItem(ACT);log('Reset demo data');renderAll()}
+function renderAll(){stats();renderCommand();renderPanels();renderPanelQueues();renderW2Mini();renderActivity();renderCandidates();renderEntryHistory();renderW1();renderW2();renderInterviewOptions();renderInterview();renderAllocation();renderAnalytics();rf27RenderGlobalTimer();document.getElementById('liveText').textContent='Live · '+candidates.length+' candidates'}
+setInterval(()=>{rf27RenderGlobalTimer();renderCommand();renderPanelQueues();},1000);
+</script>
+<script>
+function renderEntryAttendance(){
+  const all=[...candidates].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  const checked=all.filter(c=>c.checkedInAt).length;
+  const pending=all.length-checked;
+  const el=document.getElementById('entryAttendance');
+  if(!el)return;
+  const oldScroll=el.querySelector('[data-attendance-scroll]');
+  const oldTop=oldScroll?oldScroll.scrollTop:0;
+  const oldSearch=document.getElementById('attendanceSearch')?.value||'';
+  const oldFilter=document.getElementById('attendanceFilter')?.value||'';
+  el.innerHTML='<div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">'+
+    '<div class="stat"><small>Total Participants</small><b>'+all.length+'</b></div>'+
+    '<div class="stat"><small>Checked In</small><b>'+checked+'</b></div>'+
+    '<div class="stat"><small>Not Checked In</small><b>'+pending+'</b></div></div>'+
+    '<div class="toolbar"><input class="search" id="attendanceSearch" placeholder="Search participant name or ID" oninput="renderEntryAttendance()"><select id="attendanceFilter" onchange="renderEntryAttendance()"><option value="">All Participants</option><option value="checked">Checked In</option><option value="pending">Not Checked In</option></select></div>'+
+    '<div data-attendance-scroll style="max-height:520px;overflow:auto"><table><thead><tr><th>#</th><th>Participant</th><th>Candidate ID</th><th>Branch / Year</th><th>Check-In Status</th><th>Time</th></tr></thead><tbody>'+
+    (function(){
+      const q=(oldSearch||'').toLowerCase();
+      const f=oldFilter||'';
+      const filtered=all.filter(c=>(!q||String(c.name+' '+c.id).toLowerCase().includes(q))&&(!f||(f==='checked'?!!c.checkedInAt:!c.checkedInAt)));
+      return filtered.map((c,i)=>'<tr><td>'+(i+1)+'</td><td><div class="person"><div class="person-icon">'+initials(c.name)+'</div><div><b>'+esc(c.name)+'</b><span>'+esc(c.email||'')+'</span></div></div></td><td>'+esc(c.id)+'</td><td>'+esc(c.branch||'—')+' · '+esc(c.year||'—')+'</td><td><span class="pill '+(c.checkedInAt?'green':'amber')+'">'+(c.checkedInAt?'✓ Checked In':'Not Checked In')+'</span></td><td>'+(c.checkedInAt?new Date(c.checkedInAt).toLocaleTimeString('en-IN'):'—')+'</td></tr>').join('')||'<tr><td colspan="6" class="empty">No participants found.</td></tr>';
+    })()+
+    '</tbody></table></div>';
+  const restoredScroll=el.querySelector('[data-attendance-scroll]');
+  if(restoredScroll)requestAnimationFrame(()=>{restoredScroll.scrollTop=oldTop});
+  const restoredSearch=document.getElementById('attendanceSearch');
+  const restoredFilter=document.getElementById('attendanceFilter');
+  if(restoredSearch && oldSearch) restoredSearch.value=oldSearch;
+  if(restoredFilter) restoredFilter.value=oldFilter;
+}
+function renderAll(){
+  stats();renderCommand();renderPanels();renderPanelQueues();renderW2Mini();renderActivity();renderCandidates();renderEntryHistory();renderEntryAttendance();renderW1();renderW2();renderInterviewOptions();renderInterview();renderAllocation();renderAnalytics();rf27RenderGlobalTimer();document.getElementById('liveText').textContent='Live · '+candidates.length+' candidates';
+}
+</script>
+
+<script>
+/* RecruitFlow 3.7 — Session authentication and role enforcement */
+let RF37_USERS={
+  admin:{password:"admin123",role:"Admin",name:"Administrator",active:true},
+  entry:{password:"entry123",role:"Entry Volunteer",name:"Entry Volunteer",active:true},
+  w1:{password:"w1123",role:"W1 Volunteer",name:"W1 Volunteer",active:true},
+  w2:{password:"w2123",role:"W2 Volunteer",name:"W2 Volunteer",active:true},
+  interviewer:{password:"interviewer123",role:"Interviewer",name:"Interviewer",active:true}
+};
+
+function rf37Auth(){
+  try{return JSON.parse(sessionStorage.getItem("rf37-auth")||"null")}catch(e){return null}
+}
+function rf37Unlock(auth){
+  sessionStorage.setItem("rf37-auth",JSON.stringify(auth));
+  localStorage.setItem("rf-role",auth.role);
+  document.body.classList.remove("rf-locked");
+  const login=document.getElementById("rf37Login");
+  if(login)login.style.display="none";
+  const user=document.getElementById("rf37SessionUser");
+  if(user)user.textContent=auth.name+" · "+auth.role;
+  const sel=document.getElementById("roleSelect");
+  if(sel){sel.value=auth.role;sel.disabled=true;sel.style.display="none"}
+  const pill=document.getElementById("rolePill");
+  if(pill)pill.textContent=auth.role;
+  try{
+    nav();
+    load();
+    setRole(auth.role);
+    openPage(ROLES[auth.role][0]);
+  }catch(e){console.error("RecruitFlow 3.7 startup error",e)}
+}
+function rf37LoginSubmit(ev){
+  ev.preventDefault();
+  const id=String(document.getElementById("rf37User").value||"").trim().toLowerCase();
+  const pass=String(document.getElementById("rf37Pass").value||"");
+  const account=RF37_USERS[id];
+  const err=document.getElementById("rf37Error");
+  if(!account||account.active===false||account.password!==pass){
+    err.style.display="block";
+    return false;
+  }
+  err.style.display="none";
+  rf37Unlock({user:id,role:account.role,name:account.name,loginAt:new Date().toISOString()});
+  return false;
+}
+function rf37Logout(){
+  sessionStorage.removeItem("rf37-auth");
+  localStorage.removeItem("rf-role");
+  location.reload();
+}
+function rf37Gate(){
+  const auth=rf37Auth();
+  if(auth&&RF37_USERS[auth.user]&&RF37_USERS[auth.user].active!==false&&RF37_USERS[auth.user].role===auth.role){
+    rf37Unlock(auth);
+  }else{
+    document.body.classList.add("rf-locked");
+    const login=document.getElementById("rf37Login");
+    if(login)login.style.display="flex";
+  }
+}
+document.addEventListener("DOMContentLoaded",()=>setTimeout(rf37Gate,0));
+</script>
+<script>
+/* RecruitFlow 3.8 — Admin User Management */
+const RF38_USERS_KEY="rf38-users";
+
+function rf38SaveUsers(){
+  localStorage.setItem(RF38_USERS_KEY,JSON.stringify(RF37_USERS));
+}
+function rf38LoadUsers(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(RF38_USERS_KEY)||"null");
+    if(saved&&typeof saved==="object"&&!Array.isArray(saved)){
+      RF37_USERS=saved;
+    }else{
+      rf38SaveUsers();
+    }
+  }catch(e){
+    rf38SaveUsers();
+  }
+}
+function rf38RolePages(role){
+  return (ROLES[role]||[]).join(", ");
+}
+function rf38UserCount(role){
+  return Object.values(RF37_USERS).filter(u=>u.role===role).length;
+}
+function rf38RenderUsers(){
+  const table=document.getElementById("rf38UserTable");
+  const statsEl=document.getElementById("rf38UserStats");
+  if(!table||!statsEl)return;
+  const q=String(document.getElementById("rf38UserSearch")?.value||"").toLowerCase().trim();
+  const rf=String(document.getElementById("rf38UserRoleFilter")?.value||"");
+  const sf=String(document.getElementById("rf38UserStatusFilter")?.value||"");
+  const all=Object.entries(RF37_USERS).map(([id,u])=>({id,...u,active:u.active!==false}));
+  const filtered=all.filter(u=>
+    (!q||[u.id,u.name,u.role].join(" ").toLowerCase().includes(q))&&
+    (!rf||u.role===rf)&&
+    (!sf||(sf==="active"?u.active:!u.active))
+  );
+  const roles=["Admin","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"];
+  statsEl.innerHTML=roles.map(role=>
+    '<div class="stat"><small>'+esc(role)+'</small><b>'+rf38UserCount(role)+'</b></div>'
+  ).join("");
+  table.innerHTML=filtered.length?
+    '<table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Pages</th><th>Actions</th></tr></thead><tbody>'+
+    filtered.map(u=>
+      '<tr>'+
+      '<td><div class="person"><div class="person-icon">'+initials(u.name)+'</div><div><b>'+esc(u.name)+'</b><span>'+esc(u.id)+'</span></div></div></td>'+
+      '<td><span class="pill blue">'+esc(u.role)+'</span></td>'+
+      '<td><span class="pill '+(u.active?'green':'amber')+'">'+(u.active?'● Active':'○ Inactive')+'</span></td>'+
+      '<td><span class="mini">'+esc(rf38RolePages(u.role))+'</span></td>'+
+      '<td><div class="actions">'+
+      '<button class="btn secondary" onclick="rf38OpenUserForm(\''+esc(u.id)+'\')">Edit</button>'+
+      '<button class="btn secondary" onclick="rf38ToggleUser(\''+esc(u.id)+'\')">'+(u.active?'Deactivate':'Activate')+'</button>'+
+      (u.id!=="admin"?'<button class="btn danger" onclick="rf38DeleteUser(\''+esc(u.id)+'\')">Delete</button>':'')+
+      '</div></td></tr>'
+    ).join("")+
+    '</tbody></table>'
+    :'<div class="empty">No users match the selected filters.</div>';
+}
+function rf38OpenUserForm(id){
+  const modal=document.getElementById("rf38UserModal");
+  const title=document.getElementById("rf38UserModalTitle");
+  const edit=document.getElementById("rf38EditUser");
+  const username=document.getElementById("rf38Username");
+  const name=document.getElementById("rf38Name");
+  const pass=document.getElementById("rf38Password");
+  const role=document.getElementById("rf38Role");
+  const status=document.getElementById("rf38Status");
+  const msg=document.getElementById("rf38FormMsg");
+  if(!modal)return;
+  msg.innerHTML="";
+  if(id&&RF37_USERS[id]){
+    const u=RF37_USERS[id];
+    title.textContent="Edit User";
+    edit.value=id;
+    username.value=id;
+    username.disabled=true;
+    name.value=u.name||"";
+    pass.value="";
+    pass.placeholder="Leave blank to keep current password";
+    pass.required=false;
+    role.value=u.role||"Interviewer";
+    status.value=u.active===false?"inactive":"active";
+  }else{
+    title.textContent="Add User";
+    edit.value="";
+    username.disabled=false;
+    username.value="";
+    name.value="";
+    pass.value="";
+    pass.placeholder="Minimum 6 characters";
+    pass.required=true;
+    role.value="Interviewer";
+    status.value="active";
+  }
+  modal.classList.add("open");
+  setTimeout(()=>username.focus(),50);
+}
+function rf38CloseUserForm(){
+  const modal=document.getElementById("rf38UserModal");
+  if(modal)modal.classList.remove("open");
+}
+function rf38SaveUser(ev){
+  ev.preventDefault();
+  const oldId=document.getElementById("rf38EditUser").value.trim();
+  const id=document.getElementById("rf38Username").value.trim().toLowerCase();
+  const name=document.getElementById("rf38Name").value.trim();
+  const pass=document.getElementById("rf38Password").value;
+  const role=document.getElementById("rf38Role").value;
+  const active=document.getElementById("rf38Status").value==="active";
+  const msg=document.getElementById("rf38FormMsg");
+  if(!/^[a-z0-9._-]{3,30}$/.test(id)){
+    msg.innerHTML='<div class="alert danger">User ID must be 3–30 characters using letters, numbers, dot, underscore or hyphen.</div>';
+    return false;
+  }
+  if(!oldId&&RF37_USERS[id]){
+    msg.innerHTML='<div class="alert danger">That User ID already exists.</div>';
+    return false;
+  }
+  if(!oldId&&pass.length<6){
+    msg.innerHTML='<div class="alert danger">Password must be at least 6 characters.</div>';
+    return false;
+  }
+  if(oldId==="admin"&&(!active||role!=="Admin")){
+    msg.innerHTML='<div class="alert danger">The primary admin account must remain active with the Admin role.</div>';
+    return false;
+  }
+  const existing=oldId?RF37_USERS[oldId]:null;
+  RF37_USERS[id]={
+    password:pass||existing?.password||"",
+    role,
+    name,
+    active
+  };
+  if(oldId&&oldId!==id)delete RF37_USERS[oldId];
+  rf38SaveUsers();
+  rf38CloseUserForm();
+  rf38RenderUsers();
+  log((oldId?"Updated user ":"Created user ")+id);
+  alert((oldId?"User updated: ":"User created: ")+id);
+  return false;
+}
+function rf38ToggleUser(id){
+  const u=RF37_USERS[id];
+  if(!u)return;
+  if(id==="admin"){alert("The primary admin account cannot be deactivated.");return}
+  u.active=u.active===false;
+  rf38SaveUsers();
+  rf38RenderUsers();
+  log((u.active?"Activated ":"Deactivated ")+id);
+}
+function rf38DeleteUser(id){
+  if(id==="admin"){alert("The primary admin account cannot be deleted.");return}
+  if(!RF37_USERS[id])return;
+  if(!confirm("Delete user '"+id+"'? This cannot be undone."))return;
+  delete RF37_USERS[id];
+  rf38SaveUsers();
+  rf38RenderUsers();
+  log("Deleted user "+id);
+}
+const rf38OriginalRenderAll=renderAll;
+function renderAll(){
+  rf38OriginalRenderAll();
+  if(document.getElementById("users")?.classList.contains("active"))rf38RenderUsers();
+}
+rf38LoadUsers();
+</script>
+<script>
+/* RecruitFlow 3.9 — Live Queue Display */
+let rf39LastRender=0;
+function rf39WaitMs(c){
+  return c&&c.wait?Math.max(0,Date.now()-Number(c.wait)):0;
+}
+function rf39WaitText(c){
+  const s=Math.floor(rf39WaitMs(c)/1000),m=Math.floor(s/60),sec=s%60;
+  return m+"m "+String(sec).padStart(2,"0")+"s";
+}
+function rf39Queue(d){
+  return candidates.filter(c=>
+    ["Waiting Room 1","Waiting Room 2"].includes(c.status)&&
+    remaining(c).includes(d)
+  ).sort((a,b)=>{
+    const aw=a.status==="Waiting Room 2"?0:1;
+    const bw=b.status==="Waiting Room 2"?0:1;
+    if(aw!==bw)return aw-bw;
+    const ap=(a.choices||[]).indexOf(d);
+    const bp=(b.choices||[]).indexOf(d);
+    if(ap!==bp)return ap-bp;
+    return (a.wait||Infinity)-(b.wait||Infinity);
+  });
+}
+function rf39RenderQueue(){
+  const statsEl=document.getElementById("rf39QueueStats");
+  const activeEl=document.getElementById("rf39Active");
+  const panelsEl=document.getElementById("rf39PanelQueues");
+  if(!statsEl||!activeEl||!panelsEl)return;
+  const waiting1=candidates.filter(c=>c.status==="Waiting Room 1").length;
+  const waiting2=candidates.filter(c=>c.status==="Waiting Room 2").length;
+  const interviewing=candidates.filter(c=>c.status==="Interviewing");
+  const available=DOMAINS.filter(d=>!rf27PanelBusy(d)).length;
+  statsEl.innerHTML=
+    '<div class="stat"><small>Waiting Room 1</small><b>'+waiting1+'</b></div>'+
+    '<div class="stat"><small>Waiting Room 2</small><b>'+waiting2+'</b></div>'+
+    '<div class="stat"><small>Interviewing</small><b>'+interviewing.length+'</b></div>'+
+    '<div class="stat"><small>Available Panels</small><b>'+available+'</b></div>';
+  activeEl.innerHTML=interviewing.length?
+    '<table><thead><tr><th>Panel</th><th>Candidate</th><th>ID</th><th>Time</th><th>Status</th></tr></thead><tbody>'+
+    interviewing.map(c=>{
+      const elapsed=rf27Elapsed(c);
+      return '<tr><td><span class="pill blue">'+esc(c.activeDomain||"—")+'</span></td>'+
+      '<td><b>'+esc(c.name)+'</b></td><td>'+esc(c.id)+'</td>'+
+      '<td>'+rf27Fmt(elapsed)+'</td>'+
+      '<td><span class="pill '+(elapsed>=RF27_DURATION?"amber":"green")+'">'+(elapsed>=RF27_DURATION?"OVERDUE":"IN PROGRESS")+'</span></td></tr>';
+    }).join('')+'</tbody></table>'
+    :'<div class="empty">No interviews are currently active.</div>';
+  panelsEl.innerHTML=DOMAINS.map(d=>{
+    const active=candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===d);
+    const q=rf39Queue(d);
+    const next=q[0];
+    return '<div class="panel '+(active?"busy":"")+'">'+
+      '<div class="section"><h3>'+esc(d)+'</h3><span class="status '+(active?"busy":"")+'">'+(active?"BUSY":"AVAILABLE")+'</span></div>'+
+      '<p>'+(active?
+        '<b>'+esc(active.name)+'</b><br><span class="mini">'+esc(active.id)+' · '+rf27Fmt(rf27Elapsed(active))+'</span>':
+        '<b>'+q.length+'</b> waiting')+'</p>'+
+      '<div class="queue-list">'+
+      (q.length?q.slice(0,5).map((x,i)=>
+        '<div class="queue"><b>#'+(i+1)+' '+esc(x.name)+'</b>'+
+        '<span>'+esc(x.id)+' · '+(x.status==="Waiting Room 2"?"W2 Priority":"W1")+" · Choice "+((x.choices||[]).indexOf(d)+1)+" · Waiting "+rf39WaitText(x)+'</span></div>'
+      ).join(''):'<div class="mini">No eligible candidates</div>')+
+      '</div>'+
+      (next?'<div style="margin-top:8px"><span class="mini">Next candidate: </span><b>'+esc(next.name)+'</b></div>':'')+
+      '</div>';
+  }).join('');
+  rf39LastRender=Date.now();
+  const updated=document.getElementById("rf39Updated");
+  if(updated)updated.textContent="Updated "+new Date().toLocaleTimeString("en-IN");
+}
+function rf39RenderAllHook(){
+  if(document.getElementById("livequeue")?.classList.contains("active"))rf39RenderQueue();
+}
+const rf39BaseRenderAll=renderAll;
+renderAll=function(){
+  rf39BaseRenderAll();
+  rf39RenderAllHook();
+};
+setInterval(()=>{
+  if(document.getElementById("livequeue")?.classList.contains("active"))rf39RenderQueue();
+},1000);
+</script>
+<script>
+/* RecruitFlow 4.0 — Interview Control System */
+function rf40Active(d){
+  return candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===d)||null;
+}
+function rf40Needed(c,d){
+  return !!c&&remaining(c).includes(d);
+}
+function rf40Start(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c){alert("Candidate not found.");return;}
+  if(!rf40Needed(c,d)){alert("Candidate no longer needs "+d+".");load();renderAll();return;}
+  const active=rf40Active(d);
+  if(active&&active.id!==id){alert(d+" panel is already occupied by "+active.name+".");return;}
+  if(c.status==="Interviewing"&&c.activeDomain!==d){alert("Candidate is already in another interview.");return;}
+  c.status="Interviewing";
+  c.activeDomain=d;
+  c.interviewStartedAt=c.interviewStartedAt||new Date().toISOString();
+  c.wait=null;
+  save();
+  log("Interview started · "+d,id);
+  renderAll();
+  rf40Render();
+}
+function rf40Cancel(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c||c.status!=="Interviewing"||c.activeDomain!==d){alert("Interview is no longer active.");return;}
+  if(!confirm("Cancel this active interview and return the candidate to Waiting Room 2?"))return;
+  c.status="Waiting Room 2";
+  c.activeDomain=null;
+  c.interviewStartedAt=null;
+  c.wait=Date.now();
+  save();
+  log("Interview cancelled · returned to W2",id);
+  renderAll();
+  rf40Render();
+}
+function rf40Complete(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c||c.status!=="Interviewing"||c.activeDomain!==d){alert("Interview state changed. Refreshing.");load();renderAll();return;}
+  if(!rf40Needed(c,d)){alert("This domain is no longer pending.");return;}
+  const fields=["technical","communication","problemSolving","domainKnowledge"];
+  const values=fields.map(k=>Number(document.getElementById("score_"+k)?.value));
+  if(values.some(v=>!Number.isFinite(v)||v<0||v>10)){alert("Enter all four scores from 0 to 10.");return;}
+  const feedback=String(document.getElementById("feedback")?.value||"").trim();
+  if(!feedback){alert("Please enter interviewer feedback before completing.");return;}
+  const m={technical:values[0],communication:values[1],problemSolving:values[2],domainKnowledge:values[3],total:values.reduce((a,b)=>a+b,0)};
+  c.marks=c.marks||{};c.feedback=c.feedback||{};c.interviews=c.interviews||[];
+  c.marks[d]=m;c.feedback[d]=feedback;
+  c.interviews.push({domain:d,total:m.total,priority:(c.choices||[]).indexOf(d)+1,completedAt:new Date().toISOString()});
+  c.activeDomain=null;c.interviewStartedAt=null;
+  const rem=remaining(c);
+  if(rem.length){
+    c.status="Waiting Room 2";c.wait=Date.now();
+    log("Interview completed · returned to W2",id);
+  }else{
+    c.status="Completed";c.wait=null;
+    log("Interview completed · all selected domains finished",id);
+  }
+  save();renderAll();rf40Render();
+  alert(rem.length?("Interview completed. "+rem.length+" domain(s) remaining; candidate returned to W2."):"Interview completed. Candidate has finished all selected domains.");
+}
+function rf40Render(){
+  const el=document.getElementById("rf40ControlGrid");
+  if(!el)return;
+  const interviewing=candidates.filter(c=>c.status==="Interviewing");
+  document.getElementById("rf40ControlStatus").textContent=interviewing.length+" ACTIVE";
+  el.innerHTML=DOMAINS.map(d=>{
+    const active=rf40Active(d);
+    const q=rf27QueueForPanel(d);
+    const next=q[0];
+    return '<div class="panel '+(active?"busy":"")+'">'+
+      '<div class="section"><h3>'+esc(d)+'</h3><span class="status '+(active?"busy":"")+'">'+(active?"LOCKED":"READY")+'</span></div>'+
+      (active?
+        '<p><b>'+esc(active.name)+'</b><br><span class="mini">'+esc(active.id)+' · '+rf27Fmt(rf27Elapsed(active))+'</span></p>'+
+        '<div class="actions">'+
+        '<button class="btn primary" onclick="openPage(\'interviewer\');document.getElementById(\'interviewDomain\').value=\''+esc(d)+'\';renderInterview()">Open Interview</button>'+
+        '<button class="btn danger" onclick="rf40Cancel(\''+esc(active.id)+'\',\''+esc(d)+'\')">Cancel</button>'+
+        '</div>'
+        :
+        '<p><b>'+q.length+'</b> eligible in queue'+(next?'<br><span class="mini">Next: '+esc(next.name)+'</span>':'')+'</p>'+
+        (next?'<button class="btn primary" onclick="rf40Start(\''+esc(next.id)+'\',\''+esc(d)+'\')">Start Next</button>':'<span class="mini">No eligible candidate</span>')
+      )+
+      '</div>';
+  }).join("");
+}
+const rf40BaseRenderAll=renderAll;
+renderAll=function(){
+  rf40BaseRenderAll();
+  if(document.getElementById("interviewcontrol")?.classList.contains("active"))rf40Render();
+};
+setInterval(()=>{if(document.getElementById("interviewcontrol")?.classList.contains("active"))rf40Render()},1000);
+</script>
+<script>
+/* RecruitFlow 4.1 — Interviewer Assignment System */
+const RF41_KEY="rf41-assignments";
+let rf41Assignments={};
+function rf41Load(){
+  try{rf41Assignments=JSON.parse(localStorage.getItem(RF41_KEY)||"{}")||{};}catch(e){rf41Assignments={};}
+}
+function rf41Save(){localStorage.setItem(RF41_KEY,JSON.stringify(rf41Assignments));}
+function rf41Interviewers(){
+  return Object.entries(RF37_USERS||{}).filter(([id,u])=>u.role==="Interviewer"&&u.active!==false).map(([id,u])=>({id,...u}));
+}
+function rf41AssignedUser(d){
+  const a=rf41Assignments[d];
+  return a&&a.active!==false?a.user:null;
+}
+function rf41UserBusy(id){
+  return candidates.find(c=>c.status==="Interviewing"&&rf41AssignedUser(c.activeDomain)===id)||null;
+}
+function rf41OpenForm(domain){
+  const modal=document.getElementById("rf41Modal");
+  const user=document.getElementById("rf41User"),dom=document.getElementById("rf41Domain");
+  const status=document.getElementById("rf41Status"),edit=document.getElementById("rf41EditKey");
+  const msg=document.getElementById("rf41Msg");
+  if(!modal)return;
+  const interviewers=rf41Interviewers();
+  user.innerHTML=interviewers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' ('+esc(x.id)+')</option>').join('');
+  dom.innerHTML=DOMAINS.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+  edit.value="";
+  msg.innerHTML="";
+  if(domain&&rf41Assignments[domain]){
+    const a=rf41Assignments[domain];
+    document.getElementById("rf41ModalTitle").textContent="Edit Assignment";
+    edit.value=domain;dom.value=domain;user.value=a.user;status.value=a.active===false?"inactive":"active";
+  }else{
+    document.getElementById("rf41ModalTitle").textContent="Assign Interviewer";
+    const free=DOMAINS.find(d=>!rf41Assignments[d]||rf41Assignments[d].active===false);
+    if(free)dom.value=free;
+    status.value="active";
+  }
+  modal.classList.add("open");
+}
+function rf41CloseForm(){document.getElementById("rf41Modal")?.classList.remove("open");}
+function rf41SaveAssignment(ev){
+  ev.preventDefault();
+  const domain=document.getElementById("rf41Domain").value;
+  const user=document.getElementById("rf41User").value;
+  const status=document.getElementById("rf41Status").value;
+  const old=document.getElementById("rf41EditKey").value;
+  const msg=document.getElementById("rf41Msg");
+  if(!domain||!user){msg.innerHTML='<div class="alert danger">Select both an interviewer and a domain.</div>';return false;}
+  const existing=rf41Assignments[domain];
+  if(!old&&existing&&existing.active!==false){msg.innerHTML='<div class="alert danger">This panel already has an active interviewer.</div>';return false;}
+  const other=Object.entries(rf41Assignments).find(([d,a])=>d!==domain&&a.active!==false&&a.user===user);
+  if(other&&status==="active"){msg.innerHTML='<div class="alert danger">'+esc(user)+' is already assigned to '+esc(other[0])+'. Reassign them first.</div>';return false;}
+  if(old&&old!==domain){delete rf41Assignments[old];}
+  rf41Assignments[domain]={user,active:status==="active",updatedAt:new Date().toISOString()};
+  rf41Save();rf41CloseForm();rf41Render();log("Updated interviewer assignment · "+domain);
+  return false;
+}
+function rf41Toggle(domain){
+  const a=rf41Assignments[domain];if(!a)return;
+  a.active=a.active===false;rf41Save();rf41Render();log((a.active?"Activated ":"Deactivated ")+"assignment · "+domain);
+}
+function rf41Remove(domain){
+  const a=rf41Assignments[domain];if(!a)return;
+  const active=candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===domain);
+  if(active){alert("Cannot remove this assignment while "+active.name+" is interviewing.");return;}
+  if(!confirm("Remove interviewer assignment for "+domain+"?"))return;
+  delete rf41Assignments[domain];rf41Save();rf41Render();log("Removed interviewer assignment · "+domain);
+}
+function rf41Render(){
+  const assignments=document.getElementById("rf41Assignments"),work=document.getElementById("rf41Workload"),stats=document.getElementById("rf41Stats");
+  if(!assignments||!work||!stats)return;
+  const activeAssignments=Object.entries(rf41Assignments).filter(([d,a])=>a.active!==false);
+  const ints=rf41Interviewers();
+  document.getElementById("rf41AssignedCount").textContent=activeAssignments.length+" Assigned";
+  stats.innerHTML=
+    '<div class="stat"><small>Interviewers</small><b>'+ints.length+'</b></div>'+
+    '<div class="stat"><small>Assigned Panels</small><b>'+activeAssignments.length+'</b></div>'+
+    '<div class="stat"><small>Unassigned Panels</small><b>'+Math.max(0,DOMAINS.length-activeAssignments.length)+'</b></div>'+
+    '<div class="stat"><small>Busy Interviewers</small><b>'+ints.filter(x=>rf41UserBusy(x.id)).length+'</b></div>';
+  assignments.innerHTML='<table><thead><tr><th>Domain Panel</th><th>Interviewer</th><th>Status</th><th>Current Candidate</th><th>Actions</th></tr></thead><tbody>'+
+    DOMAINS.map(d=>{
+      const a=rf41Assignments[d],u=a?RF37_USERS[a.user]:null,cur=candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===d);
+      return '<tr><td><b>'+esc(d)+'</b></td><td>'+(u?esc(u.name)+'<br><span class="mini">'+esc(a.user)+'</span>':'<span class="mini">Unassigned</span>')+'</td>'+
+      '<td><span class="pill '+(a&&a.active!==false?"green":"amber")+'">'+(a&&a.active!==false?"Assigned":"Not Assigned")+'</span></td>'+
+      '<td>'+(cur?esc(cur.name)+' · '+esc(cur.id):'<span class="mini">—</span>')+'</td>'+
+      '<td><div class="actions">'+(a?'<button class="btn secondary" onclick="rf41OpenForm(\''+esc(d)+'\')">Edit</button><button class="btn secondary" onclick="rf41Toggle(\''+esc(d)+'\')">'+(a.active!==false?"Disable":"Enable")+'</button><button class="btn danger" onclick="rf41Remove(\''+esc(d)+'\')">Remove</button>':'<button class="btn primary" onclick="rf41OpenForm(\''+esc(d)+'\')">Assign</button>')+'</div></td></tr>';
+    }).join('')+'</tbody></table>';
+  work.innerHTML=ints.length?
+    '<table><thead><tr><th>Interviewer</th><th>Role</th><th>Assigned Panel</th><th>Current Interview</th><th>Status</th></tr></thead><tbody>'+
+    ints.map(u=>{
+      const d=Object.keys(rf41Assignments).find(x=>rf41Assignments[x].active!==false&&rf41Assignments[x].user===u.id);
+      const cur=d?candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===d):null;
+      return '<tr><td><b>'+esc(u.name)+'</b><br><span class="mini">'+esc(u.id)+'</span></td><td>Interviewer</td><td>'+esc(d||"Unassigned")+'</td><td>'+(cur?esc(cur.name)+' · '+rf27Fmt(rf27Elapsed(cur)):'—')+'</td><td><span class="pill '+(cur?"amber":"green")+'">'+(cur?"BUSY":"AVAILABLE")+'</span></td></tr>';
+    }).join('')+'</tbody></table>'
+    :'<div class="empty">Create an Interviewer account in User Management first.</div>';
+}
+rf41Load();
+const rf41BaseRenderAll=renderAll;
+renderAll=function(){rf41BaseRenderAll();if(document.getElementById("interviewers")?.classList.contains("active"))rf41Render();};
+setInterval(()=>{if(document.getElementById("interviewers")?.classList.contains("active"))rf41Render();},1000);
+</script>
+
+<script>
+/* RecruitFlow 4.2 — Advanced Analytics & Reports */
+function rf42Minutes(ms){return Math.max(0,ms)/60000}
+function rf42Avg(nums){return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0}
+function rf42FmtMin(v){return v<1?Math.round(v*60)+" sec":v<60?v.toFixed(1)+" min":(v/60).toFixed(1)+" hr"}
+function rf42CompletedFor(d){return candidates.filter(c=>(c.interviews||[]).some(i=>i.domain===d))}
+function rf42Render(){
+  const k=$("rf42Kpis"),domainEl=$("rf42Domain"),panelEl=$("rf42Panels"),intEl=$("rf42Interviewers"),waitEl=$("rf42Waiting"),readyEl=$("rf42Readiness");
+  if(!k||!domainEl)return;
+  const total=candidates.length;
+  const checked=candidates.filter(c=>c.checkedInAt).length;
+  const completed=candidates.filter(c=>c.status==="Completed").length;
+  const interviewing=candidates.filter(c=>c.status==="Interviewing").length;
+  const interviews=candidates.reduce((n,c)=>n+(c.interviews||[]).length,0);
+  const scored=candidates.flatMap(c=>Object.values(c.marks||{}).map(m=>Number(m.total)||0)).filter(n=>n>0);
+  const avg=rf42Avg(scored);
+  const completionRate=total?completed/total*100:0;
+  k.innerHTML=[
+    ["Candidates",total],["Checked In",checked],["Interviews Completed",interviews],["Currently Interviewing",interviewing],
+    ["Completed Candidates",completed],["Avg Score",avg.toFixed(1)+"/40"],["Completion Rate",completionRate.toFixed(1)+"%"]
+  ].map(x=>"<div class='stat'><small>"+x[0]+"</small><b>"+x[1]+"</b></div>").join("");
+
+  domainEl.innerHTML="<div style='overflow:auto'><table><thead><tr><th>Domain</th><th>Choices</th><th>Interviews</th><th>Avg Score</th><th>Completed</th><th>Demand / Interview</th></tr></thead><tbody>"+
+    DOMAINS.map(d=>{
+      const choices=candidates.filter(c=>(c.choices||[]).includes(d)).length;
+      const ints=candidates.flatMap(c=>c.interviews||[]).filter(i=>i.domain===d);
+      const scores=ints.map(i=>Number(i.total)||0).filter(n=>n>0);
+      const candDone=rf42CompletedFor(d).length;
+      const ratio=choices?(ints.length/choices*100):0;
+      return "<tr><td><b>"+esc(d)+"</b></td><td>"+choices+"</td><td>"+ints.length+"</td><td>"+(scores.length?rf42Avg(scores).toFixed(1):"—")+"/40</td><td>"+candDone+"</td><td>"+ratio.toFixed(0)+"%</td></tr>";
+    }).join("")+"</tbody></table></div>";
+
+  const sessionMinutes=60;
+  panelEl.innerHTML="<div style='overflow:auto'><table><thead><tr><th>Panel</th><th>Assigned</th><th>Current</th><th>Active Time</th><th>Utilization</th></tr></thead><tbody>"+
+    DOMAINS.map(d=>{
+      const active=rf40Active(d);
+      const assigned=rf41AssignedUser(d);
+      const activeMs=active&&active.interviewStartedAt?Date.now()-new Date(active.interviewStartedAt).getTime():0;
+      const util=Math.min(100,rf42Minutes(activeMs)/sessionMinutes*100);
+      return "<tr><td><b>"+esc(d)+"</b></td><td>"+esc(assigned||"Unassigned")+"</td><td>"+(active?esc(active.name):"—")+"</td><td>"+(active?rf42FmtMin(rf42Minutes(activeMs)*60000):"0 min")+"</td><td><div class='pill "+(active?"amber":"green")+"'>"+util.toFixed(0)+"%</div></td></tr>";
+    }).join("")+"</tbody></table></div>";
+
+  const ints=rf41Interviewers();
+  intEl.innerHTML=ints.length?"<div style='overflow:auto'><table><thead><tr><th>Interviewer</th><th>Panel</th><th>Completed</th><th>Avg Score</th><th>Status</th></tr></thead><tbody>"+
+    ints.map(u=>{
+      const d=Object.keys(rf41Assignments).find(x=>rf41Assignments[x].active!==false&&rf41Assignments[x].user===u.id);
+      const done=d?candidates.flatMap(c=>c.interviews||[]).filter(i=>i.domain===d).length:0;
+      const scores=d?candidates.flatMap(c=>Object.entries(c.marks||{}).filter(([x])=>x===d).map(([,m])=>Number(m.total)||0)).filter(n=>n>0):[];
+      const busy=rf41UserBusy(u.id);
+      return "<tr><td><b>"+esc(u.name)+"</b><br><span class='mini'>"+esc(u.id)+"</span></td><td>"+esc(d||"Unassigned")+"</td><td>"+done+"</td><td>"+(scores.length?rf42Avg(scores).toFixed(1):"—")+"/40</td><td><span class='pill "+(busy?"amber":"green")+"'>"+(busy?"BUSY":"AVAILABLE")+"</span></td></tr>";
+    }).join("")+"</tbody></table></div>":"<div class='empty'>No active interviewer accounts.</div>";
+
+  const rooms=[["Waiting Room 1","Waiting Room 1"],["Waiting Room 2","Waiting Room 2"]];
+  waitEl.innerHTML=rooms.map(r=>{
+    const arr=candidates.filter(c=>c.status===r[1]&&c.wait);
+    const vals=arr.map(c=>rf42Minutes(Date.now()-Number(c.wait)));
+    const avgw=rf42Avg(vals), maxw=vals.length?Math.max(...vals):0;
+    return "<div class='card' style='margin-bottom:10px;padding:13px'><div class='section'><b>"+r[0]+"</b><span class='pill "+(maxw>=30?"amber":"green")+"'>"+arr.length+" waiting</span></div><div class='grid3'><div><span class='mini'>Average wait</span><br><b>"+rf42FmtMin(avgw)+"</b></div><div><span class='mini'>Longest wait</span><br><b>"+rf42FmtMin(maxw)+"</b></div><div><span class='mini'>Over 30 min</span><br><b>"+vals.filter(v=>v>=30).length+"</b></div></div></div>";
+  }).join("");
+
+  const progress={one:0,two:0,three:0,four:0,done:0};
+  candidates.forEach(c=>{
+    const n=(c.interviews||[]).length;
+    if(c.status==="Completed")progress.done++;
+    else if(n===0)progress.one++;
+    else if(n===1)progress.two++;
+    else if(n===2)progress.three++;
+    else progress.four++;
+  });
+  readyEl.innerHTML="<div class='grid3'>"+
+    [["No interview yet",progress.one],["1 interview",progress.two],["2 interviews",progress.three],["3+ interviews",progress.four],["Fully completed",progress.done]].map(x=>"<div class='card' style='padding:14px'><span class='mini'>"+x[0]+"</span><h2 style='margin:6px 0 0'>"+x[1]+"</h2></div>").join("")+
+    "</div><p class='mini' style='margin-top:12px'>Final allocation uses the existing RecruitFlow rule: highest marks, with domain choice priority used as the tie-breaker.</p>";
+  $("rf42Updated").textContent="Updated "+new Date().toLocaleTimeString("en-IN");
+}
+function rf42Export(){
+  const rows=[["Domain","Choices","Interviews","Average Score","Completed Candidates"]];
+  DOMAINS.forEach(d=>{
+    const choices=candidates.filter(c=>(c.choices||[]).includes(d)).length;
+    const ints=candidates.flatMap(c=>c.interviews||[]).filter(i=>i.domain===d);
+    const scores=ints.map(i=>Number(i.total)||0).filter(n=>n>0);
+    rows.push([d,choices,ints.length,scores.length?rf42Avg(scores).toFixed(2):"",rf42CompletedFor(d).length]);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="recruitflow-advanced-analytics-4.2.csv";a.click();
+}
+const rf42BaseOpenPage=openPage;
+openPage=function(id){
+  rf42BaseOpenPage(id);
+  if(id==="advancedanalytics")rf42Render();
+};
+setInterval(()=>{if($("advancedanalytics")?.classList.contains("active"))rf42Render()},5000);
+</script>
+<script>
+/* RecruitFlow 4.3 — Final Selection & Allocation */
+const RF43_KEY="rf43-selection-config";
+let rf43Config={};
+let rf43Finalized=false;
+function rf43Load(){
+  try{rf43Config=JSON.parse(localStorage.getItem(RF43_KEY)||"{}")||{};}catch(e){rf43Config={};}
+  rf43Finalized=localStorage.getItem("rf43-finalized")==="true";
+}
+function rf43Save(){localStorage.setItem(RF43_KEY,JSON.stringify(rf43Config));}
+function rf43ChoiceRank(c,d){const n=(c.choices||[]).indexOf(d);return n<0?99:n+1}
+function rf43Eligible(){
+  return candidates.map(c=>{
+    const options=(c.interviews||[]).filter(i=>i&&i.domain&&Number.isFinite(Number(i.total)));
+    if(!options.length)return null;
+    options.sort((a,b)=>{
+      const score=Number(b.total)-Number(a.total);
+      if(score)return score;
+      return rf43ChoiceRank(c,a.domain)-rf43ChoiceRank(c,b.domain);
+    });
+    const best=options[0];
+    return {c,domain:best.domain,total:Number(best.total),priority:rf43ChoiceRank(c,best.domain)};
+  }).filter(Boolean);
+}
+function rf43Compute(){
+  const eligible=rf43Eligible();
+  const grouped={};
+  eligible.forEach(x=>(grouped[x.domain]??=[]).push(x));
+  Object.values(grouped).forEach(arr=>arr.sort((a,b)=>b.total-a.total||a.priority-b.priority||String(a.c.id).localeCompare(String(b.c.id))));
+  const results=[];
+  Object.entries(grouped).forEach(([domain,arr])=>{
+    const cap=Number(rf43Config[domain]||0);
+    arr.forEach((x,i)=>{
+      const status=!cap||i<cap?"Selected":"Waitlisted";
+      results.push({...x,domain,status,rank:i+1,capacity:cap});
+    });
+  });
+  const eligibleIds=new Set(results.map(x=>x.c.id));
+  candidates.filter(c=>c.status==="Completed"&&!eligibleIds.has(c.id)).forEach(c=>results.push({c,domain:"—",total:0,priority:99,status:"Not Selected",rank:"—",capacity:0}));
+  candidates.filter(c=>c.status!=="Completed"&&!eligibleIds.has(c.id)).forEach(c=>results.push({c,domain:"—",total:0,priority:99,status:"Pending",rank:"—",capacity:0}));
+  return results;
+}
+function rf43Render(){
+  const stats=$("rf43Stats"),capEl=$("rf43Capacity"),table=$("rf43Results");
+  if(!stats||!capEl||!table)return;
+  const results=rf43Compute();
+  const selected=results.filter(x=>x.status==="Selected"),waitlisted=results.filter(x=>x.status==="Waitlisted"),not=results.filter(x=>x.status==="Not Selected"),pending=results.filter(x=>x.status==="Pending");
+  stats.innerHTML=[
+    ["Eligible",results.filter(x=>x.domain!=="—").length],["Selected",selected.length],["Waitlisted",waitlisted.length],["Not Selected",not.length],["Pending",pending.length]
+  ].map(x=>"<div class='stat'><small>"+x[0]+"</small><b>"+x[1]+"</b></div>").join("");
+  $("rf43Status").textContent=rf43Finalized?"FINALIZED":"DRAFT";
+  $("rf43Status").className="pill "+(rf43Finalized?"green":"amber");
+
+  capEl.innerHTML="<div class='grid3'>"+DOMAINS.map(d=>"<div class='card' style='padding:12px'><div class='section'><b>"+esc(d)+"</b><span class='mini'>0 = unlimited</span></div><input type='number' min='0' step='1' value='"+Number(rf43Config[d]||0)+"' onchange='rf43SetCapacity(\''+esc(d)+'\',this.value)'></div>").join("")+"</div>";
+
+  const q=String($("rf43Search")?.value||"").toLowerCase().trim(),f=$("rf43Filter")?.value||"";
+  const filtered=results.filter(x=>
+    (!q||String(x.c.name+" "+x.c.id+" "+x.domain).toLowerCase().includes(q))&&(!f||x.status===f)
+  ).sort((a,b)=>{
+    const order={Selected:0,Waitlisted:1,"Not Selected":2,Pending:3};
+    return (order[a.status]??9)-(order[b.status]??9)||String(a.domain).localeCompare(String(b.domain))||((b.total||0)-(a.total||0));
+  });
+  table.innerHTML=filtered.length?
+    "<div style='overflow:auto'><table><thead><tr><th>Rank</th><th>Candidate</th><th>Domain</th><th>Score</th><th>Choice</th><th>Capacity</th><th>Status</th></tr></thead><tbody>"+
+    filtered.map(x=>"<tr><td>"+esc(x.rank)+"</td><td><b>"+esc(x.c.name)+"</b><br><span class='mini'>"+esc(x.c.id)+" · "+esc(x.c.branch||"")+" · "+esc(x.c.year||"")+"</span></td><td>"+esc(x.domain)+"</td><td>"+(x.domain==="—"?"—":x.total+"/40")+"</td><td>"+(x.priority===99?"—":"Choice "+x.priority)+"</td><td>"+(x.capacity?x.capacity:"Unlimited")+"</td><td><span class='pill '+(x.status==="Selected"?"green":x.status==="Waitlisted"?"amber":x.status==="Pending"?"blue":"")+'">'+esc(x.status)+'</span></td></tr>").join("")+
+    "</tbody></table></div>":"<div class='empty'>No candidates match the selected filter.</div>";
+}
+function rf43SetCapacity(domain,value){
+  rf43Config[domain]=Math.max(0,parseInt(value,10)||0);rf43Save();rf43Finalized=false;localStorage.removeItem("rf43-finalized");rf43Render();
+}
+function rf43Finalize(){
+  const results=rf43Compute();
+  if(!results.some(x=>x.status==="Selected")){alert("No eligible candidates can be selected yet.");return}
+  if(!confirm("Finalize the current allocation? You can change capacity and re-finalize later."))return;
+  candidates.forEach(c=>{c.finalAllocation=null;c.selectionStatus="Pending";});
+  results.forEach(x=>{
+    if(x.status==="Selected"){x.c.finalAllocation=x.domain;x.c.selectionStatus="Selected";}
+    else if(x.status==="Waitlisted")x.c.selectionStatus="Waitlisted";
+    else if(x.status==="Not Selected")x.c.selectionStatus="Not Selected";
+    else x.c.selectionStatus="Pending";
+  });
+  save();rf43Finalized=true;localStorage.setItem("rf43-finalized","true");log("Final selection finalized");
+  renderAll();rf43Render();alert("Final selection has been saved.");
+}
+function rf43Clear(){
+  if(!confirm("Clear final selection results?"))return;
+  candidates.forEach(c=>{c.finalAllocation=null;c.selectionStatus=null;});
+  save();rf43Finalized=false;localStorage.removeItem("rf43-finalized");log("Final selection cleared");renderAll();rf43Render();
+}
+function rf43Export(){
+  const results=rf43Compute();
+  const rows=[["Candidate ID","Candidate","Branch","Year","Allocated Domain","Best Score","Choice Priority","Rank","Status"]];
+  results.forEach(x=>rows.push([x.c.id,x.c.name,x.c.branch||"",x.c.year||"",x.domain,x.total||"",x.priority===99?"":x.priority,x.rank,x.status]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="recruitflow-final-selection-4.3.csv";a.click();
+}
+rf43Load();
+const rf43BaseOpenPage=openPage;
+openPage=function(id){rf43BaseOpenPage(id);if(id==="selection")rf43Render();};
+setInterval(()=>{if($("selection")?.classList.contains("active"))rf43Render()},5000);
+</script><script>
+/* RecruitFlow 4.4 — Candidate Notifications */
+const RF44_KEY="rf44-notifications";
+let rf44Notifications=[];
+function rf44Load(){try{rf44Notifications=JSON.parse(localStorage.getItem(RF44_KEY)||"[]")||[]}catch(e){rf44Notifications=[]}}
+function rf44Save(){localStorage.setItem(RF44_KEY,JSON.stringify(rf44Notifications.slice(0,500)))}
+function rf44OpenForm(template){
+  const modal=$("rf44Modal"),sel=$("rf44Candidate");
+  if(!modal||!sel)return;
+  sel.innerHTML=candidates.map(c=>"<option value='"+esc(c.id)+"'>"+esc(c.name)+" · "+esc(c.id)+" · "+esc(c.status)+"</option>").join("");
+  $("rf44Message").value="";
+  $("rf44Msg").innerHTML="";
+  if(template){
+    const messages={
+      "Interview Reminder":"Your interview is ready. Please report to the assigned panel when called.",
+      "Queue Update":"Your interview queue has been updated. Please remain available in the waiting area.",
+      "Interview Completed":"Your interview has been completed. Thank you for participating.",
+      "Final Result":"Your final RecruitFlow result is now available. Please check with the organizers."
+    };
+    $("rf44Type").value=template;
+    $("rf44Message").value=messages[template]||"";
+  }
+  modal.classList.add("open");
+}
+function rf44CloseForm(){$("rf44Modal")?.classList.remove("open")}
+function rf44Send(ev){
+  ev.preventDefault();
+  const id=$("rf44Candidate").value,type=$("rf44Type").value,msg=String($("rf44Message").value||"").trim();
+  if(!id||!msg){$("rf44Msg").innerHTML='<div class="alert danger">Select a candidate and enter a message.</div>';return false}
+  const c=candidates.find(x=>x.id===id);
+  rf44Notifications.unshift({id:"NT-"+Date.now(),candidateId:id,candidateName:c?.name||id,type,message:msg,read:false,createdAt:new Date().toISOString(),channel:"Dashboard"});
+  rf44Save();log("Notification created · "+id);rf44CloseForm();rf44Render();
+  alert("Notification created for "+(c?.name||id)+".");
+  return false;
+}
+function rf44Mark(id){const n=rf44Notifications.find(x=>x.id===id);if(n){n.read=true;rf44Save();rf44Render()}}
+function rf44MarkAll(){rf44Notifications.forEach(n=>n.read=true);rf44Save();rf44Render()}
+function rf44Delete(id){if(!confirm("Delete this notification?"))return;rf44Notifications=rf44Notifications.filter(n=>n.id!==id);rf44Save();rf44Render()}
+function rf44Render(){
+  const list=$("rf44List"),stats=$("rf44Stats"),hist=$("rf44History"),templates=$("rf44Templates");
+  if(!list||!stats)return;
+  const unread=rf44Notifications.filter(n=>!n.read).length;
+  const today=rf44Notifications.filter(n=>new Date(n.createdAt).toDateString()===new Date().toDateString()).length;
+  stats.innerHTML=[["Total",rf44Notifications.length],["Unread",unread],["Today",today],["Candidates Notified",new Set(rf44Notifications.map(n=>n.candidateId)).size]].map(x=>"<div class='stat'><small>"+x[0]+"</small><b>"+x[1]+"</b></div>").join("");
+  $("rf44Unread").textContent=unread+" Unread";
+  const q=String($("rf44Search")?.value||"").toLowerCase().trim(),f=$("rf44Filter")?.value||"";
+  const filtered=rf44Notifications.filter(n=>(!q||String(n.candidateName+" "+n.candidateId+" "+n.message).toLowerCase().includes(q))&&(!f||(f==="unread"?!n.read:n.read)));
+  list.innerHTML=filtered.length?filtered.map(n=>"<div class='card' style='padding:13px;margin-bottom:9px'><div class='section'><div><b>"+esc(n.type)+"</b><br><span class='mini'>"+esc(n.candidateName)+" · "+esc(n.candidateId)+"</span></div><span class='pill "+(n.read?"":"amber")+"'>"+(n.read?"Read":"Unread")+"</span></div><p style='margin:0 0 8px'>"+esc(n.message)+"</p><div class='actions'><span class='mini'>"+new Date(n.createdAt).toLocaleString('en-IN')+"</span><button class='btn secondary' onclick='rf44Mark(\''+esc(n.id)+'\')'>Mark Read</button><button class='btn danger' onclick='rf44Delete(\''+esc(n.id)+'\')'>Delete</button></div></div>").join(""):"<div class='empty'>No notifications found.</div>";
+  templates.innerHTML=["Interview Reminder","Queue Update","Interview Completed","Final Result"].map(t=>"<div class='card' style='padding:13px;margin-bottom:9px'><div class='section'><b>"+esc(t)+"</b><button class='btn primary' onclick='rf44OpenForm(\''+esc(t)+'\')'>Use Template</button></div></div>").join("");
+  hist.innerHTML=rf44Notifications.length?"<div style='overflow:auto'><table><thead><tr><th>Time</th><th>Candidate</th><th>Type</th><th>Channel</th><th>Status</th></tr></thead><tbody>"+rf44Notifications.map(n=>"<tr><td>"+new Date(n.createdAt).toLocaleString('en-IN')+"</td><td>"+esc(n.candidateName)+"<br><span class='mini'>"+esc(n.candidateId)+"</span></td><td>"+esc(n.type)+"</td><td>"+esc(n.channel)+"</td><td>"+(n.read?"Read":"Unread")+"</td></tr>").join("")+"</tbody></table></div>":"<div class='empty'>No notification history yet.</div>";
+}
+function rf44Export(){
+  const rows=[["Notification ID","Candidate ID","Candidate","Type","Message","Status","Created At"]];
+  rf44Notifications.forEach(n=>rows.push([n.id,n.candidateId,n.candidateName,n.type,n.message,n.read?"Read":"Unread",n.createdAt]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="recruitflow-notifications-4.4.csv";a.click();
+}
+rf44Load();
+const rf44BaseOpenPage=openPage;
+openPage=function(id){rf44BaseOpenPage(id);if(id==="notifications")rf44Render()};
+setInterval(()=>{if($("notifications")?.classList.contains("active"))rf44Render()},5000);
+</script><script>
+/* RecruitFlow 4.5 — Backend & Database readiness */
+const RF45_CFG="rf45-config";
+let rf45Config={};
+function rf45Load(){try{rf45Config=JSON.parse(localStorage.getItem(RF45_CFG)||"{}")||{}}catch(e){rf45Config={}};if($("rf45Api"))$("rf45Api").value=rf45Config.apiBase||"http://localhost:3000/api"}
+function rf45SaveConfig(){rf45Config.apiBase=String($("rf45Api")?.value||"").trim().replace(/\/$/,"");localStorage.setItem(RF45_CFG,JSON.stringify(rf45Config));rf45Render();rf45Check()}
+async function rf45Check(){
+ const url=rf45Config.apiBase||$("rf45Api")?.value||"";
+ const status=$("rf45Status"),msg=$("rf45Message");
+ if(!url){status.textContent="LOCAL MODE";status.className="pill amber";if(msg)msg.innerHTML='<div class="alert">Enter an API URL first.</div>';return}
+ try{
+  const r=await fetch(url+"/health",{method:"GET"});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const data=await r.json().catch(()=>({}));
+  status.textContent="API ONLINE";status.className="pill green";
+  if(msg)msg.innerHTML='<div class="alert ok">Backend connected successfully'+(data.service?" · "+esc(data.service):"")+'.</div>';
+ }catch(e){
+  status.textContent="API OFFLINE";status.className="pill danger";
+  if(msg)msg.innerHTML='<div class="alert danger">Could not connect to '+esc(url)+'. LocalStorage mode is still active.</div>';
+ }
+ rf45Render();
+}
+function rf45Render(){
+ const stats=$("rf45Stats"),mig=$("rf45Migration");if(!stats||!mig)return;
+ const api=rf45Config.apiBase||"";
+ const localCandidates=candidates.length,localNotices=typeof rf44Notifications!=="undefined"?rf44Notifications.length:0;
+ stats.innerHTML=[["Local Candidates",localCandidates],["Local Notifications",localNotices],["API",api?"Configured":"Not Configured"]].map(x=>"<div class='stat'><small>"+x[0]+"</small><b>"+x[1]+"</b></div>").join("");
+ mig.innerHTML="<table><thead><tr><th>Module</th><th>Current Prototype</th><th>Backend Target</th><th>Status</th></tr></thead><tbody>"+
+ [["Authentication","sessionStorage","JWT / secure sessions"],["Candidates","LocalStorage","PostgreSQL"],["Interviews","LocalStorage","PostgreSQL"],["Panels","LocalStorage","PostgreSQL"],["Notifications","LocalStorage","PostgreSQL"],["Allocation","LocalStorage","PostgreSQL"]].map(x=>"<tr><td><b>"+x[0]+"</b></td><td>"+x[1]+"</td><td>"+x[2]+"</td><td><span class='pill amber'>Migration Ready</span></td></tr>").join("")+"</tbody></table>";
+}
+rf45Load();rf45Render();
+const rf45BaseOpenPage=openPage;
+openPage=function(id){rf45BaseOpenPage(id);if(id==="backend"){rf45Load();rf45Render()}};
+</script><script>
+/* RecruitFlow 5.0 — Shared Backend Sync */
+const RF50_TOKEN_KEY="rf50-api-token";
+let rf50Syncing=false;
+function rf50Api(){return String(localStorage.getItem("rf45-config")?JSON.parse(localStorage.getItem("rf45-config")).apiBase||"":"").replace(/\/$/,"")}
+function rf50Headers(){const t=sessionStorage.getItem(RF50_TOKEN_KEY);return t?{"Content-Type":"application/json","Authorization":"Bearer "+t}:{"Content-Type":"application/json"}}
+async function rf50Pull(){
+ const api=rf50Api();if(!api){alert("Configure the API Base URL first.");return}
+ try{
+  const r=await fetch(api+"/api/state",{headers:rf50Headers()});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const data=await r.json();
+  if(Array.isArray(data.candidates)){candidates=normalize(data.candidates);localStorage.setItem(STORE,JSON.stringify(candidates))}
+  if(Array.isArray(data.notifications)){localStorage.setItem("rf44-notifications",JSON.stringify(data.notifications))}
+  if(data.assignments)localStorage.setItem("rf41-assignments",JSON.stringify(data.assignments));
+  if(data.selectionConfig)localStorage.setItem("rf43-selection-config",JSON.stringify(data.selectionConfig));
+  rf50SetStatus("SYNCED","green","Pulled from server at "+new Date().toLocaleTimeString("en-IN"));renderAll();
+ }catch(e){rf50SetStatus("OFFLINE","amber","Pull failed; local data remains active.")}
+}
+async function rf50Push(){
+ const api=rf50Api();if(!api){alert("Configure the API Base URL first.");return}
+ if(rf50Syncing)return;rf50Syncing=true;
+ try{
+  let notices=[];try{notices=JSON.parse(localStorage.getItem("rf44-notifications")||"[]")}catch(e){}
+  let assignments={};try{assignments=JSON.parse(localStorage.getItem("rf41-assignments")||"{}")}catch(e){}
+  let selectionConfig={};try{selectionConfig=JSON.parse(localStorage.getItem("rf43-selection-config")||"{}")}catch(e){}
+  const r=await fetch(api+"/api/state",{method:"PUT",headers:rf50Headers(),body:JSON.stringify({candidates,notifications:notices,assignments,selectionConfig})});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  rf50SetStatus("SYNCED","green","Pushed to server at "+new Date().toLocaleTimeString("en-IN"));
+ }catch(e){rf50SetStatus("OFFLINE","amber","Push failed; changes remain in LocalStorage.")}
+ finally{rf50Syncing=false}
+}
+async function rf50SyncNow(){await rf50Push();await rf50Pull()}
+function rf50SetStatus(label,cls,msg){
+ const el=$("rf50SyncStatus"),tx=$("rf50SyncText");
+ if(el){el.textContent=label;el.className="pill "+cls}if(tx)tx.textContent=msg;
+}
+const rf50OriginalSave=save;
+save=function(){rf50OriginalSave();if(rf50Api())rf50Push()};
+setInterval(()=>{if(document.body.classList.contains("rf-locked"))return;if(rf50Api())rf50Pull()},30000);
+</script><script>
+/* RecruitFlow 5.1 — Public candidate sync */
+async function rf51PullCandidates(){
+  const api=rf50Api(); if(!api)return;
+  try{
+    const r=await fetch(api+"/api/candidates");
+    if(!r.ok)return;
+    const rows=await r.json();
+    if(!Array.isArray(rows))return;
+    const remote=rows.map(x=>({...x,id:x.candidate_id||x.id,choices:Array.isArray(x.choices)?x.choices:[],interviews:Array.isArray(x.interviews)?x.interviews:[],marks:x.marks||{},feedback:x.feedback||{},checkedInAt:x.checked_in_at||x.checkedInAt||null}));
+    const localById=new Map(candidates.map(c=>[c.id,c]));
+    remote.forEach(c=>localById.set(c.id,{...(localById.get(c.id)||{}),...c}));
+    candidates=normalize([...localById.values()]);
+    localStorage.setItem(STORE,JSON.stringify(candidates));renderAll();
+    rf50SetStatus("LIVE","green","Candidate registrations synced from server.");
+  }catch(e){}
+}
+setInterval(()=>{if(!document.body.classList.contains("rf-locked"))rf51PullCandidates()},10000);
+const rf51BaseOpenPage=openPage;
+openPage=function(id){rf51BaseOpenPage(id);if(id==="candidates"||id==="dashboard"||id==="entry")rf51PullCandidates()};
+</script><script>
+/* RecruitFlow 5.2 — Full operational sync */
+async function rf52ApiCall(path,options={}){
+ const api=rf50Api();if(!api)throw new Error("API not configured");
+ const headers=Object.assign({"Content-Type":"application/json"},options.headers||{});
+ const token=sessionStorage.getItem(RF50_TOKEN_KEY);if(token)headers.Authorization="Bearer "+token;
+ const r=await fetch(api+path,{...options,headers});if(!r.ok){let e={};try{e=await r.json()}catch(x){}throw new Error(e.error||"HTTP "+r.status)}return r.json();
+}
+async function rf52PushState(){
+ const api=rf50Api();if(!api)return;
+ let notices=[];try{notices=JSON.parse(localStorage.getItem("rf44-notifications")||"[]")}catch(e){}
+ let assignments={};try{assignments=JSON.parse(localStorage.getItem("rf41-assignments")||"{}")}catch(e){}
+ let selectionConfig={};try{selectionConfig=JSON.parse(localStorage.getItem("rf43-selection-config")||"{}")}catch(e){}
+ try{
+  await rf52ApiCall("/api/state",{method:"PUT",body:JSON.stringify({candidates,notifications:notices,assignments,selectionConfig,activity:activity()})});
+  rf50SetStatus("SYNCED","green","All operational data synced.");
+ }catch(e){rf50SetStatus("LOCAL","amber","Server unavailable; local changes retained.")}
+}
+async function rf52PullState(){
+ try{
+  const data=await rf52ApiCall("/api/state");
+  if(Array.isArray(data.candidates)){candidates=normalize(data.candidates);localStorage.setItem(STORE,JSON.stringify(candidates))}
+  if(Array.isArray(data.notifications))localStorage.setItem("rf44-notifications",JSON.stringify(data.notifications));
+  if(data.assignments)localStorage.setItem("rf41-assignments",JSON.stringify(data.assignments));
+  if(data.selectionConfig)localStorage.setItem("rf43-selection-config",JSON.stringify(data.selectionConfig));
+  renderAll();rf50SetStatus("SYNCED","green","All operational data loaded from server.");
+ }catch(e){}
+}
+const rf52OldSave=save;
+save=function(){rf52OldSave();if(rf50Api())rf52PushState()};
+const rf52OldComplete=typeof completeInterview==="function"?completeInterview:null;
+if(rf52OldComplete){
+ window.completeInterview=async function(...args){const result=rf52OldComplete.apply(this,args);await rf52PushState();return result};
+}
+setInterval(()=>{if(!document.body.classList.contains("rf-locked")&&rf50Api())rf52PullState()},15000);
+</script></body></html>
