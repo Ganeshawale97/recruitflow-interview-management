@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RecruitFlow — Organizer Dashboard 3.3</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#737c90;--line:#e5e9f1;--p:#5b5ce2;--dark:#11162b;--g:#16a673;--a:#d98b00;--r:#d84c5b}
+*{box-sizing:border-box}body{margin:0;font:14px Inter,system-ui;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}
+.sidebar{position:fixed;inset:0 auto 0 0;width:240px;background:linear-gradient(180deg,#10152a,#1b2140);color:#fff;padding:20px 14px;z-index:20}.logo{font-size:22px;font-weight:900;padding:5px 12px 24px}.logo span{color:#8d87ff}.nav-title{font-size:10px;color:#79819b;text-transform:uppercase;letter-spacing:1.4px;padding:0 12px;margin:12px 0 7px}.nav button{display:flex;gap:10px;width:100%;border:0;background:transparent;color:#aeb6d0;padding:10px 12px;border-radius:9px;margin:3px 0;text-align:left;font-weight:700;cursor:pointer}.nav button.active,.nav button:hover{background:#2a3051;color:#fff}
+.main{margin-left:240px}.top{height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}.topright{display:flex;align-items:center;gap:10px}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#ecebff;color:#504be0;font-weight:800}.content{padding:28px;max-width:1600px;margin:auto}.page{display:none}.page.active{display:block}.head{display:flex;justify-content:space-between;gap:15px;margin-bottom:18px}.head h1{margin:0 0 4px;font-size:27px}.head p,.section p{margin:0;color:var(--muted);font-size:12px}.card,.stat,.panel,.queue,.timeline{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 25px #14203b0a}.card{padding:18px}.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:15px}.stat{padding:15px;min-height:100px}.stat small{color:var(--muted);font-size:10px}.stat b{display:block;font-size:27px;margin-top:8px}.grid2{display:grid;grid-template-columns:1.35fr .85fr;gap:15px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.section{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section h2,.section h3{margin:0}.btn{border:0;border-radius:9px;padding:9px 13px;font-weight:750;cursor:pointer}.primary{background:var(--p);color:#fff}.secondary{background:#fff;border:1px solid var(--line)}.danger{background:#fff0f2;color:var(--r);border:1px solid #ffd2d9}.pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef0f5;color:#626b7f;font-size:9px;font-weight:900}.blue{background:#eeedff;color:#514be0}.green{background:#e6f8f0;color:#087b54}.amber{background:#fff3db;color:#986000}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}.search{flex:1;min-width:220px}input,select,textarea{width:100%;border:1px solid #dfe4ed;border-radius:9px;padding:10px;background:#fff;outline:0}table{width:100%;border-collapse:collapse}th,td{padding:11px 9px;border-bottom:1px solid #edf0f5;text-align:left;font-size:12px}th{font-size:10px;color:#7c8496;text-transform:uppercase}.person{display:flex;gap:8px;align-items:center}.person-icon{width:34px;height:34px;border-radius:9px;background:#eeefff;color:#514be0;display:grid;place-items:center;font-size:10px;font-weight:900}.person span{display:block;color:var(--muted);font-size:10px;margin-top:2px}.panel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.panel{padding:13px}.panel.busy{background:#faf9ff;border-color:#d9d6ff}.panel h3{margin:0;font-size:12px}.panel p{font-size:10px;color:var(--muted);min-height:28px}.status{font-size:9px;font-weight:900;color:var(--g)}.status.busy{color:var(--a)}.queue-list{display:grid;gap:7px}.queue{padding:10px}.queue b{display:block}.queue span{font-size:10px;color:var(--muted)}.alert{padding:10px;border-radius:9px;background:#fff5e1;border:1px solid #ffe0a4;font-size:10px;margin-bottom:7px}.alert.ok{background:#eaf9f2;border-color:#c7edda}.alert.danger{background:#fff0f2;border-color:#ffd0d7}.smart{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}.recommend{padding:15px;border-radius:12px;background:#f7f6ff;border:1px solid #dad7ff}.recommend strong{color:#514be0}.rolebar{display:flex;gap:7px;align-items:center}.role{padding:6px 9px;border-radius:999px;background:#eeedff;color:#514be0;font-size:9px;font-weight:900}.qrgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.qrbox{text-align:center;padding:14px;background:#f8f7ff;border:1px solid #dad7ff;border-radius:12px}.qrpreview{width:190px;height:190px;margin:12px auto;background:#fff;display:grid;place-items:center}.qrpreview img{width:100%;height:100%}.scanner{border:2px dashed #c9c5ff;border-radius:12px;padding:18px;text-align:center;background:#faf9ff}.scoregrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.score{padding:10px;border:1px solid var(--line);border-radius:10px}.score input{text-align:center;font-size:20px;font-weight:800}.total{margin-top:12px;text-align:center;padding:12px;border-radius:10px;background:#efeeff;color:#514be0}.total b{display:block;font-size:24px}.timeline{padding:14px}.event{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #edf0f5}.event:last-child{border:0}.dot{width:9px;height:9px;border-radius:50%;background:var(--p);margin-top:4px;flex:none}.event small{color:var(--muted)}.modal{position:fixed;inset:0;background:#0d132a99;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.modal-card{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;padding:20px}.empty{text-align:center;padding:28px;color:var(--muted)}.mini{font-size:10px;color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap}
+@media(max-width:1200px){.stats{grid-template-columns:repeat(4,1fr)}.panel-grid{grid-template-columns:repeat(3,1fr)}.grid2,.smart{grid-template-columns:1fr}}@media(max-width:900px){.sidebar{width:68px}.logo{font-size:0}.logo span{font-size:17px}.nav-title,.nav button span{display:none}.nav button{justify-content:center}.main{margin-left:68px}.content{padding:16px}.stats{grid-template-columns:repeat(2,1fr)}.panel-grid,.scoregrid,.qrgrid{grid-template-columns:1fr 1fr}}@media(max-width:560px){.stats,.panel-grid,.scoregrid,.qrgrid{grid-template-columns:1fr}.head{flex-direction:column}.top{padding:0 14px}.rolebar select{display:none}}
+</style>
+</head>
+<body>
+<aside class="sidebar"><div class="logo">Recruit<span>Flow</span></div><div class="nav-title">Operations</div><nav class="nav" id="nav"></nav><div class="nav-title">System</div><nav class="nav" id="sys"></nav></aside>
+<main class="main"><header class="top"><div>Organizer / <b id="pageTitle">Dashboard</b><span id="globalTimer" style="margin-left:12px" class="pill amber">No active interview</span></div><div class="topright"><span class="mini" id="liveText">Live</span><div class="rolebar"><span class="role" id="rolePill">Admin</span><select id="roleSelect" style="width:auto" onchange="setRole(this.value)"><option>Admin</option><option>Entry Volunteer</option><option>W1 Volunteer</option><option>W2 Volunteer</option><option>Interviewer</option></select></div><div class="avatar">GA</div></div></header>
+<div class="content">
+<section class="page active" id="dashboard">
+<div class="card" style="margin-bottom:15px"><div class="section"><div><h2>Live Command Center</h2><p>Monitor queues, panels and candidate movement from one place.</p></div><button class="btn secondary" onclick="refresh()">↻ Refresh</button></div><div class="smart"><div class="recommend" id="recommend"></div><div><div class="section"><div><h3>Operational Alerts</h3><p>Live attention items.</p></div></div><div id="alerts"></div></div></div><div style="margin-top:15px"><div class="section"><div><h3>Panel Control</h3><p>Current candidate and next eligible candidate.</p></div></div><div class="panel-grid" id="commandPanels"></div></div></div>
+<div class="head"><div><h1>Live Overview</h1><p>Real-time recruitment operations.</p></div></div><div class="stats" id="stats"></div>
+<div class="grid2"><div class="card"><div class="section"><div><h2>Interview Panels</h2><p>11 domain panels with double-booking protection.</p></div></div><div class="panel-grid" id="panels"></div></div><div class="card"><div class="section"><div><h2>W2 Priority Queue</h2><p>Returned candidates are prioritized by wait time.</p></div></div><div id="w2mini"></div></div></div>
+<div class="card" style="margin-top:15px"><div class="section"><div><h2>Recent Activity</h2><p>Latest operational events.</p></div></div><div id="activity"></div></div>
+</section>
+<section class="page" id="candidates"><div class="head"><div><h1>Candidate Management</h1><p>Search, inspect, QR-generate and track candidates.</p></div></div><div class="card"><div class="toolbar"><input class="search" id="search" placeholder="Search ID, name, email or phone" oninput="renderCandidates()"><select id="filter" onchange="renderCandidates()"><option value="">All statuses</option><option>Registered</option><option>Waiting Room 1</option><option>Waiting Room 2</option><option>Interviewing</option><option>Completed</option></select></div><div id="candidateTable"></div></div></section>
+<section class="page" id="entry"><div class="head"><div><h1>Venue Entry</h1><p>Verify a registered candidate and move them to Waiting Room 1.</p></div></div><div class="qrgrid"><div class="card"><div class="section"><div><h2>QR Check-In</h2><p>Scan or enter a Candidate ID.</p></div><span class="pill green">Live</span></div><div class="scanner"><video id="video" playsinline style="width:100%;max-height:240px;display:none;border-radius:10px"></video><div id="scannerIdle"><b>Scanner Ready</b><div class="mini">Camera starts only after you press the button.</div></div><p id="scanStatus" class="mini">Scanner idle</p></div><div class="actions" style="margin-top:10px"><button class="btn primary" onclick="toggleScanner()" id="scanBtn">Start Camera Scanner</button><button class="btn secondary" onclick="document.getElementById('entryId').focus()">Manual Entry</button></div><input id="entryId" style="margin-top:12px" placeholder="RF-1001" onkeydown="if(event.key==='Enter')verifyEntry()"><button class="btn primary" style="width:100%;margin-top:8px" onclick="verifyEntry()">Verify Candidate</button><div id="entryResult"></div></div><div class="card"><div class="section"><div><h2>Venue Attendance</h2><p>All registered participants and their check-in status.</p></div></div><div id="entryAttendance"></div></div><div class="card" style="margin-top:14px"><div class="section"><div><h2>Recent Check-Ins</h2><p>Latest venue entries.</p></div></div><div id="entryHistory"></div></div></div></section>
+<section class="page" id="waiting1"><div class="head"><div><h1>Waiting Room 1</h1><p>Freshly checked-in candidates waiting for their first interview.</p></div></div><div class="card"><div id="w1"></div></div></section>
+<section class="page" id="waiting2"><div class="head"><div><h1>Waiting Room 2</h1><p>Candidates who still have selected domains remaining.</p></div></div><div class="card"><div id="w2"></div></div></section>
+<section class="page" id="panels"><div class="head"><div><h1>Interview Panels</h1><p>Open or manage any active panel.</p></div></div><div class="card"><div class="panel-grid" id="fullPanels"></div></div></section>
+<section class="page" id="interviewer"><div class="head"><div><h1>Interviewer</h1><p>Score the active candidate and complete the interview.</p></div><select id="interviewDomain" style="width:220px" onchange="renderInterview()"></select></div><div class="card"><div id="interview"></div></div></section>
+<section class="page" id="allocation"><div class="head"><div><h1>Final Allocation</h1><p>Highest interview score wins; choice priority breaks ties.</p></div><button class="btn secondary" onclick="exportCSV()">Export CSV</button></div><div class="card"><div id="allocation"></div></div></section>
+<section class="page" id="analytics"><div class="head"><div><h1>Analytics</h1><p>Operational snapshot and domain demand.</p></div></div><div class="grid3" id="analyticsStats"></div><div class="card" style="margin-top:15px"><div class="section"><h2>Domain Demand</h2></div><div id="domainStats"></div></div></section>
+<section class="page" id="settings"><div class="head"><div><h1>Settings & Backup</h1><p>Event configuration, backup and recovery.</p></div></div><div class="card"><div class="toolbar"><input id="eventName" placeholder="Event name"><input id="adminName" placeholder="Organizer name"></div><div class="actions"><button class="btn primary" onclick="saveSettings()">Save Settings</button><button class="btn secondary" onclick="backup()">Download JSON Backup</button><label class="btn secondary" style="display:inline-block;cursor:pointer">Import JSON Backup<input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(event)"></label><button class="btn danger" onclick="resetDemo()">Reset Demo Data</button></div><div id="settingsMsg" style="margin-top:10px"></div></div></section>
+</div></main>
+<div class="modal" id="modal"><div class="modal-card"><div class="section"><h2 id="modalTitle">Candidate</h2><button class="btn secondary" onclick="closeModal()">Close</button></div><div id="modalBody"></div></div></div>
+<script>
+const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
+const ROLES={Admin:["dashboard","candidates","entry","waiting1","waiting2","panels","interviewer","allocation","analytics","settings"],"Entry Volunteer":["entry"],"W1 Volunteer":["waiting1","panels"],"W2 Volunteer":["waiting2","panels"],Interviewer:["interviewer"]};
+const STORE="recruitflow-interface",ACT="rf-activity-log";
+let candidates=[],scanner=null,scanFrame=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+function initials(n){return String(n||"?").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase()}
+function demo(){return[{id:"RF-1001",name:"Aarav Patil",email:"aarav@example.com",phone:"9876543210",branch:"IT",year:"3rd Year",skills:"Java, Python, SQL",choices:["AI","Web Development","Robotics","Management"],status:"Waiting Room 1",wait:Date.now()-420000,checkedInAt:new Date(Date.now()-420000).toISOString(),interviews:[],marks:{},feedback:{}},{id:"RF-1002",name:"Sneha Kulkarni",email:"sneha@example.com",phone:"9876543211",branch:"CSE",year:"3rd Year",skills:"React, JavaScript, UI",choices:["Web Development","Design","AI"],status:"Waiting Room 2",wait:Date.now()-180000,checkedInAt:new Date(Date.now()-600000).toISOString(),interviews:[],marks:{},feedback:{}},{id:"RF-1003",name:"Rohan Jadhav",email:"rohan@example.com",phone:"9876543212",branch:"ENTC",year:"2nd Year",skills:"Arduino, C++, IoT",choices:["IoT","Robotics","SpaceTech"],status:"Interviewing",activeDomain:"IoT",interviewStartedAt:new Date(Date.now()-480000).toISOString(),wait:null,checkedInAt:new Date(Date.now()-900000).toISOString(),interviews:[],marks:{},feedback:{}},{id:"RF-1004",name:"Priya Shah",email:"priya@example.com",phone:"9876543213",branch:"IT",year:"3rd Year",skills:"Cybersecurity, Linux",choices:["Cybersecurity","Blockchain"],status:"Completed",wait:null,checkedInAt:new Date(Date.now()-3600000).toISOString(),interviews:[{domain:"Cybersecurity",total:36,priority:1,completedAt:new Date(Date.now()-1200000).toISOString()}],marks:{Cybersecurity:{technical:9,communication:9,problemSolving:9,domainKnowledge:9,total:36}},feedback:{Cybersecurity:"Strong technical understanding."},finalAllocation:"Cybersecurity"}]}
+function normalize(a){return (Array.isArray(a)?a:[]).map((c,i)=>({...c,id:c.id||("RF-"+String(i+1).padStart(4,"0")),choices:Array.isArray(c.choices)?c.choices.slice(0,4):[],interviews:Array.isArray(c.interviews)?c.interviews:[],marks:c.marks||{},feedback:c.feedback||{}}))}
+function load(){try{let a=JSON.parse(localStorage.getItem(STORE)||"null");candidates=normalize(a&&a.length?a:demo());if(!a||!a.length)save()}catch(e){candidates=demo();save()}}
+function save(){localStorage.setItem(STORE,JSON.stringify(candidates))}
+function log(action,id){let a=[];try{a=JSON.parse(localStorage.getItem(ACT)||"[]")}catch(e){}a.unshift({action,id,time:new Date().toISOString()});localStorage.setItem(ACT,JSON.stringify(a.slice(0,80)))}
+function activity(){try{return JSON.parse(localStorage.getItem(ACT)||"[]")}catch(e){return[]}}
+function remaining(c){let done=new Set((c.interviews||[]).map(x=>x.domain));return (c.choices||[]).filter(d=>!done.has(d))}
+function wait(t){if(!t)return"—";return Math.max(0,Math.floor((Date.now()-t)/60000))+" min"}
+function busyDomain(d){return candidates.find(c=>c.status==="Interviewing"&&c.activeDomain===d)}
+function eligible(d){return candidates.filter(c=>["Waiting Room 1","Waiting Room 2"].includes(c.status)&&remaining(c).includes(d)).sort((a,b)=>(a.status==="Waiting Room 2"?0:1)-(b.status==="Waiting Room 2"?0:1)||(a.wait||0)-(b.wait||0))}
+function recommend(){for(const d of DOMAINS){if(!busyDomain(d)){const c=eligible(d)[0];if(c)return{c,d}}}return null}
+function nav(){const items=[["dashboard","📊","Dashboard"],["candidates","👥","Candidates"],["entry","🎫","Venue Entry"],["waiting1","🕐","Waiting Room 1"],["waiting2","🔁","Waiting Room 2"],["panels","▦","Interview Panels"],["interviewer","📝","Interviewer"],["allocation","✓","Final Allocation"],["analytics","▥","Analytics"]];$("nav").innerHTML=items.map(x=>"<button data-page='"+x[0]+"' onclick=\"openPage('"+x[0]+"')\"><span>"+x[1]+"</span><span>"+x[2]+"</span></button>").join("");$("sys").innerHTML="<button data-page='settings' onclick=\"openPage('settings')\"><span>⚙</span><span>Settings</span></button>"}
+function openPage(id){
+  const role=localStorage.getItem("rf-role")||"Admin";
+  if(!ROLES[role].includes(id)){alert("Your role does not have access to this page.");return}
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  $(id)?.classList.add("active");
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+  $("pageTitle").textContent=id==="panels"?"Panels":id.replace(/(^|\s)\S/g,m=>m.toUpperCase());
+  try{renderAll()}catch(err){
+    console.error("RecruitFlow render error:",err);
+    if(id==="panels") renderPanelsPage();
+  }
+  if(id==="panels") renderPanelsPage();
+}
+function setRole(r){localStorage.setItem("rf-role",r);$("rolePill").textContent=r;document.querySelectorAll(".nav button").forEach(b=>b.style.display=ROLES[r].includes(b.dataset.page)?"flex":"none");const current=document.querySelector(".page.active")?.id;if(current&&!ROLES[r].includes(current))openPage(ROLES[r][0]);renderAll()}
+function stats(){const vals=[["Registered",candidates.length],["Checked In",candidates.filter(c=>c.checkedInAt).length],["Waiting Room 1",candidates.filter(c=>c.status==="Waiting Room 1").length],["Waiting Room 2",candidates.filter(c=>c.status==="Waiting Room 2").length],["Interviewing",candidates.filter(c=>c.status==="Interviewing").length],["Completed",candidates.filter(c=>c.status==="Completed").length],["Allocated",candidates.filter(c=>c.finalAllocation).length]];$("stats").innerHTML=vals.map(v=>"<div class='stat'><small>"+v[0]+"</small><b>"+v[1]+"</b></div>").join("")}
+function panelHTML(d){const c=busyDomain(d);return "<div class='panel "+(c?"busy":"")+"'><div class='section'><h3>"+esc(d)+"</h3><span class='status "+(c?"busy":"")+"'>"+(c?"BUSY":"AVAILABLE")+"</span></div><p>"+(c?esc(c.name)+"<br>"+esc(c.id)+" · "+wait(c.interviewStartedAt):"No active interview")+"</p>"+(c?"<button class='btn secondary' onclick=\"openPage('interviewer');$('interviewDomain').value='"+esc(d)+"';renderInterview()\">Open</button>":"")+"</div>"}
+function renderPanels(){const h=DOMAINS.map(panelHTML).join("");$("panels").innerHTML=h;$("fullPanels").innerHTML=h}
+function renderCommand(){const r=recommend();$("recommend").innerHTML=r?"<b>Next recommended interview</b><h3>"+esc(r.c.name)+"</h3><p>"+esc(r.c.id)+" · <strong>"+esc(r.d)+"</strong></p><p class='mini'>"+(r.c.status==="Waiting Room 2"?"W2 priority":"W1 first interview")+" · waiting "+wait(r.c.wait)+"</p><button class='btn primary' onclick=\"sendToPanel('"+esc(r.c.id)+"','"+esc(r.d)+"')\">Send to Panel</button>":"<b>All panels are busy or no eligible candidate is waiting.</b><p class='mini'>The system will recommend the next eligible candidate automatically.</p>";let alerts=[];DOMAINS.forEach(d=>{const q=eligible(d);if(q.length>4)alerts.push("<div class='alert'>"+esc(d)+" panel queue has "+q.length+" candidates.</div>")});candidates.filter(c=>c.status==="Interviewing"&&c.interviewStartedAt).forEach(c=>{if(Date.now()-new Date(c.interviewStartedAt)>1200000)alerts.push("<div class='alert danger'>"+esc(c.id)+" has been interviewing for over 20 minutes.</div>")});$("alerts").innerHTML=alerts.join("")||"<div class='alert ok'>No operational alerts.</div>";$("commandPanels").innerHTML=DOMAINS.map(d=>{const c=busyDomain(d),q=eligible(d)[0];return"<div class='panel "+(c?"busy":"")+"'><div class='section'><h3>"+esc(d)+"</h3><span class='status "+(c?"busy":"")+"'>"+(c?"BUSY":"FREE")+"</span></div><p>"+(c?esc(c.name):q?"Next: "+esc(q.name):"No queue")+"</p></div>"}).join("")}
+function renderW2Mini(){const a=candidates.filter(c=>c.status==="Waiting Room 2"&&remaining(c).length).sort((x,y)=>(x.wait||0)-(y.wait||0));$("w2mini").innerHTML=a.length?a.slice(0,8).map((c,i)=>"<div class='queue'><b>#"+(i+1)+" "+esc(c.name)+"</b><span>"+esc(c.id)+" · "+esc(remaining(c).join(" → "))+" · "+wait(c.wait)+"</span></div>").join(""):"<div class='empty'>W2 is empty.</div>"}
+function renderActivity(){const a=activity().slice(0,8);$("activity").innerHTML=a.length?a.map(x=>"<div class='event'><span class='dot'></span><div><b>"+esc(x.action)+"</b><br><small>"+esc(x.id||"System")+" · "+new Date(x.time).toLocaleString("en-IN")+"</small></div></div>").join(""):"<div class='empty'>No activity yet.</div>"}
+function renderCandidates(){const q=($("search").value||"").toLowerCase(),f=$("filter").value,a=candidates.filter(c=>(!f||c.status===f)&&[c.id,c.name,c.email,c.phone].some(v=>String(v||"").toLowerCase().includes(q)));$("candidateTable").innerHTML=a.length?"<table><thead><tr><th>Candidate</th><th>Branch/Year</th><th>Choices</th><th>Status</th><th>Interviews</th><th>Actions</th></tr></thead><tbody>"+a.map(c=>"<tr><td><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+"</span></div></div></td><td>"+esc(c.branch)+" · "+esc(c.year)+"</td><td>"+esc((c.choices||[]).join(" → "))+"</td><td><span class='pill "+(c.status==="Completed"?"green":c.status==="Interviewing"?"amber":"blue")+"'>"+esc(c.status)+"</span></td><td>"+(c.interviews||[]).length+"</td><td><button class='btn secondary' onclick=\"profile('"+esc(c.id)+"')\">View</button><button class='btn secondary' onclick=\"qr('"+esc(c.id)+"')\">QR</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>No candidates found.</div>"}
+function qr(id){const c=candidates.find(x=>x.id===id);if(!c)return;const url="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data="+encodeURIComponent("RECRUITFLOW|"+c.id);$("modalTitle").textContent="Candidate QR · "+c.id;$("modalBody").innerHTML="<div class='qrbox'><div class='qrpreview'><img src='"+url+"' alt='Candidate QR'></div><b>"+esc(c.name)+"</b><p class='mini'>Scan this at venue entry.</p><button class='btn primary' onclick=\"window.open('"+url+"','_blank')\">Open / Download QR</button></div>";$("modal").classList.add("open")}
+function verifyEntry(){const raw=($("entryId").value||"").trim().replace(/^RECRUITFLOW\|/i,"");const c=candidates.find(x=>x.id.toLowerCase()===raw.toLowerCase());if(!c){$("entryResult").innerHTML="<div class='alert danger' style='margin-top:10px'>Candidate not found.</div>";return}if(c.checkedInAt){$("entryResult").innerHTML="<div class='alert' style='margin-top:10px'>Already checked in. Current status: <b>"+esc(c.status)+"</b>.</div>";return}$("entryResult").innerHTML="<div class='card' style='margin-top:10px'><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+" · "+esc(c.branch)+" · "+esc(c.year)+"</span></div></div><p class='mini'>"+esc(c.email)+" · "+esc(c.phone)+"</p><button class='btn primary' style='width:100%' onclick=\"checkIn('"+esc(c.id)+"')\">✓ Verify & Check In</button></div>"}
+function checkIn(id){const c=candidates.find(x=>x.id===id);if(!c||c.checkedInAt)return;c.checkedInAt=new Date().toISOString();c.status="Waiting Room 1";c.wait=Date.now();save();log("Checked in at venue",id);renderAll();verifyEntry();renderEntryHistory()}
+function renderEntryHistory(){const a=candidates.filter(c=>c.checkedInAt).sort((x,y)=>new Date(y.checkedInAt)-new Date(x.checkedInAt)).slice(0,15);$("entryHistory").innerHTML=a.length?a.map(c=>"<div class='event'><span class='dot'></span><div><b>"+esc(c.name)+"</b><br><small>"+esc(c.id)+" · "+new Date(c.checkedInAt).toLocaleTimeString("en-IN")+"</small></div></div>").join(""):"<div class='empty'>No check-ins yet.</div>"}
+function renderW1(){const a=candidates.filter(c=>c.status==="Waiting Room 1").sort((x,y)=>(x.wait||0)-(y.wait||0));$("w1").innerHTML=a.length?"<table><thead><tr><th>Candidate</th><th>Choices</th><th>Waiting</th><th>Action</th></tr></thead><tbody>"+a.map(c=>"<tr><td><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+"</span></div></div></td><td>"+esc(c.choices.join(" → "))+"</td><td>"+wait(c.wait)+"</td><td><select id='w1-"+esc(c.id)+"'>"+c.choices.map(d=>"<option>"+esc(d)+"</option>").join("")+"</select><button class='btn primary' style='margin-top:5px' onclick=\"sendToPanel('"+esc(c.id)+"',$('w1-"+esc(c.id)+"').value)\">Send</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>Waiting Room 1 is empty.</div>"}
+function renderW2(){const a=candidates.filter(c=>c.status==="Waiting Room 2"&&remaining(c).length).sort((x,y)=>(x.wait||0)-(y.wait||0));$("w2").innerHTML=a.length?"<table><thead><tr><th>Priority</th><th>Candidate</th><th>Remaining</th><th>Waiting</th><th>Action</th></tr></thead><tbody>"+a.map((c,i)=>"<tr><td><span class='pill blue'>#"+(i+1)+"</span></td><td><b>"+esc(c.name)+"</b><br><span class='mini'>"+esc(c.id)+"</span></td><td>"+esc(remaining(c).join(" → "))+"</td><td>"+wait(c.wait)+"</td><td><select id='w2-"+esc(c.id)+"'>"+remaining(c).map(d=>"<option>"+esc(d)+"</option>").join("")+"</select><button class='btn primary' style='margin-top:5px' onclick=\"sendToPanel('"+esc(c.id)+"',$('w2-"+esc(c.id)+"').value)\">Send</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>Waiting Room 2 is empty.</div>"}
+function sendToPanel(id,d){const c=candidates.find(x=>x.id===id);if(!c||!remaining(c).includes(d))return;if(busyDomain(d)){alert(d+" panel is busy.");return}c.status="Interviewing";c.activeDomain=d;c.interviewStartedAt=new Date().toISOString();save();log("Sent to "+d+" interview panel",id);renderAll();openPage("interviewer");$("interviewDomain").value=d;renderInterview()}
+function renderInterviewOptions(){
+  const s=$("interviewDomain");
+  if(!s)return;
+  const current=s.value;
+  const active=candidates.find(c=>c.status==="Interviewing"&&c.activeDomain);
+  s.innerHTML=DOMAINS.map(d=>"<option>"+esc(d)+"</option>").join("");
+  if(current && DOMAINS.includes(current)) s.value=current;
+  else if(active && DOMAINS.includes(active.activeDomain)) s.value=active.activeDomain;
+}
+function renderInterview(){
+  const d=$("interviewDomain").value;
+  const c=candidates.find(x=>x.status==="Interviewing"&&x.activeDomain===d);
+  if(!c){$("interview").innerHTML="<div class='empty'>No candidate assigned to the "+esc(d)+" panel.</div>";return}
+  const previous=document.querySelector("#interview [data-interview-candidate]");
+  const preserve=previous && previous.dataset.interviewCandidate===c.id && previous.dataset.interviewDomain===d;
+  const draftValues=preserve?Object.fromEntries([...document.querySelectorAll("#interview [data-score]")].map(i=>[i.dataset.score,i.value])):{};
+  const draftFeedback=preserve?($("feedback")?.value||""):"";
+  const m=c.marks[d]||{};
+  const field=(l,k)=>"<div class='score'><label>"+l+" / 10</label><input type='number' min='0' max='10' data-score='"+k+"' value='"+(draftValues[k]??m[k]??"")+"' oninput='liveScore()'></div>";$("interview").innerHTML="<div class='grid2' data-interview-candidate='"+esc(c.id)+"' data-interview-domain='"+esc(d)+"'><div class='card'><div class='person'><div class='person-icon'>"+initials(c.name)+"</div><div><b>"+esc(c.name)+"</b><span>"+esc(c.id)+" · "+esc(c.branch)+" · "+esc(c.year)+"</span></div></div><p><b>Skills</b><br>"+esc(c.skills||"—")+"</p><p><b>Choices</b><br>"+esc(c.choices.join(" → "))+"</p><p><b>Interviewing For</b><br>"+esc(d)+"</p></div><div><div class='scoregrid'>"+field("Technical Skills","technical")+field("Communication","communication")+field("Problem Solving","problemSolving")+field("Domain Knowledge","domainKnowledge")+"</div><textarea id='feedback' rows='5' style='margin-top:12px' placeholder='Interview feedback...'>"+esc(preserve?draftFeedback:(c.feedback[d]||""))+"</textarea><div class='total'>Total Score<b id='total'>"+score(m)+" / 40</b></div><div class='actions' style='margin-top:12px'><button class='btn secondary' onclick=\"draftInterview('"+esc(c.id)+"','"+esc(d)+"')\">Save Draft</button><button class='btn primary' onclick=\"completeInterview('"+esc(c.id)+"','"+esc(d)+"')\">Complete Interview</button></div></div></div>"}
+function readScores(){const o={};document.querySelectorAll("[data-score]").forEach(i=>o[i.dataset.score]=Math.max(0,Math.min(10,Number(i.value)||0)));o.total=score(o);return o}
+function score(m){return ["technical","communication","problemSolving","domainKnowledge"].reduce((a,k)=>a+Number(m?.[k]||0),0)}
+function liveScore(){$("total").textContent=score(readScores())+" / 40"}
+function draftInterview(id,d){const c=candidates.find(x=>x.id===id);c.marks[d]=readScores();c.feedback[d]=$("feedback").value;save();log("Saved draft for "+d,id);renderInterview();alert("Draft saved.")}
+function completeInterview(id,d){const c=candidates.find(x=>x.id===id);if(!c)return;const m=readScores();c.marks[d]=m;c.feedback[d]=$("feedback").value;c.interviews.push({domain:d,total:m.total,priority:c.choices.indexOf(d)+1,completedAt:new Date().toISOString()});c.activeDomain=null;c.interviewStartedAt=null;const rem=remaining(c);if(rem.length){c.status="Waiting Room 2";c.wait=Date.now();log("Completed "+d+" and returned to Waiting Room 2",id)}else{c.status="Completed";c.wait=null;log("Completed all selected interviews",id)}save();renderAll();alert(rem.length?rem.length+" domain(s) remaining. Candidate returned to W2.":"All selected interviews completed.");openPage(rem.length?"waiting2":"allocation")}
+function renderAllocation(){const a=candidates.filter(c=>c.status==="Completed");$("allocation").innerHTML=a.length?"<table><thead><tr><th>Candidate</th><th>Scores</th><th>Final Allocation</th><th>Action</th></tr></thead><tbody>"+a.map(c=>"<tr><td><b>"+esc(c.name)+"</b><br><span class='mini'>"+esc(c.id)+"</span></td><td>"+c.interviews.map(i=>esc(i.domain)+": "+i.total).join(" · ")+"</td><td>"+(c.finalAllocation?"<span class='pill green'>"+esc(c.finalAllocation)+"</span>":"Not allocated")+"</td><td><button class='btn primary' onclick=\"allocate('"+esc(c.id)+"')\">Allocate</button></td></tr>").join("")+"</tbody></table>":"<div class='empty'>No fully completed candidates yet.</div>"}
+function allocate(id){const c=candidates.find(x=>x.id===id);const a=c.interviews.slice().sort((x,y)=>y.total-x.total||x.priority-y.priority);c.finalAllocation=a[0]?.domain||null;save();log("Final allocation: "+(c.finalAllocation||"—"),id);renderAll()}
+function renderAnalytics(){const vals=[["Registered",candidates.length],["Checked In",candidates.filter(c=>c.checkedInAt).length],["Interviewing",candidates.filter(c=>c.status==="Interviewing").length],["Completed",candidates.filter(c=>c.status==="Completed").length],["Allocated",candidates.filter(c=>c.finalAllocation).length],["W2",candidates.filter(c=>c.status==="Waiting Room 2").length]];$("analyticsStats").innerHTML=vals.map(v=>"<div class='card'><small class='mini'>"+v[0]+"</small><b style='display:block;font-size:27px;margin-top:7px'>"+v[1]+"</b></div>").join("");$("domainStats").innerHTML=DOMAINS.map(d=>"<div style='padding:9px 0;border-bottom:1px solid #edf0f5;display:flex;justify-content:space-between'><b>"+esc(d)+"</b><span>"+candidates.filter(c=>c.choices.includes(d)).length+"</span></div>").join("")}
+function profile(id){const c=candidates.find(x=>x.id===id);if(!c)return;$("modalTitle").textContent=c.name+" · "+c.id;$("modalBody").innerHTML="<div class='grid3'><div class='card'><b>Status</b><p>"+esc(c.status)+"</p></div><div class='card'><b>Academic</b><p>"+esc(c.branch)+" · "+esc(c.year)+"</p></div><div class='card'><b>Choices</b><p>"+esc(c.choices.join(" → "))+"</p></div></div><div class='timeline' style='margin-top:12px'><b>Candidate Timeline</b>"+(c.interviews||[]).map(i=>"<div class='event'><span class='dot'></span><div><b>"+esc(i.domain)+" interview completed · "+i.total+"/40</b><br><small>"+new Date(i.completedAt).toLocaleString("en-IN")+"</small></div></div>").join("")+"</div>";$("modal").classList.add("open")}
+function closeModal(){$("modal").classList.remove("open")}
+function exportCSV(){const rows=[["ID","Name","Allocation","Score","Priority"]];candidates.filter(c=>c.finalAllocation).forEach(c=>{const i=c.interviews.find(x=>x.domain===c.finalAllocation);rows.push([c.id,c.name,c.finalAllocation,i?.total||"",i?.priority||""])});const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="recruitflow-allocation.csv";a.click()}
+function saveSettings(){localStorage.setItem("rf-event-name",$("eventName").value);localStorage.setItem("rf-admin-name",$("adminName").value);$("settingsMsg").innerHTML="<div class='alert ok'>Settings saved.</div>"}
+function backup(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({version:"2.6",exportedAt:new Date().toISOString(),candidates,activity:activity()},null,2)],{type:"application/json"}));a.download="recruitflow-backup-2.6.json";a.click()}
+function resetDemo(){if(!confirm("Reset local candidate data to demo data?"))return;candidates=demo();save();localStorage.removeItem(ACT);log("Reset demo data");renderAll()}
+function refresh(){load();renderAll()}
+function renderAll(){stats();renderCommand();renderPanels();renderW2Mini();renderActivity();renderCandidates();renderEntryHistory();renderW1();renderW2();renderInterviewOptions();renderInterview();renderAllocation();renderAnalytics();$("liveText").textContent="Live · "+candidates.length+" candidates"}
+function toggleScanner(){if(scanner){stopScanner();return}if(!("BarcodeDetector" in window)){ $("scanStatus").textContent="QR camera scanning is not supported here. Use manual entry.";return }navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false}).then(stream=>{scanner=stream;$("video").srcObject=stream;$("video").style.display="block";$("scannerIdle").style.display="none";$("scanBtn").textContent="Stop Scanner";const detector=new BarcodeDetector({formats:["qr_code"]});const scan=async()=>{if(!scanner)return;try{const r=await detector.detect($("video"));if(r.length){$("entryId").value=r[0].rawValue;verifyEntry();stopScanner();return}}catch(e){}scanFrame=requestAnimationFrame(scan)};$("video").play();scan()}).catch(()=>$("scanStatus").textContent="Camera permission unavailable. Use manual entry.")}
+function stopScanner(){if(scanFrame)cancelAnimationFrame(scanFrame);scanFrame=null;if(scanner){scanner.getTracks().forEach(t=>t.stop());scanner=null}$("video").srcObject=null;$("video").style.display="none";$("scannerIdle").style.display="block";$("scanBtn").textContent="Start Camera Scanner"}
+document.addEventListener("DOMContentLoaded",()=>{nav();load();setRole(localStorage.getItem("rf-role")||"Admin");$("eventName").value=localStorage.getItem("rf-event-name")||"RecruitFlow Recruitment Event";$("adminName").value=localStorage.getItem("rf-admin-name")||"Organizer";openPage("dashboard");setInterval(()=>{load();renderAll()},2000);});
+</script>
+
+<script>
+/* RecruitFlow 2.7 — Interview Operations & Reliability layer; 2.9 UI stability fixes */
+const RF27_DURATION=25*60*1000, RF27_WARN=20*60*1000;
+function rf27Now(){return Date.now()}
+function rf27Elapsed(c){return c&&c.interviewStartedAt?Math.max(0,rf27Now()-new Date(c.interviewStartedAt).getTime()):0}
+function rf27Fmt(ms){let s=Math.floor(ms/1000),m=Math.floor(s/60),sec=s%60;return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}
+function rf27PanelBusy(d,excludeId){return candidates.some(c=>c.status==='Interviewing'&&c.activeDomain===d&&c.id!==excludeId)}
+function rf27Eligible(d){
+  return candidates.filter(c=>['Waiting Room 1','Waiting Room 2'].includes(c.status)&&remaining(c).includes(d))
+    .sort((a,b)=>{
+      const aw=a.status==='Waiting Room 2'?0:1,bw=b.status==='Waiting Room 2'?0:1;
+      if(aw!==bw)return aw-bw;
+      const ap=(a.choices||[]).indexOf(d),bp=(b.choices||[]).indexOf(d);
+      if(ap!==bp)return ap-bp;
+      return (a.wait||Infinity)-(b.wait||Infinity);
+    });
+}
+function rf27QueueForPanel(d){return rf27Eligible(d).slice(0,20)}
+function rf27Recommendation(){
+  const options=[];
+  DOMAINS.forEach(d=>{
+    if(rf27PanelBusy(d))return;
+    rf27Eligible(d).forEach(c=>{
+      const choice=Math.max(0,(c.choices||[]).indexOf(d));
+      const w=Date.now()-(c.wait||Date.now());
+      const w2=c.status==='Waiting Room 2'?100000:0;
+      options.push({c,d,score:w2+(4-choice)*20000+w});
+    });
+  });
+  options.sort((a,b)=>b.score-a.score);
+  return options[0]||null;
+}
+function renderPanelsPage(){
+  const target=document.getElementById('fullPanels');
+  if(!target)return;
+  target.innerHTML=DOMAINS.map(d=>{
+    const active=candidates.find(c=>c.status==='Interviewing'&&c.activeDomain===d);
+    const queue=rf27QueueForPanel(d);
+    const next=queue[0];
+    return '<div class="panel '+(active?'busy':'')+'">'+
+      '<div class="section"><h3>'+esc(d)+'</h3><span class="status '+(active?'busy':'')+'">'+(active?'BUSY':'AVAILABLE')+'</span></div>'+
+      '<p>'+(active?esc(active.name)+'<br><span class="mini">'+esc(active.id)+' · '+rf27Fmt(rf27Elapsed(active))+'</span>':queue.length+' waiting')+'</p>'+
+      '<div class="queue-list">'+
+      (queue.length?queue.slice(0,4).map((c,i)=>'<div class="queue"><b>#'+(i+1)+' '+esc(c.name)+'</b><span>'+esc(c.id)+' · '+(c.status==='Waiting Room 2'?'W2 priority':'W1')+' · Choice '+((c.choices||[]).indexOf(d)+1)+' · '+wait(c.wait)+'</span></div>').join(''):'<div class="mini">No eligible candidates</div>')+
+      '</div>'+
+      (active?'<button class="btn secondary" style="margin-top:7px" onclick="openPage(\'interviewer\');$(\'interviewDomain\').value=\''+esc(d)+\';renderInterview()">Open Active</button>':
+       next?'<button class="btn primary" style="margin-top:7px" onclick="sendToPanel(\''+esc(next.id)+\',\''+esc(d)+\')">Send Next</button>':'')+
+      '</div>';
+  }).join('');
+}
+function renderPanelQueues(){
+  const target=document.getElementById('fullPanels');
+  if(!target)return;
+  target.innerHTML=DOMAINS.map(d=>{
+    const active=busyDomain(d), q=rf27QueueForPanel(d);
+    return '<div class="panel '+(active?'busy':'')+'"><div class="section"><h3>'+esc(d)+'</h3><span class="status '+(active?'busy':'')+'">'+(active?'BUSY':'AVAILABLE')+'</span></div>'+
+      '<p>'+(active?esc(active.name)+'<br>'+rf27Fmt(rf27Elapsed(active)):q.length+' waiting')+'</p>'+
+      '<div class="queue-list">'+(q.length?q.slice(0,4).map((c,i)=>'<div class="queue"><b>#'+(i+1)+' '+esc(c.name)+'</b><span>'+esc(c.id)+' · '+(c.status==='Waiting Room 2'?'W2 priority':'W1')+' · Choice '+((c.choices||[]).indexOf(d)+1)+' · '+wait(c.wait)+'</span></div>').join(''):'<div class="mini">No eligible candidates</div>')+'</div>'+
+      (active?'<button class="btn secondary" style="margin-top:7px" onclick="openPage(\'interviewer\');$(\'interviewDomain\').value=\''+esc(d)+'\';renderInterview()">Open Active</button>':q.length?'<button class="btn primary" style="margin-top:7px" onclick="sendToPanel(\''+esc(q[0].id)+'\',\''+esc(d)+'\')">Send Next</button>':'')+
+      '</div>';
+  }).join('');
+}
+function rf27RenderGlobalTimer(){
+  const active=candidates.find(c=>c.status==='Interviewing'&&c.interviewStartedAt);
+  const el=document.getElementById('globalTimer');
+  if(!el)return;
+  if(!active){el.className='pill';el.textContent='No active interview';return}
+  const e=rf27Elapsed(active);
+  el.className='pill '+(e>=RF27_DURATION?'danger':e>=RF27_WARN?'amber':'green');
+  el.textContent=active.id+' · '+rf27Fmt(e)+(e>=RF27_DURATION?' · OVERDUE':e>=RF27_WARN?' · 20 MIN WARNING':'');
+}
+function renderCommand(){
+  const r=rf27Recommendation();
+  document.getElementById('recommend').innerHTML=r?
+    '<b>Next recommended interview</b><h3>'+esc(r.c.name)+'</h3><p>'+esc(r.c.id)+' · <strong>'+esc(r.d)+'</strong></p><p class="mini">'+(r.c.status==='Waiting Room 2'?'W2 priority':'W1 first interview')+' · Choice '+((r.c.choices||[]).indexOf(r.d)+1)+' · waiting '+wait(r.c.wait)+'</p><button class="btn primary" onclick="sendToPanel(\''+esc(r.c.id)+'\',\''+esc(r.d)+'\')">Send to Panel</button>':
+    '<b>All panels are busy or no eligible candidate is waiting.</b><p class="mini">The next eligible candidate will appear automatically.</p>';
+  let alerts=[];
+  DOMAINS.forEach(d=>{const q=rf27QueueForPanel(d);if(q.length>4)alerts.push('<div class="alert">'+esc(d)+' panel queue has '+q.length+' candidates.</div>')});
+  candidates.filter(c=>c.status==='Interviewing'&&c.interviewStartedAt).forEach(c=>{
+    const e=rf27Elapsed(c);
+    if(e>=RF27_DURATION)alerts.push('<div class="alert danger">'+esc(c.id)+' is overdue: '+rf27Fmt(e)+'.</div>');
+    else if(e>=RF27_WARN)alerts.push('<div class="alert">'+esc(c.id)+' reached the 20-minute warning.</div>');
+  });
+  candidates.filter(c=>['Waiting Room 1','Waiting Room 2'].includes(c.status)&&c.wait).forEach(c=>{
+    if(Date.now()-c.wait>=30*60*1000)alerts.push('<div class="alert">'+esc(c.id)+' has waited over 30 minutes.</div>');
+  });
+  document.getElementById('alerts').innerHTML=alerts.join('')||'<div class="alert ok">No operational alerts.</div>';
+  document.getElementById('commandPanels').innerHTML=DOMAINS.map(d=>{
+    const c=busyDomain(d),q=rf27Eligible(d)[0];
+    return '<div class="panel '+(c?'busy':'')+'"><div class="section"><h3>'+esc(d)+'</h3><span class="status '+(c?'busy':'')+'">'+(c?'BUSY':'FREE')+'</span></div><p>'+(c?esc(c.name)+'<br>'+rf27Fmt(rf27Elapsed(c)):(q?'Next: '+esc(q.name):'No queue'))+'</p></div>';
+  }).join('');
+}
+function sendToPanel(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c||!remaining(c).includes(d)){alert('Candidate no longer needs this domain.');return}
+  if(rf27PanelBusy(d)){alert(d+' panel is already busy.');return}
+  if(c.status==='Interviewing'){alert('Candidate is already interviewing.');return}
+  c.status='Interviewing';c.activeDomain=d;c.interviewStartedAt=new Date().toISOString();c.wait=null;save();log('Sent to '+d+' interview panel',id);renderAll();openPage('interviewer');document.getElementById('interviewDomain').value=d;renderInterview();
+}
+function completeInterview(id,d){
+  const c=candidates.find(x=>x.id===id);
+  if(!c||c.status!=='Interviewing'||c.activeDomain!==d){alert('Interview state changed. Refreshing.');load();renderAll();return}
+  const m=readScores();c.marks[d]=m;c.feedback[d]=document.getElementById('feedback').value;
+  c.interviews.push({domain:d,total:m.total,priority:c.choices.indexOf(d)+1,completedAt:new Date().toISOString()});
+  c.activeDomain=null;c.interviewStartedAt=null;
+  const rem=remaining(c);
+  if(rem.length){c.status='Waiting Room 2';c.wait=Date.now();log('Completed '+d+' and returned to Waiting Room 2',id)}
+  else{c.status='Completed';c.wait=null;log('Completed all selected interviews',id)}
+  save();renderAll();alert(rem.length?rem.length+' domain(s) remaining. Candidate returned to W2.':'All selected interviews completed.');openPage(rem.length?'waiting2':'allocation');
+}
+function renderW2(){
+  const a=candidates.filter(c=>c.status==='Waiting Room 2'&&remaining(c).length).sort((x,y)=>{
+    const aw=Date.now()-(x.wait||Date.now()),bw=Date.now()-(y.wait||Date.now());
+    const ar=Math.min((x.choices||[]).filter(d=>remaining(x).includes(d)).length,4);
+    const br=Math.min((y.choices||[]).filter(d=>remaining(y).includes(d)).length,4);
+    return -((x.status==='Waiting Room 2'?100000:0)+aw+(4-ar)*1000)+((y.status==='Waiting Room 2'?100000:0)+bw+(4-br)*1000);
+  });
+  document.getElementById('w2').innerHTML=a.length?'<table><thead><tr><th>Priority</th><th>Candidate</th><th>Remaining</th><th>Waiting</th><th>Best Panel</th><th>Action</th></tr></thead><tbody>'+
+    a.map((c,i)=>{
+      const d=(c.choices||[]).find(x=>remaining(c).includes(x)&&!rf27PanelBusy(x));
+      return '<tr><td><span class="pill blue">#'+(i+1)+'</span></td><td><b>'+esc(c.name)+'</b><br><span class="mini">'+esc(c.id)+'</span></td><td>'+esc(remaining(c).join(' → '))+'</td><td>'+wait(c.wait)+'</td><td>'+esc(d||'All busy')+'</td><td>'+(d?'<button class="btn primary" onclick="sendToPanel(\''+esc(c.id)+'\',\''+esc(d)+'\')">Send Next</button>':'<span class="mini">Waiting</span>')+'</td></tr>';
+    }).join('')+'</tbody></table>':'<div class="empty">Waiting Room 2 is empty.</div>';
+}
+function profile(id){
+  const c=candidates.find(x=>x.id===id);if(!c)return;
+  const events=[];
+  if(c.checkedInAt)events.push({t:c.checkedInAt,s:'Venue check-in'});
+  (c.interviews||[]).forEach(i=>{events.push({t:i.completedAt,s:i.domain+' interview completed · '+i.total+'/40'})});
+  if(c.finalAllocation)events.push({t:c.interviews?.at(-1)?.completedAt||new Date().toISOString(),s:'Final allocation · '+c.finalAllocation});
+  events.sort((a,b)=>new Date(a.t)-new Date(b.t));
+  document.getElementById('modalTitle').textContent=c.name+' · '+c.id;
+  document.getElementById('modalBody').innerHTML='<div class="grid3"><div class="card"><b>Status</b><p>'+esc(c.status)+'</p></div><div class="card"><b>Academic</b><p>'+esc(c.branch)+' · '+esc(c.year)+'</p></div><div class="card"><b>Choices</b><p>'+esc(c.choices.join(' → '))+'</p></div></div><div class="timeline" style="margin-top:12px"><b>Candidate Timeline</b>'+
+    (events.length?events.map(e=>'<div class="event"><span class="dot"></span><div><b>'+esc(e.s)+'</b><br><small>'+new Date(e.t).toLocaleString('en-IN')+'</small></div></div>').join(''):'<div class="empty">No timeline events yet.</div>')+'</div>';
+  document.getElementById('modal').classList.add('open');
+}
+function backup(){
+  const payload={version:'3.0',exportedAt:new Date().toISOString(),candidates,activity:activity(),settings:{eventName:localStorage.getItem('rf-event-name')||'',adminName:localStorage.getItem('rf-admin-name')||''}};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));a.download='recruitflow-backup-3.3.json';a.click();
+}
+function importBackup(ev){
+  const input=ev.target;
+  const file=input?.files?.[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onerror=()=>alert('Could not read the selected JSON file.');
+  reader.onload=()=>{
+    try{
+      const raw=JSON.parse(String(reader.result||''));
+      // Accept both RecruitFlow backup objects and plain candidate-array JSON files.
+      const list=Array.isArray(raw)?raw:(Array.isArray(raw.candidates)?raw.candidates:null);
+      if(!list)throw new Error('JSON must contain a candidates array or be a candidate array.');
+      if(!list.length)throw new Error('The JSON contains 0 candidates.');
+      const cleaned=list.map((x,i)=>{
+        const c={...x};
+        c.id=c.id||c.candidateId||c.candidateID||('RF-'+String(i+1).padStart(4,'0'));
+        c.name=c.name||c.fullName||c.participantName||'Unnamed Candidate';
+        c.email=c.email||'';
+        c.phone=c.phone||c.mobile||'';
+        c.branch=c.branch||'';
+        c.year=c.year||'';
+        c.skills=c.skills||'';
+        c.choices=Array.isArray(c.choices)?c.choices:(Array.isArray(c.domains)?c.domains:(Array.isArray(c.domainChoices)?c.domainChoices:[c.choice1,c.choice2,c.choice3,c.choice4].filter(Boolean)));
+        return c;
+      });
+      if(!confirm('Import '+cleaned.length+' candidates and replace current local candidate data?'))return;
+      candidates=normalize(cleaned);
+      save();
+      if(Array.isArray(raw.activity))localStorage.setItem(ACT,JSON.stringify(raw.activity.slice(0,80)));
+      if(raw.settings){
+        localStorage.setItem('rf-event-name',raw.settings.eventName||'');
+        localStorage.setItem('rf-admin-name',raw.settings.adminName||'');
+      }
+      load();
+      renderAll();
+      alert('Successfully imported '+candidates.length+' candidates.');
+    }catch(e){
+      alert('Import failed: '+e.message);
+    }finally{
+      if(input)input.value='';
+    }
+  };
+  reader.readAsText(file);
+}
+function resetDemo(){if(!confirm('Reset local candidate data to demo data? This cannot be undone unless you have a backup.'))return;candidates=demo();save();localStorage.removeItem(ACT);log('Reset demo data');renderAll()}
+function renderAll(){stats();renderCommand();renderPanels();renderPanelQueues();renderW2Mini();renderActivity();renderCandidates();renderEntryHistory();renderW1();renderW2();renderInterviewOptions();renderInterview();renderAllocation();renderAnalytics();rf27RenderGlobalTimer();document.getElementById('liveText').textContent='Live · '+candidates.length+' candidates'}
+setInterval(()=>{rf27RenderGlobalTimer();renderCommand();renderPanelQueues();},1000);
+</script>
+<script>
+function renderEntryAttendance(){
+  const all=[...candidates].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  const checked=all.filter(c=>c.checkedInAt).length;
+  const pending=all.length-checked;
+  const el=document.getElementById('entryAttendance');
+  if(!el)return;
+  const oldScroll=el.querySelector('[data-attendance-scroll]');
+  const oldTop=oldScroll?oldScroll.scrollTop:0;
+  const oldSearch=document.getElementById('attendanceSearch')?.value||'';
+  const oldFilter=document.getElementById('attendanceFilter')?.value||'';
+  el.innerHTML='<div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">'+
+    '<div class="stat"><small>Total Participants</small><b>'+all.length+'</b></div>'+
+    '<div class="stat"><small>Checked In</small><b>'+checked+'</b></div>'+
+    '<div class="stat"><small>Not Checked In</small><b>'+pending+'</b></div></div>'+
+    '<div class="toolbar"><input class="search" id="attendanceSearch" placeholder="Search participant name or ID" oninput="renderEntryAttendance()"><select id="attendanceFilter" onchange="renderEntryAttendance()"><option value="">All Participants</option><option value="checked">Checked In</option><option value="pending">Not Checked In</option></select></div>'+
+    '<div data-attendance-scroll style="max-height:520px;overflow:auto"><table><thead><tr><th>#</th><th>Participant</th><th>Candidate ID</th><th>Branch / Year</th><th>Check-In Status</th><th>Time</th></tr></thead><tbody>'+
+    (function(){
+      const q=(oldSearch||'').toLowerCase();
+      const f=oldFilter||'';
+      const filtered=all.filter(c=>(!q||String(c.name+' '+c.id).toLowerCase().includes(q))&&(!f||(f==='checked'?!!c.checkedInAt:!c.checkedInAt)));
+      return filtered.map((c,i)=>'<tr><td>'+(i+1)+'</td><td><div class="person"><div class="person-icon">'+initials(c.name)+'</div><div><b>'+esc(c.name)+'</b><span>'+esc(c.email||'')+'</span></div></div></td><td>'+esc(c.id)+'</td><td>'+esc(c.branch||'—')+' · '+esc(c.year||'—')+'</td><td><span class="pill '+(c.checkedInAt?'green':'amber')+'">'+(c.checkedInAt?'✓ Checked In':'Not Checked In')+'</span></td><td>'+(c.checkedInAt?new Date(c.checkedInAt).toLocaleTimeString('en-IN'):'—')+'</td></tr>').join('')||'<tr><td colspan="6" class="empty">No participants found.</td></tr>';
+    })()+
+    '</tbody></table></div>';
+  const restoredScroll=el.querySelector('[data-attendance-scroll]');
+  if(restoredScroll)requestAnimationFrame(()=>{restoredScroll.scrollTop=oldTop});
+  const restoredSearch=document.getElementById('attendanceSearch');
+  const restoredFilter=document.getElementById('attendanceFilter');
+  if(restoredSearch && oldSearch) restoredSearch.value=oldSearch;
+  if(restoredFilter) restoredFilter.value=oldFilter;
+}
+function renderAll(){
+  stats();renderCommand();renderPanels();renderPanelQueues();renderW2Mini();renderActivity();renderCandidates();renderEntryHistory();renderEntryAttendance();renderW1();renderW2();renderInterviewOptions();renderInterview();renderAllocation();renderAnalytics();rf27RenderGlobalTimer();document.getElementById('liveText').textContent='Live · '+candidates.length+' candidates';
+}
+</script>
+</body></html>
