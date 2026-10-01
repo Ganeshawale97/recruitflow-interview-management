@@ -59,29 +59,47 @@ app.put("/api/state",auth,dbRequired,async(req,res)=>{
       await client.query(
         `INSERT INTO candidates(candidate_id,name,email,phone,branch,year,skills,choices,status,checked_in_at)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-         ON CONFLICT(candidate_id) DO UPDATE SET
-         name=EXCLUDED.name,email=EXCLUDED.email,phone=EXCLUDED.phone,branch=EXCLUDED.branch,
-         year=EXCLUDED.year,skills=EXCLUDED.skills,choices=EXCLUDED.choices,status=EXCLUDED.status,
-         checked_in_at=EXCLUDED.checked_in_at`,
+         ON CONFLICT(candidate_id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,phone=EXCLUDED.phone,
+         branch=EXCLUDED.branch,year=EXCLUDED.year,skills=EXCLUDED.skills,choices=EXCLUDED.choices,
+         status=EXCLUDED.status,checked_in_at=EXCLUDED.checked_in_at`,
         [c.id,c.name||"",c.email||"",c.phone||"",c.branch||"",c.year||"",c.skills||"",choices,c.status||"Registered",c.checkedInAt||null]
       );
+      const cr=await client.query("SELECT id FROM candidates WHERE candidate_id=$1",[c.id]);
+      const cid=cr.rows[0]?.id;
+      if(cid && Array.isArray(c.interviews)){
+        for(const i of c.interviews){
+          if(!i.domain)continue;
+          await client.query(
+            `INSERT INTO interviews(candidate_id,domain,started_at,completed_at,technical,communication,problem_solving,domain_knowledge,total,feedback)
+             VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+            [cid,i.domain,i.startedAt||null,i.completedAt||null,i.technical??i.marks?.technical??null,i.communication??i.marks?.communication??null,i.problemSolving??i.marks?.problemSolving??null,i.domainKnowledge??i.marks?.domainKnowledge??null,i.total??null,i.feedback||""]
+          );
+        }
+      }
+      if(cid && (c.finalAllocation||c.selectionStatus)){
+        await client.query(
+          `INSERT INTO allocations(candidate_id,domain,score,choice_priority,status,finalized_at)
+           VALUES($1,$2,$3,$4,$5,NOW())
+           ON CONFLICT(candidate_id) DO UPDATE SET domain=EXCLUDED.domain,score=EXCLUDED.score,choice_priority=EXCLUDED.choice_priority,status=EXCLUDED.status,finalized_at=NOW()`,
+          [cid,c.finalAllocation||null,null,null,c.selectionStatus||"Pending"]
+        );
+      }
     }
     for(const n of notifications){
       const cr=await client.query("SELECT id FROM candidates WHERE candidate_id=$1",[n.candidateId]);
       if(!cr.rows[0])continue;
+      const nid=Number(String(n.id||"").replace(/\D/g,"").slice(-12))||Date.now();
       await client.query(
         `INSERT INTO notifications(id,candidate_id,type,message,read_at,created_at)
          VALUES($1,$2,$3,$4,$5,$6)
          ON CONFLICT(id) DO UPDATE SET read_at=EXCLUDED.read_at,message=EXCLUDED.message,type=EXCLUDED.type`,
-        [String(n.id).replace(/[^0-9]/g,"").slice(-9)||Date.now(),cr.rows[0].id,n.type||"General Announcement",n.message||"",n.read?n.createdAt:null,n.createdAt||new Date().toISOString()]
+        [nid,cr.rows[0].id,n.type||"General Announcement",n.message||"",n.read?n.createdAt:null,n.createdAt||new Date().toISOString()]
       );
     }
     await client.query("COMMIT");
     res.json({ok:true,savedCandidates:candidates.length,savedNotifications:notifications.length});
   }catch(e){
-    await client.query("ROLLBACK");
-    res.status(500).json({error:"Sync failed",detail:e.message});
+    await client.query("ROLLBACK");res.status(500).json({error:"Sync failed",detail:e.message});
   }finally{client.release()}
 });
-
 app.listen(PORT,()=>console.log(`RecruitFlow API 5.0 running on port ${PORT}`));
