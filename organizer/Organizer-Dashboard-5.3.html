@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RecruitFlow — Organizer Dashboard 5.3</title><style>html,body,iframe{margin:0;width:100%;height:100%;border:0}body{overflow:hidden}</style></head><body><iframe id="app" src="Organizer-Dashboard-5.2.html"></iframe><script>
+const f=document.getElementById("app");
+f.addEventListener("load",()=>{try{
+ const w=f.contentWindow,d=f.contentDocument;
+ const form=d.querySelector("#rf37Login form");
+ if(!form)return;
+ form.onsubmit=async e=>{e.preventDefault();
+  const api=(()=>{try{return String(JSON.parse(w.localStorage.getItem("rf45-config")||"{}").apiBase||"").replace(/\/$/,"")}catch(x){return""}})();
+  if(!api){return w.rf37LoginSubmit(e)}
+  const u=d.getElementById("rf37User").value.trim().toLowerCase(),p=d.getElementById("rf37Pass").value;
+  try{const r=await fetch(api+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});if(!r.ok)throw Error("Invalid credentials");
+   const x=await r.json();w.sessionStorage.setItem("rf50-api-token",x.token);w.sessionStorage.setItem("rf37-auth",JSON.stringify({user:x.user.username,role:x.user.role,name:x.user.name,remote:true}));w.localStorage.setItem("rf-role",x.user.role);w.rf37Unlock({user:x.user.username,role:x.user.role,name:x.user.name,remote:true});
+  }catch(x){const er=d.getElementById("rf37Error");er.textContent=x.message;er.style.display="block"}
+ };
+} catch(e){console.error(e)}});
+</script></body></html>
