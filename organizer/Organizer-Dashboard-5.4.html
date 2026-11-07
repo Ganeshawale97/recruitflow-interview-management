@@ -1220,7 +1220,7 @@ function rf43Render(){
   });
   table.innerHTML=filtered.length?
     "<div style='overflow:auto'><table><thead><tr><th>Rank</th><th>Candidate</th><th>Domain</th><th>Score</th><th>Choice</th><th>Capacity</th><th>Status</th></tr></thead><tbody>"+
-    filtered.map(x=>"<tr><td>"+esc(x.rank)+"</td><td><b>"+esc(x.c.name)+"</b><br><span class='mini'>"+esc(x.c.id)+" · "+esc(x.c.branch||"")+" · "+esc(x.c.year||"")+"</span></td><td>"+esc(x.domain)+"</td><td>"+(x.domain==="—"?"—":x.total+"/40")+"</td><td>"+(x.priority===99?"—":"Choice "+x.priority)+"</td><td>"+(x.capacity?x.capacity:"Unlimited")+"</td><td><span class='pill '+(x.status==="Selected"?"green":x.status==="Waitlisted"?"amber":x.status==="Pending"?"blue":"")+'">'+esc(x.status)+'</span></td></tr>").join("")+
+    filtered.map(x=>"<tr><td>"+esc(x.rank)+"</td><td><b>"+esc(x.c.name)+"</b><br><span class='mini'>"+esc(x.c.id)+" · "+esc(x.c.branch||"")+" · "+esc(x.c.year||"")+"</span></td><td>"+esc(x.domain)+"</td><td>"+(x.domain==="—"?"—":x.total+"/40")+"</td><td>"+(x.priority===99?"—":"Choice "+x.priority)+"</td><td>"+(x.capacity?x.capacity:"Unlimited")+"</td><td><span class='pill "+(x.status==="Selected"?"green":x.status==="Waitlisted"?"amber":x.status==="Pending"?"blue":"")+"'>"+esc(x.status)+"</span></td></tr>").join("")+
     "</tbody></table></div>":"<div class='empty'>No candidates match the selected filter.</div>";
 }
 function rf43SetCapacity(domain,value){
