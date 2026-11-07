@@ -1,0 +1,155 @@
+import express from "express";
+import cors from "cors";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import pg from "pg";
+
+const {Pool}=pg;
+const app=express();
+const PORT=Number(process.env.PORT||3000);
+const JWT_SECRET=process.env.JWT_SECRET||"change-this-secret-before-production";
+const pool=process.env.DATABASE_URL?new Pool({
+  connectionString:process.env.DATABASE_URL,
+  ssl:process.env.NODE_ENV==="production"?{rejectUnauthorized:false}:false
+}):null;
+
+app.use(cors());
+app.use(express.json({limit:"10mb"}));
+
+function auth(req,res,next){
+  const h=req.headers.authorization||"";
+  const token=h.startsWith("Bearer ")?h.slice(7):"";
+  try{req.user=jwt.verify(token,JWT_SECRET);next()}catch(e){return res.status(401).json({error:"Authentication required"})}
+}
+function dbRequired(req,res,next){
+  if(!pool)return res.status(503).json({error:"DATABASE_URL is not configured"});
+  next();
+}
+
+app.get("/api/health",async(req,res)=>{
+  let database="not-configured";
+  if(pool){try{await pool.query("SELECT 1");database="connected"}catch(e){database="error"}}
+  res.json({service:"RecruitFlow API 5.0",status:"ok",database});
+});
+
+app.post("/api/auth/login",dbRequired,async(req,res)=>{
+  const {username,password}=req.body||{};
+  if(!username||!password)return res.status(400).json({error:"Username and password are required"});
+  const {rows}=await pool.query("SELECT id,username,display_name,password_hash,role,active FROM users WHERE username=$1",[String(username).toLowerCase()]);
+  const u=rows[0];
+  if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:"Invalid credentials"});
+  const token=jwt.sign({id:u.id,username:u.username,role:u.role,name:u.display_name},JWT_SECRET,{expiresIn:"12h"});
+  res.json({token,user:{id:u.id,username:u.username,role:u.role,name:u.display_name}});
+});
+
+app.get("/api/state",auth,dbRequired,async(req,res)=>{
+  const c=await pool.query("SELECT * FROM candidates ORDER BY created_at");
+  const n=await pool.query("SELECT n.*,c.candidate_id FROM notifications n JOIN candidates c ON c.id=n.candidate_id ORDER BY n.created_at DESC LIMIT 500");
+  const p=await pool.query("SELECT domain,interviewer_user_id,active FROM panels");
+  res.json({candidates:c.rows,notifications:n.rows,panels:p.rows});
+});
+
+app.put("/api/state",auth,dbRequired,async(req,res)=>{
+  const {candidates=[],notifications=[]}=req.body||{};
+  const client=await pool.connect();
+  try{
+    await client.query("BEGIN");
+    for(const c of candidates){
+      const choices=JSON.stringify(c.choices||[]);
+      await client.query(
+        `INSERT INTO candidates(candidate_id,name,email,phone,branch,year,skills,choices,status,checked_in_at)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         ON CONFLICT(candidate_id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,phone=EXCLUDED.phone,
+         branch=EXCLUDED.branch,year=EXCLUDED.year,skills=EXCLUDED.skills,choices=EXCLUDED.choices,
+         status=EXCLUDED.status,checked_in_at=EXCLUDED.checked_in_at`,
+        [c.id,c.name||"",c.email||"",c.phone||"",c.branch||"",c.year||"",c.skills||"",choices,c.status||"Registered",c.checkedInAt||null]
+      );
+      const cr=await client.query("SELECT id FROM candidates WHERE candidate_id=$1",[c.id]);
+      const cid=cr.rows[0]?.id;
+      if(cid && Array.isArray(c.interviews)){
+        for(const i of c.interviews){
+          if(!i.domain)continue;
+          await client.query(
+            `INSERT INTO interviews(candidate_id,domain,started_at,completed_at,technical,communication,problem_solving,domain_knowledge,total,feedback)
+             VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+            [cid,i.domain,i.startedAt||null,i.completedAt||null,i.technical??i.marks?.technical??null,i.communication??i.marks?.communication??null,i.problemSolving??i.marks?.problemSolving??null,i.domainKnowledge??i.marks?.domainKnowledge??null,i.total??null,i.feedback||""]
+          );
+        }
+      }
+      if(cid && (c.finalAllocation||c.selectionStatus)){
+        await client.query(
+          `INSERT INTO allocations(candidate_id,domain,score,choice_priority,status,finalized_at)
+           VALUES($1,$2,$3,$4,$5,NOW())
+           ON CONFLICT(candidate_id) DO UPDATE SET domain=EXCLUDED.domain,score=EXCLUDED.score,choice_priority=EXCLUDED.choice_priority,status=EXCLUDED.status,finalized_at=NOW()`,
+          [cid,c.finalAllocation||null,null,null,c.selectionStatus||"Pending"]
+        );
+      }
+    }
+    for(const n of notifications){
+      const cr=await client.query("SELECT id FROM candidates WHERE candidate_id=$1",[n.candidateId]);
+      if(!cr.rows[0])continue;
+      const nid=Number(String(n.id||"").replace(/\D/g,"").slice(-12))||Date.now();
+      await client.query(
+        `INSERT INTO notifications(id,candidate_id,type,message,read_at,created_at)
+         VALUES($1,$2,$3,$4,$5,$6)
+         ON CONFLICT(id) DO UPDATE SET read_at=EXCLUDED.read_at,message=EXCLUDED.message,type=EXCLUDED.type`,
+        [nid,cr.rows[0].id,n.type||"General Announcement",n.message||"",n.read?n.createdAt:null,n.createdAt||new Date().toISOString()]
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ok:true,savedCandidates:candidates.length,savedNotifications:notifications.length});
+  }catch(e){
+    await client.query("ROLLBACK");res.status(500).json({error:"Sync failed",detail:e.message});
+  }finally{client.release()}
+});
+
+/* RecruitFlow 5.5 — Candidate self-service status lookup.
+   Requires candidate ID plus the registered phone number for identity verification. */
+app.get("/api/candidate-portal/:candidateId",dbRequired,async(req,res)=>{
+  const candidateId=String(req.params.candidateId||"").trim();
+  const phone=String(req.query.phone||"").replace(/\\D/g,"");
+  if(!candidateId||phone.length<4)return res.status(400).json({error:"Candidate ID and registered phone number are required"});
+  try{
+    const found=await pool.query(
+      "SELECT id,candidate_id,name,email,phone,branch,year,choices,status,checked_in_at,created_at FROM candidates WHERE candidate_id=$1",
+      [candidateId]
+    );
+    const c=found.rows[0];
+    if(!c)return res.status(404).json({error:"No candidate found with these details"});
+    const stored=String(c.phone||"").replace(/\\D/g,"");
+    if(!stored||stored.slice(-4)!==phone.slice(-4))return res.status(403).json({error:"The phone number does not match our records"});
+    const [interviews,allocation,notifications]=await Promise.all([
+      pool.query("SELECT domain,started_at,completed_at,technical,communication,problem_solving,domain_knowledge,total,feedback FROM interviews WHERE candidate_id=$1 ORDER BY started_at NULLS LAST",[c.id]),
+      pool.query("SELECT domain,status,score,finalized_at FROM allocations WHERE candidate_id=$1",[c.id]),
+      pool.query("SELECT type,message,created_at FROM notifications WHERE candidate_id=$1 ORDER BY created_at DESC LIMIT 20",[c.id])
+    ]);
+    res.set("Cache-Control","no-store");
+    res.json({candidate:{candidateId:c.candidate_id,name:c.name,branch:c.branch,year:c.year,choices:c.choices,status:c.status,checkedInAt:c.checked_in_at,registeredAt:c.created_at},interviews:interviews.rows,allocation:allocation.rows[0]||null,notifications:notifications.rows});
+  }catch(e){res.status(500).json({error:"Could not load candidate status"})}
+});
+
+
+app.post("/api/candidates",dbRequired,async(req,res)=>{
+ const c=req.body||{};
+ const name=String(c.name||"").trim();
+ const email=String(c.email||"").trim().toLowerCase();
+ const phone=String(c.phone||"").trim();
+ const choices=Array.isArray(c.choices)?c.choices.slice(0,4):[];
+ if(!name||!email||!phone||!c.branch||!c.year||!choices.length)
+   return res.status(400).json({error:"Please provide all required registration details"});
+ try{
+   const dup=await pool.query("SELECT candidate_id FROM candidates WHERE LOWER(email)=LOWER($1) OR phone=$2 LIMIT 1",[email,phone]);
+   if(dup.rows.length)return res.status(409).json({error:"This email or mobile number is already registered"});
+   const candidateId="RF-"+Date.now().toString(36).toUpperCase();
+   const saved=await pool.query(
+    "INSERT INTO candidates(candidate_id,name,email,phone,branch,year,skills,choices,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'Registered') RETURNING candidate_id,name,email,phone,branch,year,skills,choices,status,created_at",
+    [candidateId,name,email,phone,String(c.branch),String(c.year),String(c.skills||""),JSON.stringify(choices)]
+   );
+   res.status(201).json(saved.rows[0]);
+ }catch(e){
+   if(e.code==="23505")return res.status(409).json({error:"This email or mobile number is already registered"});
+   res.status(500).json({error:"Registration could not be saved"});
+ }
+});
+
+app.listen(PORT,()=>console.log(`RecruitFlow API 5.6 running on port ${PORT}`));
