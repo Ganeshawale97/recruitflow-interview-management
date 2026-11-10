@@ -1,12 +1,12 @@
-# RecruitFlow Platform — Phase 1
+# RecruitFlow Platform — Phase 1.1
 
-New React + TypeScript platform foundation. The legacy HTML prototype is preserved and untouched.
+The new React + TypeScript platform is separate from the preserved legacy HTML prototypes.
 
 ## Requirements
 - Node.js 20+
-- PostgreSQL 15+ (the UI shell runs without it)
+- PostgreSQL 15+ (PostgreSQL 18 is supported)
 
-## Frontend
+## 1. Frontend
 ```powershell
 cd platform
 npm install
@@ -14,25 +14,39 @@ npm run dev
 ```
 Open http://localhost:5173.
 
-## Backend API
-Open a second terminal:
+## 2. Backend and authentication
+In a second terminal:
 ```powershell
 cd platform/backend
 npm install
 Copy-Item .env.example .env
+```
+Edit `.env`: set your PostgreSQL password in DATABASE_URL, replace JWT_SECRET with a random secret of 32+ characters, and set a unique BOOTSTRAP_ADMIN_PASSWORD of at least 12 characters.
+
+Create the first administrator once:
+```powershell
+npm run create-admin
+```
+Then start the API:
+```powershell
 npm run dev
 ```
-The API listens on http://localhost:4000. Check GET /api/health.
+Check http://localhost:4000/api/health.
 
-## Database
-Create a PostgreSQL database, set DATABASE_URL in platform/backend/.env, then run:
+## 3. Database schema
+If not already applied:
 ```powershell
-psql $env:DATABASE_URL -f schema.sql
+psql -U postgres -d recruitflow -f schema.sql
 ```
 
-## Current status
-- React/TypeScript app shell and responsive navigation: implemented.
-- Initial domain and role model: included in schema.
-- API health endpoint: implemented.
-- PostgreSQL schema foundation: included.
-- Secure login, server-side permissions, candidate workflows and live operations: not yet implemented. Role selector is a UI preview only, not authentication.
+## 4. Sign in
+Open http://localhost:5173 and sign in with the bootstrap admin username/email and password from your local `.env`.
+
+## Security notes
+- Passwords are hashed with bcryptjs (12 rounds).
+- Login uses a short-lived 8-hour JWT and is rate-limited.
+- API routes enforce role permissions on the server.
+- The browser keeps the session token in sessionStorage and clears it on logout.
+- The bootstrap script refuses to overwrite an existing admin account.
+- Never commit your real `.env` file or share credentials.
+- This is the initial authentication foundation. Password reset, MFA, refresh-token rotation, account suspension UI and audit logging for every admin action remain future hardening tasks.
