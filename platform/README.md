@@ -1,12 +1,8 @@
-# RecruitFlow Platform — Phase 1.1
+# RecruitFlow Platform — Phase 1.2
 
-The new React + TypeScript platform is separate from the preserved legacy HTML prototypes.
+React + TypeScript frontend and Express/PostgreSQL API. Legacy HTML prototypes remain preserved.
 
-## Requirements
-- Node.js 20+
-- PostgreSQL 15+ (PostgreSQL 18 is supported)
-
-## 1. Frontend
+## Run frontend
 ```powershell
 cd platform
 npm install
@@ -14,39 +10,31 @@ npm run dev
 ```
 Open http://localhost:5173.
 
-## 2. Backend and authentication
-In a second terminal:
+## Run backend
 ```powershell
 cd platform/backend
 npm install
-Copy-Item .env.example .env
-```
-Edit `.env`: set your PostgreSQL password in DATABASE_URL, replace JWT_SECRET with a random secret of 32+ characters, and set a unique BOOTSTRAP_ADMIN_PASSWORD of at least 12 characters.
-
-Create the first administrator once:
-```powershell
-npm run create-admin
-```
-Then start the API:
-```powershell
 npm run dev
 ```
-Check http://localhost:4000/api/health.
+Keep your existing local `.env`. Never commit it or share its secrets.
 
-## 3. Database schema
-If not already applied:
+## Database
+The Phase 1 schema already includes recruitment_events, event_users, domains, panels and panel_assignments. If you have not applied it yet:
 ```powershell
 psql -U postgres -d recruitflow -f schema.sql
 ```
+If you applied schema.sql earlier, no migration is required for Phase 1.2.
 
-## 4. Sign in
-Open http://localhost:5173 and sign in with the bootstrap admin username/email and password from your local `.env`.
+## Phase 1.2 features
+- Create recruitment events with unique slugs and optional start/end dates.
+- Automatically provision the 11 default domains and 11 interview panels per event.
+- Change event lifecycle status (draft, open, live, completed, archived).
+- Manage global staff accounts, activate/deactivate users and update roles.
+- Add existing active users to an event team with event-specific role.
+- Assign one active interviewer to each panel; prevents assigning one interviewer to multiple active panels.
+- Server-side authentication and role authorization for management endpoints.
 
-## Security notes
-- Passwords are hashed with bcryptjs (12 rounds).
-- Login uses a short-lived 8-hour JWT and is rate-limited.
-- API routes enforce role permissions on the server.
-- The browser keeps the session token in sessionStorage and clears it on logout.
-- The bootstrap script refuses to overwrite an existing admin account.
-- Never commit your real `.env` file or share credentials.
-- This is the initial authentication foundation. Password reset, MFA, refresh-token rotation, account suspension UI and audit logging for every admin action remain future hardening tasks.
+## Important
+- Only Admin/Super Admin can create events and manage users/team/panel assignments.
+- The frontend hides restricted modules, but the API enforces permissions too.
+- Candidate registration, interview execution and audit-event history are separate upcoming phases.
