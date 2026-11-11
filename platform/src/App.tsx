@@ -8,7 +8,9 @@ type Event={id:string;name:string;slug:string;status:string;starts_at?:string;en
 type Panel={id:string;name:string;domain:string;status:string;active:boolean;interviewers?:{id:string;name:string;username:string}[]};
 const API=(import.meta.env.VITE_API_URL||"http://localhost:4000").replace(/\/$/,"");
 const nav:{name:Section;icon:any;group:string;roles:Role[]}[]=[
-{name:"Platform Overview",icon:LayoutDashboard,group:"PLATFORM",roles:["Platform Owner"]},\n{name:"Organizations",icon:UsersRound,group:"PLATFORM",roles:["Platform Owner"]},\n{name:"Overview",icon:LayoutDashboard,group:"WORKSPACE",roles:["Super Admin","Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"]},
+{name:"Platform Overview",icon:LayoutDashboard,group:"PLATFORM",roles:["Platform Owner"]},
+{name:"Organizations",icon:UsersRound,group:"PLATFORM",roles:["Platform Owner"]},
+{name:"Overview",icon:LayoutDashboard,group:"WORKSPACE",roles:["Super Admin","Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"]},
 {name:"Candidates",icon:Users,group:"WORKSPACE",roles:["Super Admin","Admin","Registration Volunteer"]},
 {name:"Live Operations",icon:Activity,group:"OPERATIONS",roles:["Super Admin","Admin","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"]},
 {name:"Selection & Reports",icon:CalendarCheck,group:"WORKSPACE",roles:["Super Admin","Admin","Registration Volunteer"]},
