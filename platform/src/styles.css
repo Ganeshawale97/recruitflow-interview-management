@@ -140,3 +140,5 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .org-register-success>p{max-width:550px;margin:12px auto;color:#7b879b;font-size:13px;line-height:1.7}
 .org-register-success .org-review-note{text-align:left;max-width:530px;margin:22px auto}
 @media(max-width:650px){.org-register-screen{padding:18px 12px}.org-register-top{margin-bottom:18px}.org-register-card{padding:23px 17px}.org-register-card h1{font-size:23px}.org-register-top>a:first-child{font-size:17px}}
+
+.auth-register-link{text-align:center;margin-top:13px;color:#7d899e;font-size:11px}.auth-register-link a{color:#315fce;font-weight:800;text-decoration:none}.auth-register-link a:hover{text-decoration:underline}
