@@ -78,6 +78,11 @@ async function ensurePanelCallTable(){
  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS one_open_call_per_candidate ON panel_calls(candidate_id) WHERE status IN ('pending','sent')");
  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS one_open_call_per_panel ON panel_calls(panel_id) WHERE status IN ('pending','sent')");
 }
+async function repairCandidateStatuses(eventId){
+ // Older builds could leave a candidate in 'interviewed' after only one domain.
+ // Reconcile their state from the actual interview records before attempting dispatch.
+ await pool.query("UPDATE candidates c SET status='waiting_2' WHERE c.event_id=$1 AND c.status='interviewed' AND EXISTS(SELECT 1 FROM candidate_preferences cp WHERE cp.candidate_id=c.id AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=c.id AND i.domain_id=cp.domain_id AND i.status IN ('completed','absent'))) AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=c.id AND i.status='in_progress')",[eventId]);
+}
 async function dispatchNextForEvent(eventId){
  await ensurePanelCallTable();
  const panels=await pool.query("SELECT p.id,p.domain_id FROM panels p JOIN panel_assignments pa ON pa.panel_id=p.id AND pa.active=true JOIN users u ON u.id=pa.interviewer_id AND u.active WHERE p.event_id=$1 AND p.active=true AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.panel_id=p.id AND i.status='in_progress') AND NOT EXISTS(SELECT 1 FROM panel_calls pc WHERE pc.panel_id=p.id AND pc.status IN ('pending','sent')) ORDER BY p.name",[eventId]);
