@@ -1,4 +1,4 @@
-# RecruitFlow Platform — Phase 1.3
+# RecruitFlow Platform — Phase 1.4
 
 React + TypeScript frontend and Express/PostgreSQL API. Legacy HTML prototypes remain preserved.
 
@@ -24,6 +24,13 @@ The Phase 1 schema already includes recruitment_events, event_users, domains, pa
 psql -U postgres -d recruitflow -f schema.sql
 ```
 If you applied schema.sql earlier, no migration is required for Phase 1.2.
+
+## Phase 1.4 features
+- Live operations queue grouped into Registered, Waiting Room 1, Waiting Room 2, Interviewing and Interviewed.
+- Entry volunteers check candidates in; W1/W2 volunteers move candidates between waiting rooms.
+- Assigned interviewers can start interviews from Waiting Room 2 and submit four scored categories (0–10 each) plus feedback.
+- Interview start/complete operations are transaction-backed, enforce panel assignments for interviewers, prevent duplicate active interviews and write audit entries for check-in and room movement.
+- Candidate status and interview score records are stored in PostgreSQL.
 
 ## Phase 1.3 features
 - Public event registration at `http://localhost:5173/?register=<event-slug>` for events in `open` or `live` status.
