@@ -155,3 +155,5 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .invite-modal-close{position:absolute;right:15px;top:12px;border:0;background:transparent;color:#77849a;font-size:26px;cursor:pointer}
 .invite-modal-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center}
 .invite-modal-actions .primary-button{width:auto}
+
+.invite-link-label{display:grid;gap:8px;font-size:12px;font-weight:700;color:#34445d}.invite-link-label input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #dce3ef;border-radius:9px;background:#f7f9fc;color:#34445d;font-size:12px}.invite-copy-hint{display:block;margin-top:12px;color:#77849a;font-size:11px;line-height:1.5;word-break:break-word}
