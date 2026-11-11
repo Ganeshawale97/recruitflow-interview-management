@@ -6,10 +6,14 @@ import pg from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes, createHash, randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
-app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"1mb"}));
+app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"2mb"}));
+const uploadDirectory=path.resolve(process.cwd(),"uploads");
+app.use("/uploads",express.static(uploadDirectory,{fallthrough:false,maxAge:"7d",immutable:true}));
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."}});
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
@@ -80,6 +84,29 @@ app.post("/api/public/organization-invitations/accept",requireDb,organizationInv
  if(!/^[a-f0-9]{64}$/.test(token)||!/^[a-z0-9._-]{3,30}$/.test(username)||displayName.length<2||displayName.length>140||password.length<12)return res.status(400).json({error:"Enter a valid username, full name and password of at least 12 characters."});
  const hash=createHash("sha256").update(token).digest("hex"),client=await pool.connect();
  try{await client.query("BEGIN");const inv=await client.query("SELECT i.*,o.name AS organization_name,o.status AS organization_status FROM organization_admin_invitations i JOIN organizations o ON o.id=i.organization_id WHERE i.token_hash=$1 FOR UPDATE",[hash]);if(!inv.rowCount||inv.rows[0].accepted_at||new Date(inv.rows[0].expires_at)<new Date()||inv.rows[0].organization_status!=="active"){await client.query("ROLLBACK");return res.status(400).json({error:"Invitation is invalid, expired, already used or organisation inactive."})}const role=await client.query("SELECT id FROM roles WHERE name='Organization Admin'");if(!role.rowCount)throw new Error("Organization Admin role is not configured.");const ph=await bcrypt.hash(password,12);const user=await client.query("INSERT INTO users(username,email,display_name,password_hash,role_id) VALUES($1,$2,$3,$4,$5) RETURNING id,username,email,display_name,active,created_at",[username,inv.rows[0].email,displayName,ph,role.rows[0].id]);const orgRole=await client.query("SELECT id FROM organization_roles WHERE organization_id=$1 AND role_key='organization_admin'",[inv.rows[0].organization_id]);if(!orgRole.rowCount)throw new Error("Organisation administrator role is missing.");await client.query("INSERT INTO organization_memberships(organization_id,user_id,organization_role_id,status) VALUES($1,$2,$3,'active')",[inv.rows[0].organization_id,user.rows[0].id,orgRole.rows[0].id]);await client.query("UPDATE organization_admin_invitations SET accepted_at=now() WHERE id=$1",[inv.rows[0].id]);await client.query("COMMIT");res.status(201).json({message:"Administrator account created. Sign in to continue.",organization:inv.rows[0].organization_name,user:{...user.rows[0],role:"Organization Admin"}})}catch(e){await client.query("ROLLBACK");if(e.code==="23505")return res.status(409).json({error:"That username or email already has an account."});console.error(e);res.status(500).json({error:"Could not activate administrator account."})}finally{client.release()}
+});
+
+
+app.post("/api/organization/logo",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin"||!req.auth.organizationId)return res.status(403).json({error:"Organisation administrator access required."});
+ const dataUrl=String(req.body?.imageData||"");
+ const match=dataUrl.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+=*)$/);
+ if(!match)return res.status(400).json({error:"Choose a PNG, JPG or WEBP image."});
+ const buffer=Buffer.from(match[2],"base64");
+ if(!buffer.length||buffer.length>1400000)return res.status(413).json({error:"Logo image must be smaller than 1.4 MB."});
+ const signatures={png:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]),jpeg:Buffer.from([0xff,0xd8,0xff]),webp:Buffer.from("RIFF")};
+ const ext=match[1],sig=signatures[ext];
+ if(ext==="webp"?(buffer.length<12||!buffer.subarray(0,4).equals(sig)||buffer.toString("ascii",8,12)!=="WEBP"):!buffer.subarray(0,sig.length).equals(sig))return res.status(400).json({error:"The image file contents do not match its format."});
+ try{
+  const member=await pool.query("SELECT o.id FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE o.id=$1 AND m.user_id=$2 AND m.status='active' AND o.status='active'",[req.auth.organizationId,req.auth.sub]);
+  if(!member.rowCount)return res.status(403).json({error:"Active organisation membership is required."});
+  await mkdir(uploadDirectory,{recursive:true});
+  const filename=randomUUID()+"."+({png:"png",jpeg:"jpg",webp:"webp"}[ext]);
+  await writeFile(path.join(uploadDirectory,filename),buffer,{flag:"wx"});
+  const logoUrl="/uploads/"+filename;
+  const updated=await pool.query("UPDATE organizations SET logo_url=$2,updated_at=now() WHERE id=$1 RETURNING logo_url",[req.auth.organizationId,logoUrl]);
+  res.status(201).json({logoUrl:updated.rows[0].logo_url,message:"Organisation logo uploaded."});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not upload organisation logo."})}
 });
 
 app.patch("/api/organization/settings",requireDb,requireAuth,async(req,res)=>{
