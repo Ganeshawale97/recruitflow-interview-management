@@ -49,5 +49,34 @@ app.post("/api/events/:id/interviews/:interviewId/complete",requireDb,requireAut
 
 
 app.get("/api/events/:id/candidates/:candidateId/progress",requireDb,requireAuth,requireRole("Super Admin","Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"),async(req,res)=>{try{const c=await pool.query("SELECT id,candidate_code,name,status FROM candidates WHERE id=$1 AND event_id=$2",[req.params.candidateId,req.params.id]);if(!c.rowCount)return res.status(404).json({error:"Candidate not found."});const q=await pool.query("SELECT cp.priority,d.id AS domain_id,d.name AS domain,COALESCE(i.status,'pending') AS interview_status,i.total_score,i.technical,i.communication,i.problem_solving,i.domain_knowledge,i.feedback,i.completed_at,p.name AS panel FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id LEFT JOIN LATERAL(SELECT * FROM interviews WHERE candidate_id=cp.candidate_id AND domain_id=cp.domain_id ORDER BY created_at DESC LIMIT 1)i ON true LEFT JOIN panels p ON p.id=i.panel_id WHERE cp.candidate_id=$1 ORDER BY cp.priority",[req.params.candidateId]);const completed=q.rows.filter(x=>x.interview_status==='completed');const ranked=[...completed].sort((a,b)=>(Number(b.total_score)||0)-(Number(a.total_score)||0)||a.priority-b.priority);res.json({candidate:c.rows[0],domains:q.rows,completedCount:completed.length,totalPreferences:q.rowCount,finalDomain:ranked[0]?.domain||null,finalScore:ranked[0]?.total_score??null,finalRanking:ranked.map((x,i)=>({rank:i+1,domain:x.domain,priority:x.priority,score:x.total_score}))})}catch(e){console.error(e);res.status(500).json({error:"Could not load candidate interview progress."})}});
+
+const reportRoles=["Super Admin","Admin","Registration Volunteer"];
+async function buildSelectionRows(eventId){
+ const q=await pool.query("WITH pref AS (SELECT c.id,c.candidate_code,c.name,c.email,c.college,c.branch,c.academic_year,c.status AS candidate_status,c.created_at,count(cp.domain_id)::int AS preference_count FROM candidates c LEFT JOIN candidate_preferences cp ON cp.candidate_id=c.id WHERE c.event_id=$1 GROUP BY c.id), scored AS (SELECT cp.candidate_id,count(i.id) FILTER(WHERE i.status='completed')::int AS completed_count,round(avg(i.total_score) FILTER(WHERE i.status='completed'),2) AS average_score,max(i.total_score) FILTER(WHERE i.status='completed') AS best_score,(array_agg(d.name ORDER BY i.total_score DESC NULLS LAST,cp.priority) FILTER(WHERE i.status='completed'))[1] AS strongest_domain FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id JOIN candidates c ON c.id=cp.candidate_id LEFT JOIN interviews i ON i.candidate_id=cp.candidate_id AND i.domain_id=cp.domain_id WHERE c.event_id=$1 GROUP BY cp.candidate_id) SELECT pref.*,COALESCE(scored.completed_count,0) AS completed_count,scored.average_score,scored.best_score,scored.strongest_domain,CASE WHEN COALESCE(scored.completed_count,0)<pref.preference_count THEN 'Pending interviews' WHEN scored.average_score>=28 THEN 'Shortlist for review' WHEN scored.average_score>=24 THEN 'Committee review' ELSE 'Further review' END AS recommendation FROM pref LEFT JOIN scored ON scored.candidate_id=pref.id ORDER BY scored.average_score DESC NULLS LAST,pref.name ASC",[eventId]);
+ return q.rows;
+}
+app.get("/api/events/:id/selection",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
+ try{const e=await pool.query("SELECT id FROM recruitment_events WHERE id=$1",[req.params.id]);if(!e.rowCount)return res.status(404).json({error:"Event not found."});res.json({candidates:await buildSelectionRows(req.params.id)});}
+ catch(e){console.error(e);res.status(500).json({error:"Could not build selection review."})}
+});
+app.get("/api/events/:id/analytics",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
+ try{
+  const e=await pool.query("SELECT id,name,status FROM recruitment_events WHERE id=$1",[req.params.id]);if(!e.rowCount)return res.status(404).json({error:"Event not found."});
+  const summary=await pool.query("SELECT count(*)::int AS total_candidates,count(*) FILTER(WHERE status='registered')::int AS registered,count(*) FILTER(WHERE status='waiting_1')::int AS waiting_1,count(*) FILTER(WHERE status='waiting_2')::int AS waiting_2,count(*) FILTER(WHERE status='interviewing')::int AS interviewing,count(*) FILTER(WHERE status='interviewed')::int AS interviewed FROM candidates WHERE event_id=$1",[req.params.id]);
+  const domains=await pool.query("SELECT d.name AS domain,count(i.id)::int AS completed_interviews,round(avg(i.total_score),2) AS average_score,count(DISTINCT i.candidate_id)::int AS candidates_assessed FROM domains d LEFT JOIN interviews i ON i.domain_id=d.id AND i.status='completed' WHERE d.event_id=$1 GROUP BY d.id,d.name ORDER BY d.name",[req.params.id]);
+  const rows=await buildSelectionRows(req.params.id);
+  res.json({event:e.rows[0],summary:summary.rows[0],domains:domains.rows,recommendations:{shortlist:rows.filter(x=>x.recommendation==="Shortlist for review").length,committeeReview:rows.filter(x=>x.recommendation==="Committee review").length,furtherReview:rows.filter(x=>x.recommendation==="Further review").length,pending:rows.filter(x=>x.recommendation==="Pending interviews").length}});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load event analytics."})}
+});
+app.get("/api/events/:id/reports/candidates.csv",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
+ try{
+  const rows=await buildSelectionRows(req.params.id);
+  const headers=["Candidate ID","Name","Email","College","Branch","Academic Year","Candidate Status","Completed Interviews","Preference Count","Average Score","Best Score","Strongest Domain","Recommendation"];
+  const esc=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const csv=[headers,...rows.map(x=>[x.candidate_code,x.name,x.email,x.college,x.branch,x.academic_year,x.candidate_status,x.completed_count,x.preference_count,x.average_score,x.best_score,x.strongest_domain,x.recommendation])].map(row=>row.map(esc).join(",")).join("\r\n");
+  res.setHeader("Content-Type","text/csv; charset=utf-8");res.setHeader("Content-Disposition",'attachment; filename="recruitflow-candidates.csv"');res.send("\uFEFF"+csv);
+ }catch(e){console.error(e);res.status(500).json({error:"Could not export candidate report."})}
+});
+
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"Internal server error"})});
 app.listen(port,()=>console.log("RecruitFlow API listening on http://localhost:"+port));
