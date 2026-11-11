@@ -118,3 +118,6 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .domain-absent,.progress-absent{background:#f0f1f4!important;border-color:#d7dbe3!important;color:#687386!important}
 .exit-candidate-action{margin-top:9px!important;border-color:#f0c8c5!important;color:#b43d36!important;background:#fff8f7!important}
 .exit-candidate-action:hover{background:#ffefed!important}
+
+/* Phase 2.1 platform owner control plane */
+.table-sub{display:block;color:#8290a5;font-size:10px;margin-top:4px}.org-actions{display:flex;flex-wrap:wrap;gap:6px}.danger-action{color:#b43d36;border-color:#f1cbc8;background:#fff8f7}.muted-copy{font-size:13px;color:#8491a5;padding:14px 0}
