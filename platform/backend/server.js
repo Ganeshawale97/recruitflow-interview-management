@@ -72,7 +72,7 @@ app.patch("/api/platform/organization-applications/:id",requireDb,requireAuth,re
 const organizationInviteLimiter=rateLimit({windowMs:60*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false});
 app.post("/api/platform/organizations/:id/invitations",requireDb,requireAuth,requirePlatformOwner,async(req,res)=>{
  const email=String(req.body?.email||"").trim().toLowerCase();
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid administrator email."});
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid administrator email."});
  try{const org=await pool.query("SELECT id,name,status FROM organizations WHERE id=$1",[req.params.id]);if(!org.rowCount)return res.status(404).json({error:"Organisation not found."});if(org.rows[0].status!=="active")return res.status(409).json({error:"Only active organisations can receive administrator invitations."});const raw=randomBytes(32).toString("hex"),hash=createHash("sha256").update(raw).digest("hex");await pool.query("INSERT INTO organization_admin_invitations(organization_id,email,token_hash,expires_at,created_by) VALUES($1,$2,$3,now()+interval '72 hours',$4)",[req.params.id,email,hash,req.auth.sub]);res.status(201).json({invitationUrl:(process.env.APP_ORIGIN||"http://localhost:5173")+"/?accept-organization-invite="+raw,expiresInHours:72,organization:org.rows[0].name})}catch(e){console.error(e);res.status(500).json({error:"Could not create administrator invitation."})}
 });
 app.post("/api/public/organization-invitations/accept",requireDb,organizationInviteLimiter,async(req,res)=>{
