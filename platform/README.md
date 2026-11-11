@@ -1,4 +1,4 @@
-# RecruitFlow Platform — Phase 1.5
+# RecruitFlow Platform — Phase 1.6
 
 React + TypeScript frontend and Express/PostgreSQL API. Legacy HTML prototypes remain preserved.
 
@@ -24,6 +24,14 @@ The Phase 1 schema already includes recruitment_events, event_users, domains, pa
 psql -U postgres -d recruitflow -f schema.sql
 ```
 If you applied schema.sql earlier, no migration is required for Phase 1.2.
+
+## Phase 1.6 features
+- Selection review ranks candidates by average completed interview score and displays interview progress, best score and strongest domain.
+- Advisory recommendation bands: Shortlist for review (average 28+/40), Committee review (24–27.99/40), Further review (below 24/40), or Pending interviews.
+- Event analytics show candidate pipeline totals, recommendation counts and domain-level average scores.
+- Downloadable CSV candidate evaluation report for committee records.
+- Recommendations do not automatically select or reject candidates; final decisions remain with the selection committee.
+- No database migration required.
 
 ## Phase 1.5 features
 - Interview execution follows the candidate's ordered domain preferences (up to four); out-of-order panel starts are rejected.
