@@ -75,6 +75,7 @@ async function ensurePanelCallTable(){
  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sent','started','completed','cancelled')),
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),sent_at TIMESTAMPTZ,started_at TIMESTAMPTZ,completed_at TIMESTAMPTZ
  )`);
+ await pool.query("ALTER TABLE panel_calls ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS one_open_call_per_candidate ON panel_calls(candidate_id) WHERE status IN ('pending','sent')");
  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS one_open_call_per_panel ON panel_calls(panel_id) WHERE status IN ('pending','sent')");
 }
@@ -114,6 +115,7 @@ app.post("/api/events/:id/interviews/:interviewId/complete",requireDb,requireAut
 
 
 app.post("/api/events/:id/candidates/:candidateId/withdraw-remaining",requireDb,requireAuth,requireRole("Super Admin","Admin","W2 Volunteer"),async(req,res)=>{
+ await ensurePanelCallTable();
  const client=await pool.connect();
  try{
   await client.query("BEGIN");
