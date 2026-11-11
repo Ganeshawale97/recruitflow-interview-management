@@ -1,4 +1,4 @@
-# RecruitFlow Platform — Phase 1.4
+# RecruitFlow Platform — Phase 1.5
 
 React + TypeScript frontend and Express/PostgreSQL API. Legacy HTML prototypes remain preserved.
 
@@ -24,6 +24,13 @@ The Phase 1 schema already includes recruitment_events, event_users, domains, pa
 psql -U postgres -d recruitflow -f schema.sql
 ```
 If you applied schema.sql earlier, no migration is required for Phase 1.2.
+
+## Phase 1.5 features
+- Interview execution follows the candidate's ordered domain preferences (up to four); out-of-order panel starts are rejected.
+- After each completed interview, the candidate automatically returns to Waiting Room 2 when another preference remains; otherwise the candidate is marked interviewed.
+- Candidate progress endpoint reports each preference, interview status, panel, scores and feedback.
+- Final domain ranking uses highest completed interview score, with candidate preference order as the tie-breaker.
+- Live Operations includes a domain-progress view and informs operators of the next required domain.
 
 ## Phase 1.4 features
 - Live operations queue grouped into Registered, Waiting Room 1, Waiting Room 2, Interviewing and Interviewed.
