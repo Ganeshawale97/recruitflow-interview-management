@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import CandidateRegistration from "./CandidateRegistration";
 import OrganizationRegistration from "./OrganizationRegistration";
+import OrganizationInviteAcceptance from "./OrganizationInviteAcceptance";
 import { Activity, Users, PanelsTopLeft, UserRoundCheck, Settings, Bell, Wifi, WifiOff, LayoutDashboard, CalendarDays, ShieldCheck, Menu, LogOut, LockKeyhole, Eye, EyeOff, UserPlus, RefreshCw, Plus, CalendarCheck, UsersRound, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 type Role="Platform Owner"|"Organization Admin"|"Super Admin"|"Admin"|"Registration Volunteer"|"Entry Volunteer"|"W1 Volunteer"|"W2 Volunteer"|"Interviewer";
 type Section="Overview"|"Organization Workspace"|"Platform Overview"|"Organizations"|"Candidates"|"Live Operations"|"Selection & Reports"|"Events"|"Panels"|"Interviewers"|"User Management"|"Settings";
@@ -25,6 +26,7 @@ const nav:{name:Section;icon:any;group:string;roles:Role[]}[]=[
 const domains=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 async function api(path:string,token?:string,options:RequestInit={}){const r=await fetch(API+path,{...options,headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const d=await r.json().catch(()=>({error:"Unexpected server response."}));if(!r.ok)throw new Error(d.error||"Request failed.");return d}
 export default function App(){
+ if(new URLSearchParams(location.search).has("accept-organization-invite"))return <OrganizationInviteAcceptance/>;
  if(new URLSearchParams(location.search).has("register-organization"))return <OrganizationRegistration/>;
  if(new URLSearchParams(location.search).has("register"))return <CandidateRegistration/>;
  const [user,setUser]=useState<User|null>(null),[token,setToken]=useState(()=>sessionStorage.getItem("rf-session")||""),[apiStatus,setApiStatus]=useState("checking"),[mobile,setMobile]=useState(false),[section,setSection]=useState<Section>("Overview"),[identity,setIdentity]=useState(""),[password,setPassword]=useState(""),[showPassword,setShowPassword]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
