@@ -24,6 +24,51 @@ async function requirePlatformOwner(req,res,next){
   next();
  }catch(e){console.error(e);res.status(500).json({error:"Could not verify Platform Owner access."})}
 }
+
+const organizationApplicationLimiter=rateLimit({windowMs:60*60*1000,limit:5,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many applications from this connection. Please try again later."}});
+app.post("/api/public/organization-applications",requireDb,organizationApplicationLimiter,async(req,res)=>{
+ const b=req.body||{};
+ const name=String(b.name||"").trim(),type=String(b.type||"").trim(),contactName=String(b.contactName||"").trim(),email=String(b.email||"").trim().toLowerCase(),phone=String(b.phone||"").trim(),website=String(b.website||"").trim(),description=String(b.description||"").trim();
+ const allowedTypes=["College","Company","Club","Other"];
+ if(name.length<2||name.length>180||!allowedTypes.includes(type)||contactName.length<2||contactName.length>140||!/^\S+@\S+\.\S+$/.test(email)||phone.replace(/\D/g,"").length<8||phone.length>30||description.length>2000)return res.status(400).json({error:"Complete the required fields with valid contact details. Description must be under 2,000 characters."});
+ if(website){try{const u=new URL(website);if(!["http:","https:"].includes(u.protocol)||website.length>300)throw new Error("invalid")}catch{return res.status(400).json({error:"Enter a valid website URL beginning with http:// or https://."})}}
+ try{
+  const duplicate=await pool.query("SELECT id,status FROM organization_applications WHERE lower(email)=lower($1) AND status='pending' LIMIT 1",[email]);
+  if(duplicate.rowCount)return res.status(409).json({error:"An application from this email is already awaiting review."});
+  const q=await pool.query("INSERT INTO organization_applications(name,organization_type,contact_name,email,phone,website,description) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,created_at",[name,type,contactName,email,phone,website||null,description||null]);
+  res.status(201).json({message:"Your organisation application has been submitted for review.",applicationId:q.rows[0].id,submittedAt:q.rows[0].created_at});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not submit your application. Please try again."})}
+});
+app.get("/api/platform/organization-applications",requireDb,requireAuth,requirePlatformOwner,async(req,res)=>{
+ try{
+  const status=String(req.query.status||"pending");
+  if(!["pending","approved","rejected","all"].includes(status))return res.status(400).json({error:"Invalid application filter."});
+  const q=await pool.query("SELECT id,name,organization_type,contact_name,email,phone,website,description,status,organization_id,reviewed_at,created_at FROM organization_applications WHERE ($1='all' OR status=$1) ORDER BY created_at DESC LIMIT 200",[status]);
+  res.json({applications:q.rows});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load organisation applications."})}
+});
+app.patch("/api/platform/organization-applications/:id",requireDb,requireAuth,requirePlatformOwner,async(req,res)=>{
+ const decision=String(req.body?.decision||"");
+ if(!["approve","reject"].includes(decision))return res.status(400).json({error:"Choose approve or reject."});
+ const client=await pool.connect();
+ try{
+  await client.query("BEGIN");
+  const a=await client.query("SELECT * FROM organization_applications WHERE id=$1 FOR UPDATE",[req.params.id]);
+  if(!a.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Application not found."})}
+  if(a.rows[0].status!=="pending"){await client.query("ROLLBACK");return res.status(409).json({error:"This application has already been reviewed."})}
+  let organization=null;
+  if(decision==="approve"){
+   const base=a.rows[0].name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,70)||"organization";
+   const slug=base+"-"+String(a.rows[0].id).slice(0,8);
+   const created=await client.query("INSERT INTO organizations(name,slug,status,branding) VALUES($1,$2,'active',$3::jsonb) RETURNING id,name,slug,status",[a.rows[0].name,slug,JSON.stringify({organizationType:a.rows[0].organization_type,contactName:a.rows[0].contact_name,contactEmail:a.rows[0].email,contactPhone:a.rows[0].phone,website:a.rows[0].website,description:a.rows[0].description})]);
+   organization=created.rows[0];
+  }
+  const updated=await client.query("UPDATE organization_applications SET status=$2,organization_id=$3,reviewed_at=now(),reviewed_by=$4 WHERE id=$1 RETURNING id,status,organization_id,reviewed_at",[req.params.id,decision==="approve"?"approved":"rejected",organization?.id||null,req.auth.sub]);
+  await client.query("COMMIT");
+  res.json({application:updated.rows[0],organization,message:decision==="approve"?"Application approved. The organisation record has been created; workspace access will be enabled in a later onboarding phase.":"Application rejected."});
+ }catch(e){await client.query("ROLLBACK");console.error(e);res.status(500).json({error:"Could not review organisation application."})}finally{client.release()}
+});
+
 app.get("/api/platform/overview",requireDb,requireAuth,requirePlatformOwner,async(_req,res)=>{
  try{
   const [orgs,events,users,candidates,pending]=await Promise.all([
