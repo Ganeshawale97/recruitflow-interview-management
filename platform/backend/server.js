@@ -16,6 +16,42 @@ function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"D
 function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});next()}catch{return res.status(401).json({error:"Session expired. Please sign in again."})}}
 function requireRole(...roles){return async(req,res,next)=>{try{if(!req.auth)return res.status(401).json({error:"Authentication required."});const q=await pool.query("SELECT u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1",[req.auth.sub]);if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"Account is unavailable."});req.auth.role=q.rows[0].role;if(!roles.includes(req.auth.role))return res.status(403).json({error:"Your current account role ("+req.auth.role+") is not permitted to perform this action."});next()}catch(e){console.error(e);res.status(500).json({error:"Could not verify account permissions."})}}}
 function safeUser(r){return{id:r.id,username:r.username,email:r.email,displayName:r.display_name,role:r.role,active:r.active,createdAt:r.created_at}}
+
+async function requirePlatformOwner(req,res,next){
+ try{
+  const q=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[req.auth.sub]);
+  if(!q.rowCount)return res.status(403).json({error:"Platform Owner access required."});
+  next();
+ }catch(e){console.error(e);res.status(500).json({error:"Could not verify Platform Owner access."})}
+}
+app.get("/api/platform/overview",requireDb,requireAuth,requirePlatformOwner,async(_req,res)=>{
+ try{
+  const [orgs,events,users,candidates,pending]=await Promise.all([
+   pool.query("SELECT count(*)::int AS total,count(*) FILTER(WHERE status='active')::int AS active,count(*) FILTER(WHERE status='pending')::int AS pending,count(*) FILTER(WHERE status='suspended')::int AS suspended FROM organizations"),
+   pool.query("SELECT count(*)::int AS total FROM recruitment_events"),
+   pool.query("SELECT count(*)::int AS total FROM users"),
+   pool.query("SELECT count(*)::int AS total FROM candidates"),
+   pool.query("SELECT id,name,slug,status,created_at FROM organizations WHERE status='pending' ORDER BY created_at ASC LIMIT 10")
+  ]);
+  res.json({organizations:orgs.rows[0],events:events.rows[0].total,users:users.rows[0].total,candidates:candidates.rows[0].total,pendingOrganizations:pending.rows});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load platform overview."})}
+});
+app.get("/api/platform/organizations",requireDb,requireAuth,requirePlatformOwner,async(_req,res)=>{
+ try{
+  const q=await pool.query("SELECT o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.created_at,(SELECT count(*)::int FROM recruitment_events e WHERE e.organization_id=o.id) AS events,(SELECT count(*)::int FROM organization_memberships m WHERE m.organization_id=o.id AND m.status='active') AS staff,(SELECT count(*)::int FROM candidates c JOIN recruitment_events e ON e.id=c.event_id WHERE e.organization_id=o.id) AS candidates FROM organizations o ORDER BY o.created_at ASC");
+  res.json({organizations:q.rows});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load organisations."})}
+});
+app.patch("/api/platform/organizations/:id/status",requireDb,requireAuth,requirePlatformOwner,async(req,res)=>{
+ const status=String(req.body?.status||"");
+ if(!["pending","active","suspended"].includes(status))return res.status(400).json({error:"Invalid organisation status."});
+ try{
+  const q=await pool.query("UPDATE organizations SET status=$2,updated_at=now() WHERE id=$1 RETURNING id,name,slug,status",[req.params.id,status]);
+  if(!q.rowCount)return res.status(404).json({error:"Organisation not found."});
+  res.json({organization:q.rows[0]});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not update organisation status."})}
+});
+
 const admin=["Super Admin","Admin"];
 app.get("/api/health",async(_req,res)=>{let database="not_configured";if(pool){try{await pool.query("SELECT 1");database="connected"}catch{database="disconnected"}}res.json({ok:true,service:"recruitflow-api",version:"0.7.0",database,authentication:Boolean(process.env.JWT_SECRET&&process.env.JWT_SECRET.length>=32),now:new Date().toISOString()})});
 app.get("/api",(_req,res)=>res.json({name:"RecruitFlow API",version:"0.7.0",status:"Automatic panel dispatch"}));
