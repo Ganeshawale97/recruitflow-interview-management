@@ -110,3 +110,6 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .domain-running,.progress-running{background:#fff6e6!important;border-color:#f6dfb1!important;color:#9a6814!important}
 .progress-domain-list>div{border-radius:9px;padding:12px 14px}
 .progress-domain-list>div span{font-weight:700}
+
+
+.candidate-completion-badge{display:inline-flex;align-items:center;gap:6px;width:max-content;margin:5px 0 8px;padding:7px 10px;border-radius:8px;background:#e5f7ec;border:1px solid #b8e7ca;color:#167b48;font-size:10px;font-weight:800;letter-spacing:.35px}
