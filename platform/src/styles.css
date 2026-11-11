@@ -142,3 +142,16 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 @media(max-width:650px){.org-register-screen{padding:18px 12px}.org-register-top{margin-bottom:18px}.org-register-card{padding:23px 17px}.org-register-card h1{font-size:23px}.org-register-top>a:first-child{font-size:17px}}
 
 .auth-register-link{text-align:center;margin-top:13px;color:#7d899e;font-size:11px}.auth-register-link a{color:#315fce;font-weight:800;text-decoration:none}.auth-register-link a:hover{text-decoration:underline}
+
+
+.invite-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(13,25,47,.52);display:grid;place-items:center;padding:18px;backdrop-filter:blur(3px)}
+.invite-modal{position:relative;width:min(100%,480px);background:#fff;border:1px solid #e4eaf3;border-radius:18px;padding:28px;box-shadow:0 24px 80px #0d193033}
+.invite-modal h2{font:800 23px Manrope;margin:10px 0 8px;color:#17243b}
+.invite-modal p{font-size:13px;line-height:1.65;color:#77849a;margin:0 0 20px}
+.invite-modal form{display:grid;gap:16px}
+.invite-modal form label{display:grid;gap:8px;font-size:12px;font-weight:700;color:#34445d}
+.invite-modal input{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #dce3ef;border-radius:9px;font:inherit;outline:none}
+.invite-modal input:focus{border-color:#6878df;box-shadow:0 0 0 3px #6878df20}
+.invite-modal-close{position:absolute;right:15px;top:12px;border:0;background:transparent;color:#77849a;font-size:26px;cursor:pointer}
+.invite-modal-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.invite-modal-actions .primary-button{width:auto}
