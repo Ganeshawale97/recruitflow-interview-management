@@ -27,3 +27,51 @@
 
 /* Phase 1.6 selection and reporting */
 .report-download{margin:15px 0 0}.table-wrap td small{display:inline-block;color:#8792a7;font-size:10px;margin-top:4px}.table-wrap td .status-tag{margin:0;display:inline-block;white-space:normal;line-height:1.4}
+
+
+/* Phase 1.8 role-based workspace redesign */
+:root{--rf-ink:#17243b;--rf-muted:#77849a;--rf-line:#e8edf4;--rf-primary:#315fce;--rf-soft:#eff4ff}
+body{background:#f5f7fb;color:var(--rf-ink)}
+.sidebar{background:#14213a;padding:24px 16px}
+.brand{margin-bottom:28px}
+.event-switch{background:#1d2d4c;border:1px solid #314363;border-radius:14px;padding:15px;margin-bottom:23px}
+.event-switch small{color:#9eb0ce}.event-switch b{line-height:1.45}.event-switch span{color:#b8c5d9}
+.nav-group>p{font-size:9px;letter-spacing:1.5px;color:#91a3c2;font-weight:800}
+.nav-item{padding:12px 13px;margin:4px 0;border-radius:10px;font-size:13px;transition:background .15s,color .15s}
+.nav-item.active{background:#2c4267;box-shadow:inset 3px 0 #8baeff;color:#fff}
+.nav-item:hover{background:#243858;color:#fff}
+.topbar{padding:0 38px;box-shadow:0 3px 14px #182b4b06}
+.content{padding:36px 40px 30px}
+.page-heading{margin-bottom:28px}
+.page-heading h1{font-size:30px;letter-spacing:-.7px}
+.page-heading p{font-size:13px;color:#8995a8}
+.surface,.metric{border-radius:15px;box-shadow:0 7px 24px #1c315008;border-color:#e9edf4}
+.surface{padding:24px;margin-bottom:17px}
+.surface h2{font-size:16px}
+.metric{padding:20px}
+.metric strong{font-size:31px;color:#1c2c49}
+.welcome-strip{display:flex;align-items:center;justify-content:space-between;gap:20px;background:linear-gradient(110deg,#eaf1ff,#f7f9ff 70%);border:1px solid #dce7ff;border-radius:17px;padding:25px 27px;margin-bottom:19px}
+.welcome-strip h2{font:800 24px Manrope,sans-serif;margin:7px 0 5px;color:#1a2b49}
+.welcome-strip p{margin:0;color:#74839b;font-size:13px;line-height:1.5}
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #dfe8f7;border-radius:30px;color:#4b6285;font-size:11px;font-weight:700;white-space:nowrap}
+.live-pill i{width:7px;height:7px;border-radius:50%;background:#22b77c;box-shadow:0 0 0 4px #22b77c1c}
+.quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:17px 0}
+.quick-actions button{display:flex;align-items:center;gap:15px;text-align:left;padding:18px;border:1px solid #e6ebf3;border-radius:13px;background:#fff;cursor:pointer;color:#315fce;transition:transform .15s,border-color .15s,box-shadow .15s}
+.quick-actions button:hover{transform:translateY(-2px);border-color:#cbd9f5;box-shadow:0 8px 20px #1c31500d}
+.quick-actions button>svg{width:22px;height:22px;flex-shrink:0}
+.quick-actions button span{display:grid;gap:4px}
+.quick-actions b{font:700 13px Manrope;color:#243653}
+.quick-actions small{font-size:11px;color:#8491a5}
+.role-primary{display:inline-flex;align-items:center;gap:12px;border:0;border-radius:11px;background:#315fce;color:#fff;padding:14px 18px;font:700 13px 'DM Sans';cursor:pointer;box-shadow:0 6px 15px #315fce25}
+.role-primary:hover,.primary-button:hover{background:#244fae}
+.metric-word{font-size:19px!important;text-transform:capitalize}
+.panel-card{border-radius:13px;padding:17px}
+.panel-card p{line-height:1.5}
+.panel-assign-toolbar label{font-size:12px!important;color:#53627a}
+.wide-select{padding:12px 13px;border-color:#e0e6ef;border-radius:10px}
+.primary-button{background:#315fce;border-radius:10px;padding:12px 16px}
+.text-button{color:#315fce}
+.queue-card{border-radius:12px;padding:15px}
+.status-tag{background:#edf2ff;color:#315fce}
+@media(max-width:1000px){.content{padding:27px 22px}.topbar{padding:0 20px}}
+@media(max-width:650px){.content{padding:20px 14px}.welcome-strip{align-items:flex-start;flex-direction:column;padding:20px}.welcome-strip h2{font-size:21px}.quick-actions{grid-template-columns:1fr}.surface{padding:17px}.page-heading h1{font-size:25px}.topbar{padding:0 13px}.top-actions{gap:8px}}
