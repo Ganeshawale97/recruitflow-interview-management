@@ -75,3 +75,27 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .status-tag{background:#edf2ff;color:#315fce}
 @media(max-width:1000px){.content{padding:27px 22px}.topbar{padding:0 20px}}
 @media(max-width:650px){.content{padding:20px 14px}.welcome-strip{align-items:flex-start;flex-direction:column;padding:20px}.welcome-strip h2{font-size:21px}.quick-actions{grid-template-columns:1fr}.surface{padding:17px}.page-heading h1{font-size:25px}.topbar{padding:0 13px}.top-actions{gap:8px}}
+
+
+/* Interviewer-only focused workspace */
+.interviewer-desk{max-width:980px;margin:0 auto}
+.interviewer-desk-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}
+.interviewer-desk-head h2{font:800 21px Manrope;margin:7px 0}
+.interviewer-desk-head p{font-size:12px;color:#8290a5;margin:0}
+.interviewer-assigned-list{display:grid;gap:13px;margin-top:14px}
+.interviewer-participant{border:1px solid #e5ebf4;border-radius:14px;padding:18px;background:#fff}
+.participant-main{display:flex;align-items:center;gap:12px}
+.participant-avatar{width:43px;height:43px;display:grid;place-items:center;border-radius:13px;background:#edf2ff;color:#315fce;font:800 13px Manrope;flex-shrink:0}
+.participant-main h3{font:700 15px Manrope;margin:0 0 4px}
+.participant-main p{font-size:11px;color:#8491a5;margin:0}
+.participant-main .status-tag{margin-left:auto}
+.status-live{background:#fff4e5;color:#a76b18}
+.participant-details{display:grid;grid-template-columns:1fr 2fr;gap:12px;padding:14px 0;margin:12px 0;border-top:1px solid #eef1f6;border-bottom:1px solid #eef1f6}
+.participant-details span{display:grid;gap:5px;font-size:12px;color:#465671}
+.participant-details b{font-size:10px;color:#8995a8;text-transform:uppercase;letter-spacing:.5px}
+.interviewer-participant .role-primary{margin-top:4px}
+.interviewer-empty{text-align:center;padding:42px 18px}
+.interviewer-empty .placeholder-icon{margin:0 auto 13px}
+.interviewer-empty h3{font:700 16px Manrope;margin:0 0 7px}
+.interviewer-empty p{font-size:12px;color:#8491a5;max-width:430px;line-height:1.6;margin:0 auto}
+@media(max-width:600px){.interviewer-desk-head{align-items:flex-start}.participant-main{flex-wrap:wrap}.participant-main .status-tag{margin-left:55px}.participant-details{grid-template-columns:1fr}}
