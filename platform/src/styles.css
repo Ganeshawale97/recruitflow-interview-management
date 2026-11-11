@@ -113,3 +113,8 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 
 
 .candidate-completion-badge{display:inline-flex;align-items:center;gap:6px;width:max-content;margin:5px 0 8px;padding:7px 10px;border-radius:8px;background:#e5f7ec;border:1px solid #b8e7ca;color:#167b48;font-size:10px;font-weight:800;letter-spacing:.35px}
+
+
+.domain-absent,.progress-absent{background:#f0f1f4!important;border-color:#d7dbe3!important;color:#687386!important}
+.exit-candidate-action{margin-top:9px!important;border-color:#f0c8c5!important;color:#b43d36!important;background:#fff8f7!important}
+.exit-candidate-action:hover{background:#ffefed!important}
