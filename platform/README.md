@@ -1,4 +1,4 @@
-# RecruitFlow Platform — Phase 1.6
+# RecruitFlow Platform — Phase 1.7
 
 React + TypeScript frontend and Express/PostgreSQL API. Legacy HTML prototypes remain preserved.
 
@@ -24,6 +24,15 @@ The Phase 1 schema already includes recruitment_events, event_users, domains, pa
 psql -U postgres -d recruitflow -f schema.sql
 ```
 If you applied schema.sql earlier, no migration is required for Phase 1.2.
+
+## Phase 1.7 — automatic panel dispatch
+- After check-in, RecruitFlow finds the next available panel matching the candidate's next uncompleted domain preference and creates a locked panel assignment.
+- First interviews are routed to the W1 volunteer; subsequent interviews are routed to the W2 volunteer.
+- Volunteers receive live dashboard notifications (5-second refresh) with participant, domain and assigned panel details.
+- Volunteers confirm **Confirm Participant Sent** after guiding the participant to the assigned panel.
+- Interviewers can start only after the volunteer confirms dispatch; the interviewer does not choose the panel.
+- After an interview is completed, the candidate returns to Waiting Room 2 when preferences remain and the next eligible panel dispatch is created automatically.
+- Dispatch records are created automatically in PostgreSQL on first use; no manual database migration or reset is required.
 
 ## Phase 1.6 features
 - Selection review ranks candidates by average completed interview score and displays interview progress, best score and strongest domain.
