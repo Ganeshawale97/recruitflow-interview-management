@@ -117,26 +117,31 @@ app.post("/api/events/:id/candidates/:candidateId/withdraw-remaining",requireDb,
  const client=await pool.connect();
  try{
   await client.query("BEGIN");
-  await client.query("ALTER TABLE interviews DROP CONSTRAINT IF EXISTS interviews_status_check");
+  // Replace any older CHECK constraint on interviews.status so 'absent' is valid.
+  const checks=await client.query("SELECT conname FROM pg_constraint WHERE conrelid='interviews'::regclass AND contype='c' AND pg_get_constraintdef(oid) ILIKE '%status%'");
+  for(const row of checks.rows) await client.query('ALTER TABLE interviews DROP CONSTRAINT "'+String(row.conname).replace(/"/g,'""')+'"');
   await client.query("ALTER TABLE interviews ADD CONSTRAINT interviews_status_check CHECK(status IN ('scheduled','in_progress','completed','cancelled','absent'))");
   const candidate=await client.query("SELECT id,status FROM candidates WHERE id=$1 AND event_id=$2 FOR UPDATE",[req.params.candidateId,req.params.id]);
-  if(!candidate.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Candidate not found."})}
+  if(!candidate.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Candidate not found in this event."})}
   if(["interviewed","withdrawn"].includes(candidate.rows[0].status)){await client.query("ROLLBACK");return res.status(409).json({error:"This participant has already completed or exited the interview process."})}
-  if(req.auth.role==="W2 Volunteer"&&!["waiting_2","called_to_panel"].includes(candidate.rows[0].status)){await client.query("ROLLBACK");return res.status(403).json({error:"W2 volunteers can record an exit only for participants currently in Waiting Room 2 or called from Waiting Room 2."})}
-  if(req.auth.role==="W2 Volunteer"&&candidate.rows[0].status==="called_to_panel"){const roleCheck=await client.query("SELECT 1 FROM panel_calls WHERE candidate_id=$1 AND event_id=$2 AND volunteer_role='W2 Volunteer' AND status IN ('pending','sent')",[req.params.candidateId,req.params.id]);if(!roleCheck.rowCount){await client.query("ROLLBACK");return res.status(403).json({error:"This participant is not assigned to the W2 volunteer queue."})}}
+  if(req.auth.role==="W2 Volunteer"&&!["waiting_2","called_to_panel"].includes(candidate.rows[0].status)){await client.query("ROLLBACK");return res.status(403).json({error:"W2 volunteers can process exits only from Waiting Room 2 or its assigned panel."})}
+  if(req.auth.role==="W2 Volunteer"&&candidate.rows[0].status==="called_to_panel"){
+   const roleCheck=await client.query("SELECT 1 FROM panel_calls pc WHERE pc.candidate_id=$1 AND pc.event_id=$2 AND pc.status IN ('pending','sent') AND (pc.volunteer_role='W2 Volunteer' OR EXISTS(SELECT 1 FROM interviews done WHERE done.candidate_id=pc.candidate_id AND done.status='completed')) LIMIT 1",[req.params.candidateId,req.params.id]);
+   if(!roleCheck.rowCount){await client.query("ROLLBACK");return res.status(403).json({error:"This participant is not in your Waiting Room 2 dispatch queue."})}
+  }
   const active=await client.query("SELECT 1 FROM interviews WHERE candidate_id=$1 AND status='in_progress' LIMIT 1",[req.params.candidateId]);
-  if(active.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"The participant has an interview in progress. Complete or cancel that interview before exiting."})}
-  const pending=await client.query("SELECT cp.domain_id,p.id AS panel_id FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=$2 AND p.active=true WHERE cp.candidate_id=$1 AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=$1 AND i.domain_id=cp.domain_id AND i.status='completed') AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=$1 AND i.domain_id=cp.domain_id AND i.status='absent')",[req.params.candidateId,req.params.id]);
+  if(active.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"An interview is currently in progress. Complete it before processing the exit."})}
+  const pending=await client.query("SELECT cp.domain_id,p.id AS panel_id FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=$2 WHERE cp.candidate_id=$1 AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=$1 AND i.domain_id=cp.domain_id AND i.status IN ('completed','absent'))",[req.params.candidateId,req.params.id]);
   for(const item of pending.rows){
-   await client.query("INSERT INTO interviews(candidate_id,panel_id,domain_id,status,feedback,completed_at) VALUES($1,$2,$3,'absent','Participant exited before attending this domain interview.',now()) ON CONFLICT DO NOTHING",[req.params.candidateId,item.panel_id,item.domain_id]);
+   await client.query("INSERT INTO interviews(candidate_id,panel_id,domain_id,status,feedback,completed_at) VALUES($1,$2,$3,'absent','Participant exited before attending this domain interview.',now())",[req.params.candidateId,item.panel_id,item.domain_id]);
   }
   await client.query("UPDATE panel_calls SET status='cancelled',updated_at=now() WHERE candidate_id=$1 AND status IN ('pending','sent')",[req.params.candidateId]);
   await client.query("UPDATE candidates SET status='withdrawn' WHERE id=$1",[req.params.candidateId]);
-  await client.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'candidate_withdrew_remaining_interviews','candidate',$3,$4::jsonb)",[req.params.id,req.auth.sub,req.params.candidateId,JSON.stringify({absentDomains:pending.rowCount})]);
+  await client.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'candidate_withdrew_remaining_interviews','candidate',$3,$4::jsonb)",[req.params.id,req.auth.sub,req.params.candidateId,JSON.stringify({absentDomains:pending.rowCount,processedByRole:req.auth.role})]);
   await client.query("COMMIT");
   await dispatchNextForEvent(req.params.id);
-  res.json({ok:true,message:"Participant exited. Completed interview scores were preserved and remaining domains were marked absent.",absentCount:pending.rowCount});
- }catch(e){await client.query("ROLLBACK");console.error("Participant withdrawal failed:",e);res.status(500).json({error:"Could not record participant exit."})}finally{client.release()}
+  res.json({ok:true,message:"Participant exit recorded. Completed scores were preserved and remaining interviews were marked absent.",absentCount:pending.rowCount});
+ }catch(e){await client.query("ROLLBACK");console.error("Participant withdrawal failed:",e);res.status(500).json({error:"Could not record participant exit: "+(e.message||e.code||"database error")})}finally{client.release()}
 });
 app.get("/api/events/:id/candidates/:candidateId/progress",requireDb,requireAuth,requireRole("Super Admin","Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"),async(req,res)=>{try{const c=await pool.query("SELECT id,candidate_code,name,status FROM candidates WHERE id=$1 AND event_id=$2",[req.params.candidateId,req.params.id]);if(!c.rowCount)return res.status(404).json({error:"Candidate not found."});const q=await pool.query("SELECT cp.priority,d.id AS domain_id,d.name AS domain,COALESCE(i.status,'pending') AS interview_status,i.total_score,i.technical,i.communication,i.problem_solving,i.domain_knowledge,i.feedback,i.completed_at,p.name AS panel FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id LEFT JOIN LATERAL(SELECT * FROM interviews WHERE candidate_id=cp.candidate_id AND domain_id=cp.domain_id ORDER BY created_at DESC LIMIT 1)i ON true LEFT JOIN panels p ON p.id=i.panel_id WHERE cp.candidate_id=$1 ORDER BY cp.priority",[req.params.candidateId]);const completed=q.rows.filter(x=>x.interview_status==='completed');const ranked=[...completed].sort((a,b)=>(Number(b.total_score)||0)-(Number(a.total_score)||0)||a.priority-b.priority);res.json({candidate:c.rows[0],domains:q.rows,completedCount:completed.length,totalPreferences:q.rowCount,finalDomain:ranked[0]?.domain||null,finalScore:ranked[0]?.total_score??null,finalRanking:ranked.map((x,i)=>({rank:i+1,domain:x.domain,priority:x.priority,score:x.total_score}))})}catch(e){console.error(e);res.status(500).json({error:"Could not load candidate interview progress."})}});
 
