@@ -13,7 +13,7 @@ const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
 app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"2mb"}));
 const uploadDirectory=path.resolve(process.cwd(),"uploads");
-app.use("/uploads",express.static(uploadDirectory,{fallthrough:false,maxAge:"7d",immutable:true}));
+app.use("/uploads",(req,res,next)=>{res.setHeader("Cross-Origin-Resource-Policy","cross-origin");next()},express.static(uploadDirectory,{fallthrough:false,maxAge:"7d",immutable:true}));
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."}});
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
