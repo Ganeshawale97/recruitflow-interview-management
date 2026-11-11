@@ -157,3 +157,22 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .invite-modal-actions .primary-button{width:auto}
 
 .invite-link-label{display:grid;gap:8px;font-size:12px;font-weight:700;color:#34445d}.invite-link-label input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #dce3ef;border-radius:9px;background:#f7f9fc;color:#34445d;font-size:12px}.invite-copy-hint{display:block;margin-top:12px;color:#77849a;font-size:11px;line-height:1.5;word-break:break-word}
+
+
+/* Organisation branding settings */
+.org-settings-surface{max-width:1050px}
+.org-settings-form{display:grid;gap:15px;max-width:760px}
+.org-settings-form h3{font:800 14px Manrope;color:#263550;margin:15px 0 0;padding-bottom:9px;border-bottom:1px solid #edf0f6}
+.org-settings-form>label,.org-color-fields label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#34445d}
+.org-settings-form input:not([type=color]),.org-settings-form textarea{width:100%;padding:11px 12px;border:1px solid #dce3ef;border-radius:9px;background:#fff;color:#263550;font:13px 'DM Sans',sans-serif;outline:none}
+.org-settings-form input:focus,.org-settings-form textarea:focus{border-color:#7278e8;box-shadow:0 0 0 3px #7278e81a}
+.org-settings-form small{font-size:10px;font-weight:400;color:#8792a6;line-height:1.5}
+.org-brand-preview{display:flex;align-items:center;gap:13px;padding:17px;border:1px solid #e7ebf3;border-top:4px solid #6568e9;border-radius:12px;background:#f9faff;margin:5px 0 10px}
+.org-brand-preview img,.org-logo-placeholder{width:52px;height:52px;border-radius:11px;object-fit:contain;background:#fff;border:1px solid #e8ebf3}
+.org-logo-placeholder{display:grid;place-items:center;background:#6568e9;color:#fff;font:800 22px Manrope}
+.org-brand-preview>div:last-child{display:grid;gap:5px;color:#263550}
+.org-brand-preview small{font-size:11px;color:#8490a5}
+.org-color-fields{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.org-color-fields input[type=color]{width:100%;height:43px;border:1px solid #dce3ef;border-radius:9px;padding:4px;background:#fff;cursor:pointer}
+.org-settings-actions{display:flex;justify-content:flex-start;padding-top:8px}
+@media(max-width:600px){.org-color-fields{grid-template-columns:1fr}.org-settings-form{gap:12px}}
