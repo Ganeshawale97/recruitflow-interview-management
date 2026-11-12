@@ -17,8 +17,19 @@ app.use("/uploads",(req,res,next)=>{res.setHeader("Cross-Origin-Resource-Policy"
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."}});
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
-function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});if(req.auth.role==="Organization Admin"&&req.path!=="/api/auth/me"&&!req.path.startsWith("/api/organization/")&&!req.path.startsWith("/api/events/"))return res.status(403).json({error:"This workspace feature is not enabled yet. Your organisation data remains protected."});next()}catch{return res.status(401).json({error:"Session expired. Please sign in again."})}}
+function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});if(req.auth.role==="Organization Admin"&&req.path!=="/api/auth/me"&&!req.path.startsWith("/api/organization/")&&!req.path.startsWith("/api/events/"))return res.status(403).json({error:"This workspace feature is not enabled yet. Your organisation data remains protected."});if(["POST","PUT","PATCH","DELETE"].includes(req.method.toUpperCase()))writePlatformAudit(req).finally(()=>next());else next()}catch{return res.status(401).json({error:"Session expired. Please sign in again."})}}
 function requireRole(...roles){return async(req,res,next)=>{try{if(!req.auth)return res.status(401).json({error:"Authentication required."});const q=await pool.query("SELECT u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1",[req.auth.sub]);if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"Account is unavailable."});req.auth.role=q.rows[0].role;const effectiveRole=req.auth.role==="Organization Admin"&&req.orgEventAuthorized?"Admin":req.auth.role;if(!roles.includes(effectiveRole))return res.status(403).json({error:"Your current account role ("+req.auth.role+") is not permitted to perform this action."});next()}catch(e){console.error(e);res.status(500).json({error:"Could not verify account permissions."})}}}
+
+async function writePlatformAudit(req){
+ const method=req.method.toUpperCase();
+ if(!["POST","PUT","PATCH","DELETE"].includes(method)||req.path.startsWith("/api/platform/audit"))return;
+ try{
+  const eventMatch=req.path.match(/\/api\/events\/([^/]+)/),eventId=eventMatch?eventMatch[1]:null;
+  const member=await pool.query("SELECT organization_id FROM organization_memberships WHERE user_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1",[req.auth.sub]);
+  const orgId=member.rows[0]?.organization_id||null;
+  await pool.query("INSERT INTO platform_audit_logs(actor_id,organization_id,event_id,action,method,path,ip_address,user_agent,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",[req.auth.sub,orgId,eventId,method.toLowerCase()+":"+req.path,method,req.path,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500),JSON.stringify({queryKeys:Object.keys(req.query||{}),bodyKeys:Object.keys(req.body||{}).filter(k=>!/(password|token|secret|imageData)/i.test(k)})]);
+ }catch(e){console.error("Platform audit write failed:",e.message)}
+}
 function safeUser(r){return{id:r.id,username:r.username,email:r.email,displayName:r.display_name,role:r.role,active:r.active,createdAt:r.created_at}}
 
 async function requirePlatformOwner(req,res,next){
@@ -206,6 +217,18 @@ app.patch("/api/organization/events/:id/status",requireDb,requireAuth,async(req,
 app.get("/api/organization/workspace",requireDb,requireAuth,async(req,res)=>{
  if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
  try{const q=await pool.query("SELECT o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.branding,o.created_at,(SELECT count(*)::int FROM recruitment_events e WHERE e.organization_id=o.id) AS events,(SELECT count(*)::int FROM organization_memberships m WHERE m.organization_id=o.id AND m.status='active') AS staff,(SELECT count(*)::int FROM recruitment_events e JOIN candidates c ON c.event_id=e.id WHERE e.organization_id=o.id) AS candidates FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' LIMIT 1",[req.auth.sub]);if(!q.rowCount)return res.status(403).json({error:"Organisation membership is inactive."});res.json({organization:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"Could not load organisation workspace."})}
+});
+
+app.get("/api/platform/audit",requireDb,requireAuth,requirePlatformOwner,async(req,res)=>{
+ try{
+  await pool.query("CREATE TABLE IF NOT EXISTS platform_audit_logs(id bigserial PRIMARY KEY,actor_id uuid,organization_id uuid,event_id uuid,action text NOT NULL,method text NOT NULL,path text NOT NULL,ip_address text,user_agent text,details jsonb NOT NULL DEFAULT '{}'::jsonb,created_at timestamptz NOT NULL DEFAULT now())");
+  await pool.query("CREATE INDEX IF NOT EXISTS platform_audit_logs_created_idx ON platform_audit_logs(created_at DESC)");
+  await pool.query("CREATE INDEX IF NOT EXISTS platform_audit_logs_org_idx ON platform_audit_logs(organization_id,created_at DESC)");
+  const limit=Math.min(200,Math.max(1,Number(req.query.limit)||100)),offset=Math.max(0,Number(req.query.offset)||0),orgId=String(req.query.organizationId||"");
+  const q=await pool.query("SELECT l.id,l.actor_id,l.organization_id,l.event_id,l.action,l.method,l.path,l.ip_address,l.user_agent,l.details,l.created_at,u.display_name AS actor_name,u.email AS actor_email,o.name AS organization_name,e.name AS event_name FROM platform_audit_logs l LEFT JOIN users u ON u.id=l.actor_id LEFT JOIN organizations o ON o.id=l.organization_id LEFT JOIN recruitment_events e ON e.id=l.event_id WHERE ($1='' OR l.organization_id::text=$1) ORDER BY l.created_at DESC LIMIT $2 OFFSET $3",[orgId,limit,offset]);
+  const count=await pool.query("SELECT count(*)::int AS total FROM platform_audit_logs WHERE ($1='' OR organization_id::text=$1)",[orgId]);
+  res.json({activities:q.rows,total:count.rows[0].total,limit,offset});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load platform audit history."})}
 });
 app.get("/api/platform/overview",requireDb,requireAuth,requirePlatformOwner,async(_req,res)=>{
  try{
