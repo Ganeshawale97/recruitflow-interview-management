@@ -181,3 +181,41 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .org-settings-form input[type=file]{width:100%;padding:11px;border:1px dashed #cbd4e4;border-radius:9px;background:#f9faff;color:#53617a;font:12px 'DM Sans',sans-serif;cursor:pointer}
 .org-settings-form input[type=file]::file-selector-button{margin-right:12px;padding:8px 12px;border:0;border-radius:7px;background:#e9ebff;color:#454bc0;font:700 11px 'DM Sans',sans-serif;cursor:pointer}
 .org-brand-preview img{width:64px;height:64px;object-fit:contain;padding:4px}
+
+
+/* Organisation recruitment event manager */
+.org-events-page{display:grid;gap:18px}
+.org-events-notice{padding:12px 15px;border:1px solid #bfe9d8;border-radius:10px;background:#effbf5;color:#08784e;font-size:13px}
+.org-event-editor{display:grid;gap:18px}
+.org-event-form{display:grid;gap:16px}
+.org-event-form>label,.org-event-form .portal-grid>label,.org-domain-editor label,.org-registration-field>label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#34445d}
+.org-event-form input:not([type=checkbox]),.org-event-form textarea,.org-event-form select{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #dce3ef;border-radius:9px;background:#fff;color:#263550;font:13px 'DM Sans',sans-serif;outline:none}
+.org-event-form input:focus,.org-event-form textarea:focus,.org-event-form select:focus{border-color:#7278e8;box-shadow:0 0 0 3px #7278e81a}
+.org-event-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding-bottom:10px;border-bottom:1px solid #edf0f6}
+.org-event-section-title h4{margin:0 0 4px;font:800 14px Manrope;color:#263550}
+.org-event-section-title p{margin:0;color:#8792a6;font-size:11px}
+.org-domain-editor{display:grid;gap:10px;padding:15px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff}
+.org-domain-heading,.org-panel-input{display:flex;align-items:end;gap:10px}
+.org-domain-heading label,.org-panel-input label{flex:1}
+.org-panel-input{padding-left:15px}
+.icon-danger{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border:1px solid #f0d3d3;border-radius:8px;background:#fff7f7;color:#c64b4b;cursor:pointer}
+.icon-danger:disabled{opacity:.35;cursor:not-allowed}
+.org-registration-field{display:grid;grid-template-columns:1.2fr 1fr auto;gap:10px;align-items:end;padding:13px;border:1px solid #e6eaf2;border-radius:10px}
+.org-registration-field .org-required-field{display:flex;align-items:center;gap:7px;padding-bottom:10px}
+.org-registration-field .org-required-field input{width:auto}
+.org-event-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:8px}
+.org-events-empty{display:grid;justify-items:center;gap:9px;padding:38px 15px;color:#8490a5;text-align:center}
+.org-events-empty b{color:#34445d}
+.org-events-list{display:grid;gap:12px}
+.org-event-card{padding:17px;border:1px solid #e6eaf2;border-radius:12px;background:#fff}
+.org-event-card-main{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.org-event-card h3{margin:0 0 6px;font:800 15px Manrope;color:#263550}
+.org-event-card p{margin:0 0 7px;color:#8792a6;font-size:12px}
+.org-event-card small{color:#65728a;font-size:11px}
+.org-event-status{padding:5px 10px;border-radius:20px;background:#f0f2f7;color:#58657a;font-size:10px;font-weight:800;text-transform:uppercase}
+.org-event-status.status-open,.org-event-status.status-live{background:#e8f8ef;color:#08784e}
+.org-event-stats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;color:#718098;font-size:11px}
+.org-event-stats span{padding:6px 9px;border-radius:7px;background:#f5f7fb}
+.org-event-card-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.org-event-card-actions select{padding:8px 10px;border:1px solid #dce3ef;border-radius:8px;background:#fff;color:#34445d;font-size:11px}
+@media(max-width:650px){.org-registration-field{grid-template-columns:1fr}.org-event-card-main{flex-direction:column}.org-event-section-title{align-items:flex-start;flex-direction:column}}
