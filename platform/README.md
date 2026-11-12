@@ -76,3 +76,11 @@ If you applied schema.sql earlier, no migration is required for Phase 1.2.
 - Only Admin/Super Admin can create events and manage users/team/panel assignments.
 - The frontend hides restricted modules, but the API enforces permissions too.
 - Candidate registration, interview execution and audit-event history are separate upcoming phases.
+
+## Phase 3 advanced event operations foundation
+Migration 007 adds event-scoped task management, incident tracking, volunteer attendance, candidate waitlists, interviewer question banks, and digital pass records. Apply it once to the existing RecruitFlow database after pulling the branch:
+```powershell
+cd platform\backend
+psql -U postgres -d recruitflow -f migrations\007_advanced_event_operations.sql
+```
+The Operations Hub is available inside an event dashboard for authorized administrators. Its APIs are event-scoped and use the existing event membership boundary. Current implemented tools: task creation/status tracking, incident reporting/status tracking, volunteer check-in/check-out, candidate waitlist management, interviewer question bank, digital pass issuance, and operational summary metrics. External AI providers, SMS/WhatsApp delivery, email delivery, and public candidate self-service flows require separate provider credentials and dedicated integration work; they are not represented as active until configured.
