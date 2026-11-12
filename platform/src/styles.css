@@ -235,3 +235,98 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .org-public-registration-link code{font-size:12px;color:#34445d;overflow-wrap:anywhere}
 .org-public-registration-link a{font-size:12px;font-weight:700;color:#555bd4;text-decoration:none}
 .org-public-registration-link small{font-size:11px;color:#8490a5}
+
+
+/* RecruitFlow visual refresh — unified event operations workspace */
+:root{
+ --rf-ink:#17243d;--rf-muted:#71809a;--rf-line:#e5eaf3;--rf-panel:#fff;
+ --rf-bg:#f4f6fb;--rf-primary:#5965df;--rf-primary-dark:#4652c8;
+ --rf-accent:#8b91ff;--rf-shadow:0 12px 34px rgba(23,36,61,.055);
+}
+html{scroll-behavior:smooth}
+body{background:var(--rf-bg);color:var(--rf-ink);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:'DM Sans',sans-serif}
+button{transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(89,101,223,.22);outline-offset:2px}
+.sidebar{width:270px;padding:25px 16px 18px;background:linear-gradient(180deg,#111c36 0%,#172746 100%);box-shadow:8px 0 32px rgba(17,28,54,.08)}
+.brand{font-size:24px;letter-spacing:-.7px;margin-bottom:34px}
+.brand-mark{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#747cff,#535cdb);box-shadow:0 7px 18px rgba(91,101,223,.28)}
+.event-switch{padding:16px;border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.12);margin-bottom:29px}
+.event-switch small,.nav-group>p{letter-spacing:1.45px;font-weight:700}
+.event-switch b{font:700 14px Manrope,sans-serif}
+.nav-group{margin-bottom:21px}
+.nav-item{padding:12px 13px;border-radius:11px;gap:13px;font-size:13px;margin:4px 0;color:#bac6df}
+.nav-item svg{opacity:.85}
+.nav-item.active,.nav-item:hover{background:rgba(130,146,255,.19);color:#fff}
+.nav-item.active{box-shadow:inset 3px 0 #98a4ff,0 5px 15px rgba(4,12,30,.12)}
+.main{margin-left:270px}
+.topbar{height:72px;padding:0 34px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:1px solid rgba(226,232,242,.9)}
+.breadcrumbs{font-size:12px;letter-spacing:.1px}
+.top-actions{gap:16px}
+.signed-user{font-size:12px;font-weight:600;color:#46536c}
+.avatar{width:37px;height:37px;background:linear-gradient(135deg,#eef0ff,#dfe4ff);color:#4e58c8;border:1px solid #dfe3ff}
+.content{max-width:1500px;padding:32px 36px 42px}
+.page-heading{margin-bottom:24px}
+.page-heading h1{font-size:28px;letter-spacing:-.7px;color:#17243d}
+.page-heading p,.surface-heading p{line-height:1.55}
+.eyebrow{letter-spacing:1.65px}
+.surface,.metric{border:1px solid var(--rf-line);border-radius:16px;box-shadow:var(--rf-shadow)}
+.surface{padding:23px}
+.metric{padding:19px;background:linear-gradient(180deg,#fff,#fcfdff)}
+.metric strong{font-size:30px;letter-spacing:-1px}
+.metric-top{font-weight:600}
+.grid-two{gap:19px}
+.primary-button{background:linear-gradient(135deg,#6570ed,#535ed7);border-radius:10px;padding:11px 16px;box-shadow:0 5px 13px rgba(83,94,215,.17);font-size:12px}
+.primary-button:hover{background:linear-gradient(135deg,#5965df,#4652c8);box-shadow:0 8px 18px rgba(83,94,215,.24);transform:translateY(-1px)}
+.primary-button:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.text-button{padding:8px 10px;border-radius:8px}
+.text-button:hover{background:#f0f2ff}
+.small-action{border:1px solid #e0e5f0;border-radius:9px;background:#fff;color:#4e5bd0;padding:8px 11px;font-size:11px;font-weight:700;cursor:pointer}
+.small-action:hover{background:#f3f4ff;border-color:#cfd4ff}
+.wide-select,.role-select select{border:1px solid #dfe5ef;border-radius:10px;background:#fff;padding:10px 12px;color:#34445d;font:12px 'DM Sans',sans-serif}
+.table-wrap{overflow:auto;border:1px solid #e9edf4;border-radius:12px}
+.table-wrap table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.table-wrap th{background:#f7f8fc;color:#65728a;font-size:10px;letter-spacing:.55px;text-transform:uppercase;font-weight:800;white-space:nowrap}
+.table-wrap th,.table-wrap td{padding:12px 14px;border-bottom:1px solid #edf0f5;text-align:left}
+.table-wrap tbody tr:last-child td{border-bottom:0}
+.table-wrap tbody tr:hover{background:#fafbff}
+.status-tag,.phase-pill{border-radius:999px;padding:6px 10px;letter-spacing:.15px}
+.alert{border-radius:11px;padding:12px 15px;font-size:12px}
+.placeholder{border-style:dashed;box-shadow:none;background:linear-gradient(180deg,#fff,#fbfcff)}
+.org-events-page{gap:20px}
+.org-event-editor{border-radius:16px}
+.org-event-card{padding:20px;border:1px solid #e4e9f2;border-radius:15px;box-shadow:0 5px 20px rgba(25,40,70,.035);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.org-event-card:hover{transform:translateY(-2px);border-color:#d6dcf8;box-shadow:0 13px 28px rgba(25,40,70,.075)}
+.org-event-card h3{font-size:17px;letter-spacing:-.2px}
+.org-event-stats{gap:9px;margin:15px 0}
+.org-event-stats span{padding:7px 11px;border-radius:8px;background:#f3f5fb;color:#586783;font-weight:600}
+.org-public-registration-link{padding:14px 15px;border-radius:11px;background:#f8f9fd;border-color:#e7ebf4}
+.org-public-registration-link code{font-size:11px;line-height:1.55}
+.org-public-registration-link a{width:max-content}
+.org-public-registration-link .primary-button{width:max-content;margin-top:7px!important}
+.org-event-card-actions{gap:9px;flex-wrap:wrap}
+.org-event-card-actions select{padding:9px 11px;border-radius:9px}
+.org-event-status{letter-spacing:.55px}
+.org-events-empty{border:1px dashed #dfe5f0;border-radius:13px;background:#fafbfe}
+.panel-grid{gap:13px}
+.panel-card{border:1px solid #e6eaf2;border-radius:13px;padding:16px;background:linear-gradient(180deg,#fff,#fbfcff);box-shadow:0 4px 15px rgba(23,36,61,.035)}
+.panel-card-top{display:flex;align-items:center;gap:10px}
+.panel-card p{color:#64728b;font-size:12px;line-height:1.5}
+.panel-card small{color:#8b96a9;font-size:10px}
+.queue-card,.ops-column,.interviewer-desk,.score-panel{border:1px solid #e5eaf3;border-radius:14px;box-shadow:0 5px 18px rgba(23,36,61,.035)}
+.auth-card{border-radius:22px;box-shadow:0 28px 85px rgba(26,43,80,.12)}
+.auth-card input,.password-field input{border-radius:10px}
+@media(max-width:1000px){
+ .sidebar{width:270px}
+ .main{margin-left:0}
+ .content{padding:27px 23px 36px}
+}
+@media(max-width:650px){
+ .content{padding:21px 14px 30px}
+ .topbar{padding:0 14px}
+ .surface{padding:17px}
+ .org-event-card{padding:15px}
+ .org-public-registration-link .primary-button{width:100%;justify-content:center}
+ .org-event-card-actions{justify-content:flex-start}
+ .org-event-card-actions select{flex:1}
+}
