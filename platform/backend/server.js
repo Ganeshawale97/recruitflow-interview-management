@@ -534,12 +534,13 @@ app.get("/api/events/:id/timeline",requireDb,requireAuth,requireRole(...reportRo
    ) timeline
    WHERE occurred_at IS NOT NULL ORDER BY occurred_at DESC LIMIT 150
   `,[req.params.id]);
+  const upcoming=await pool.query("SELECT sl.id,c.name AS candidate_name,c.candidate_code,p.name AS panel_name,d.name AS domain,sl.starts_at,sl.ends_at,sl.status,EXTRACT(EPOCH FROM (sl.starts_at-now()))::int AS seconds_until_start FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id WHERE sl.event_id=$1 AND sl.status IN ('scheduled','confirmed') AND sl.starts_at>now() ORDER BY sl.starts_at LIMIT 200",[req.params.id]);
   const rows=await buildSelectionRows(req.params.id);
   const completed=rows.filter(x=>Number(x.completed_count)>=Number(x.preference_count)&&Number(x.preference_count)>0).length;
   const selected=rows.filter(x=>x.recommendation==="Shortlist for review").length;
   const finalStages=[];
   if(completed){const lastCompletion=q.rows.find(x=>x.type==="interview_completed")?.occurred_at;if(lastCompletion)finalStages.push({id:"selection-review",type:"selection_ready",title:"Final selection review available",candidate_name:null,candidate_code:null,occurred_at:lastCompletion,description:completed+" candidate(s) have completed all preferred interviews. "+selected+" currently meet the shortlist recommendation."});}
-  res.json({event:event.rows[0],timeline:[...q.rows,...finalStages].sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at)).slice(0,150)});
+  res.json({event:event.rows[0],timeline:[...q.rows,...finalStages].sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at)).slice(0,150),upcoming:upcoming.rows});
  }catch(e){console.error("Event timeline failed:",e);res.status(500).json({error:"Could not load event timeline."})}
 });
 app.get("/api/events/:id/analytics",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
