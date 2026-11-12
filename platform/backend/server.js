@@ -538,7 +538,7 @@ app.get("/api/events/:id/timeline",requireDb,requireAuth,requireRole(...reportRo
   const completed=rows.filter(x=>Number(x.completed_count)>=Number(x.preference_count)&&Number(x.preference_count)>0).length;
   const selected=rows.filter(x=>x.recommendation==="Shortlist for review").length;
   const finalStages=[];
-  if(completed)finalStages.push({id:"selection-review",type:"selection_ready",title:"Final selection review ready",candidate_name:null,candidate_code:null,occurred_at:new Date().toISOString(),description:completed+" candidate(s) have completed all preferred interviews. "+selected+" currently meet the shortlist recommendation."});
+  if(completed){const lastCompletion=q.rows.find(x=>x.type==="interview_completed")?.occurred_at;if(lastCompletion)finalStages.push({id:"selection-review",type:"selection_ready",title:"Final selection review available",candidate_name:null,candidate_code:null,occurred_at:lastCompletion,description:completed+" candidate(s) have completed all preferred interviews. "+selected+" currently meet the shortlist recommendation."});}
   res.json({event:event.rows[0],timeline:[...q.rows,...finalStages].sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at)).slice(0,150)});
  }catch(e){console.error("Event timeline failed:",e);res.status(500).json({error:"Could not load event timeline."})}
 });
