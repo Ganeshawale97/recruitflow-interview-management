@@ -120,7 +120,7 @@ app.patch("/api/organization/settings",requireDb,requireAuth,async(req,res)=>{
  if(contactEmail&&!/^\S+@\S+\.\S+$/.test(contactEmail))return res.status(400).json({error:"Enter a valid contact email."});
  if(website&&logoUrl&&website===logoUrl)return res.status(400).json({error:"Website and logo URL must be different."});
  try{
-  const q=await pool.query("UPDATE organizations o SET name=$3,logo_url=NULLIF($4,''),primary_color=$5,secondary_color=$6,branding=COALESCE(o.branding,'{}'::jsonb)||$7::jsonb,updated_at=now() FROM organization_memberships m WHERE o.id=m.organization_id AND m.user_id=$1 AND m.status='active' AND o.status='active' RETURNING o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.branding,o.created_at",[req.auth.sub,name,logoUrl,primaryColor,secondaryColor,JSON.stringify({welcomeMessage,footerText,contactEmail,contactPhone,website})]);
+  const q=await pool.query("UPDATE organizations o SET name=$2,logo_url=NULLIF($3,''),primary_color=$4,secondary_color=$5,branding=COALESCE(o.branding,'{}'::jsonb)||$6::jsonb,updated_at=now() FROM organization_memberships m WHERE o.id=m.organization_id AND m.user_id=$1 AND m.status='active' AND o.status='active' RETURNING o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.branding,o.created_at",[req.auth.sub,name,logoUrl,primaryColor,secondaryColor,JSON.stringify({welcomeMessage,footerText,contactEmail,contactPhone,website})]);
   if(!q.rowCount)return res.status(403).json({error:"Active organisation membership is required."});
   res.json({organization:q.rows[0],message:"Organisation branding saved."});
  }catch(e){console.error(e);res.status(500).json({error:"Could not save organisation settings."})}
