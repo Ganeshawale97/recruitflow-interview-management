@@ -28,7 +28,7 @@ async function writePlatformAudit(req){
   const eventMatch=req.path.match(/\/api\/events\/([^/]+)/),eventId=eventMatch?eventMatch[1]:null;
   const member=await pool.query("SELECT organization_id FROM organization_memberships WHERE user_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1",[req.auth.sub]);
   const orgId=member.rows[0]?.organization_id||null;
-  await pool.query("INSERT INTO platform_audit_logs(actor_id,organization_id,event_id,action,method,path,ip_address,user_agent,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",[req.auth.sub,orgId,eventId,method.toLowerCase()+":"+req.path,method,req.path,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500),JSON.stringify({queryKeys:Object.keys(req.query||{}),bodyKeys:Object.keys(req.body||{}).filter(k=>!/(password|token|secret|imageData)/i.test(k)})]);
+  await pool.query("INSERT INTO platform_audit_logs(actor_id,organization_id,event_id,action,method,path,ip_address,user_agent,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",[req.auth.sub,orgId,eventId,method.toLowerCase()+":"+req.path,method,req.path,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500),JSON.stringify({queryKeys:Object.keys(req.query||{}),bodyKeys:Object.keys(req.body||{}).filter(k=>!/(password|token|secret|imageData)/i.test(k))})]);
  }catch(e){console.error("Platform audit write failed:",e.message)}
 }
 function safeUser(r){return{id:r.id,username:r.username,email:r.email,displayName:r.display_name,role:r.role,active:r.active,createdAt:r.created_at}}
