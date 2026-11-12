@@ -31,7 +31,7 @@ async function api(path:string,token?:string,options:RequestInit={}){const r=awa
 export default function App(){
  if(new URLSearchParams(location.search).has("accept-organization-invite"))return <OrganizationInviteAcceptance/>;
  if(new URLSearchParams(location.search).has("register-organization"))return <OrganizationRegistration/>;
- if(new URLSearchParams(location.search).has("register"))return <CandidateRegistration/>;
+ if(new URLSearchParams(location.search).has("register")||/^\\/register\\/[^/]+\\/?$/.test(location.pathname))return <CandidateRegistration/>;
  const [user,setUser]=useState<User|null>(null),[token,setToken]=useState(()=>sessionStorage.getItem("rf-session")||""),[apiStatus,setApiStatus]=useState("checking"),[mobile,setMobile]=useState(false),[section,setSection]=useState<Section>("Overview"),[identity,setIdentity]=useState(""),[password,setPassword]=useState(""),[showPassword,setShowPassword]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [inviteTarget,setInviteTarget]=useState<{id:string;name:string}|null>(null),[inviteEmail,setInviteEmail]=useState(""),[inviteBusy,setInviteBusy]=useState(false),[inviteUrl,setInviteUrl]=useState(""),[inviteCopied,setInviteCopied]=useState(false);
  const [orgSettings,setOrgSettings]=useState({name:"",logoUrl:"",primaryColor:"#6568e9",secondaryColor:"#898cff",welcomeMessage:"",footerText:"",contactEmail:"",contactPhone:"",website:""});
