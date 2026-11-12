@@ -512,6 +512,36 @@ app.get("/api/events/:id/selection",requireDb,requireAuth,requireRole(...reportR
  try{const e=await pool.query("SELECT id FROM recruitment_events WHERE id=$1",[req.params.id]);if(!e.rowCount)return res.status(404).json({error:"Event not found."});res.json({candidates:await buildSelectionRows(req.params.id)});}
  catch(e){console.error(e);res.status(500).json({error:"Could not build selection review."})}
 });
+app.get("/api/events/:id/timeline",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
+ try{
+  const event=await pool.query("SELECT id,name FROM recruitment_events WHERE id=$1",[req.params.id]);
+  if(!event.rowCount)return res.status(404).json({error:"Event not found."});
+  const q=await pool.query(`
+   SELECT * FROM (
+    SELECT c.id::text||':registered' AS id,'candidate_registered' AS type,'Candidate registered' AS title,c.name AS candidate_name,c.candidate_code, c.created_at AS occurred_at,'Candidate registration submitted' AS description FROM candidates c WHERE c.event_id=$1
+    UNION ALL
+    SELECT c.id::text||':checkin','candidate_checked_in','Venue check-in',c.name,c.candidate_code,c.checked_in_at,'Candidate checked in to Waiting Room 1' FROM candidates c WHERE c.event_id=$1 AND c.checked_in_at IS NOT NULL
+    UNION ALL
+    SELECT pc.id::text||':dispatch','panel_dispatched','Dispatched to panel',c.name,c.candidate_code,pc.sent_at,COALESCE(p.name,'Interview panel')||' · '||COALESCE(pc.volunteer_role,'Panel call') FROM panel_calls pc JOIN candidates c ON c.id=pc.candidate_id LEFT JOIN panels p ON p.id=pc.panel_id WHERE c.event_id=$1 AND pc.sent_at IS NOT NULL
+    UNION ALL
+    SELECT pc.id::text||':started','panel_started','Panel call started',c.name,c.candidate_code,pc.started_at,COALESCE(p.name,'Interview panel') FROM panel_calls pc JOIN candidates c ON c.id=pc.candidate_id LEFT JOIN panels p ON p.id=pc.panel_id WHERE c.event_id=$1 AND pc.started_at IS NOT NULL
+    UNION ALL
+    SELECT i.id::text||':interview_started','interview_started','Interview started',c.name,c.candidate_code,i.started_at,COALESCE(d.name,'Domain')||' interview' FROM interviews i JOIN candidates c ON c.id=i.candidate_id LEFT JOIN domains d ON d.id=i.domain_id WHERE c.event_id=$1 AND i.started_at IS NOT NULL
+    UNION ALL
+    SELECT i.id::text||':interview_completed','interview_completed','Interview completed',c.name,c.candidate_code,i.completed_at,COALESCE(d.name,'Domain')||' · Score '||COALESCE(i.total_score::text,'pending')||'/40' FROM interviews i JOIN candidates c ON c.id=i.candidate_id LEFT JOIN domains d ON d.id=i.domain_id WHERE c.event_id=$1 AND i.status='completed' AND i.completed_at IS NOT NULL
+    UNION ALL
+    SELECT al.id::text,'event_activity',replace(al.action,'_',' '),COALESCE(c.name,''),COALESCE(c.candidate_code,''),al.created_at,COALESCE(al.details->>'room',al.details->>'domain',al.entity_type,'Event activity') FROM audit_logs al LEFT JOIN candidates c ON al.entity_type='candidate' AND c.id=al.entity_id WHERE al.event_id=$1 AND al.action NOT IN ('candidate_checked_in')
+   ) timeline
+   WHERE occurred_at IS NOT NULL ORDER BY occurred_at DESC LIMIT 150
+  `,[req.params.id]);
+  const rows=await buildSelectionRows(req.params.id);
+  const completed=rows.filter(x=>Number(x.completed_count)>=Number(x.preference_count)&&Number(x.preference_count)>0).length;
+  const selected=rows.filter(x=>x.recommendation==="Shortlist for review").length;
+  const finalStages=[];
+  if(completed)finalStages.push({id:"selection-review",type:"selection_ready",title:"Final selection review ready",candidate_name:null,candidate_code:null,occurred_at:new Date().toISOString(),description:completed+" candidate(s) have completed all preferred interviews. "+selected+" currently meet the shortlist recommendation."});
+  res.json({event:event.rows[0],timeline:[...q.rows,...finalStages].sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at)).slice(0,150)});
+ }catch(e){console.error("Event timeline failed:",e);res.status(500).json({error:"Could not load event timeline."})}
+});
 app.get("/api/events/:id/analytics",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
  try{
   const e=await pool.query("SELECT id,name,status FROM recruitment_events WHERE id=$1",[req.params.id]);if(!e.rowCount)return res.status(404).json({error:"Event not found."});
