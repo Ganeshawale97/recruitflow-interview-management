@@ -88,7 +88,7 @@ app.post("/api/public/organization-invitations/accept",requireDb,organizationInv
 
 
 app.post("/api/organization/logo",requireDb,requireAuth,async(req,res)=>{
- if(req.auth.role!=="Organization Admin"||!req.auth.organizationId)return res.status(403).json({error:"Organisation administrator access required."});
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
  const dataUrl=String(req.body?.imageData||"");
  const match=dataUrl.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+=*)$/);
  if(!match)return res.status(400).json({error:"Choose a PNG, JPG or WEBP image."});
@@ -98,13 +98,13 @@ app.post("/api/organization/logo",requireDb,requireAuth,async(req,res)=>{
  const ext=match[1],sig=signatures[ext];
  if(ext==="webp"?(buffer.length<12||!buffer.subarray(0,4).equals(sig)||buffer.toString("ascii",8,12)!=="WEBP"):!buffer.subarray(0,sig.length).equals(sig))return res.status(400).json({error:"The image file contents do not match its format."});
  try{
-  const member=await pool.query("SELECT o.id FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE o.id=$1 AND m.user_id=$2 AND m.status='active' AND o.status='active'",[req.auth.organizationId,req.auth.sub]);
+  const member=await pool.query("SELECT o.id FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' LIMIT 1",[req.auth.sub]);
   if(!member.rowCount)return res.status(403).json({error:"Active organisation membership is required."});
   await mkdir(uploadDirectory,{recursive:true});
   const filename=randomUUID()+"."+({png:"png",jpeg:"jpg",webp:"webp"}[ext]);
   await writeFile(path.join(uploadDirectory,filename),buffer,{flag:"wx"});
   const logoUrl="/uploads/"+filename;
-  const updated=await pool.query("UPDATE organizations SET logo_url=$2,updated_at=now() WHERE id=$1 RETURNING logo_url",[req.auth.organizationId,logoUrl]);
+  const updated=await pool.query("UPDATE organizations SET logo_url=$2,updated_at=now() WHERE id=$1 RETURNING logo_url",[member.rows[0].id,logoUrl]);
   res.status(201).json({logoUrl:updated.rows[0].logo_url,message:"Organisation logo uploaded."});
  }catch(e){console.error(e);res.status(500).json({error:"Could not upload organisation logo."})}
 });
@@ -120,7 +120,7 @@ app.patch("/api/organization/settings",requireDb,requireAuth,async(req,res)=>{
  if(contactEmail&&!/^\S+@\S+\.\S+$/.test(contactEmail))return res.status(400).json({error:"Enter a valid contact email."});
  if(website&&logoUrl&&website===logoUrl)return res.status(400).json({error:"Website and logo URL must be different."});
  try{
-  const q=await pool.query("UPDATE organizations o SET name=$3,logo_url=NULLIF($4,''),primary_color=$5,secondary_color=$6,branding=COALESCE(o.branding,'{}'::jsonb)||$7::jsonb,updated_at=now() FROM organization_memberships m WHERE o.id=m.organization_id AND m.user_id=$1 AND m.status='active' AND o.status='active' AND o.id=$2 RETURNING o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.branding,o.created_at",[req.auth.sub,req.auth.organizationId||null,name,logoUrl,primaryColor,secondaryColor,JSON.stringify({welcomeMessage,footerText,contactEmail,contactPhone,website})]);
+  const q=await pool.query("UPDATE organizations o SET name=$3,logo_url=NULLIF($4,''),primary_color=$5,secondary_color=$6,branding=COALESCE(o.branding,'{}'::jsonb)||$7::jsonb,updated_at=now() FROM organization_memberships m WHERE o.id=m.organization_id AND m.user_id=$1 AND m.status='active' AND o.status='active' RETURNING o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.branding,o.created_at",[req.auth.sub,name,logoUrl,primaryColor,secondaryColor,JSON.stringify({welcomeMessage,footerText,contactEmail,contactPhone,website})]);
   if(!q.rowCount)return res.status(403).json({error:"Active organisation membership is required."});
   res.json({organization:q.rows[0],message:"Organisation branding saved."});
  }catch(e){console.error(e);res.status(500).json({error:"Could not save organisation settings."})}
