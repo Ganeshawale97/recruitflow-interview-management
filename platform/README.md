@@ -100,9 +100,5 @@ The Operations Hub automation tabs provide:
 Email, SMS and WhatsApp delivery are not active without configured provider credentials. Browser camera QR scanning is not included; use a QR scanner that enters the decoded pass code.
 
 ## Automatic candidate QR entry passes
-Every successful public registration now creates a unique candidate pass code and QR image. The registration success screen displays the QR image and a download button. If SMTP is configured, RecruitFlow emails the QR pass as an inline image attachment.
-Configure these optional variables in `platform/backend/.env` (see `.env.example`):
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`
-- `SMTP_USER`, `SMTP_PASS`
-- `MAIL_FROM`
-Restart the backend after changing environment variables. For Gmail, use an app password with 2-Step Verification; never commit the real `.env` file or share SMTP credentials. Without SMTP configuration, the participant still sees and can download the QR pass on the registration confirmation screen, but no email is sent. Existing registrations are not retroactively emailed by this change.
+Every successful public registration now creates a unique candidate pass code and QR image. The registration success screen displays the QR image and a download button. Email delivery is intentionally disabled; participants download the QR pass from the confirmation page.
+No SMTP credentials or email provider are needed. Participants see and download the QR pass directly from the registration confirmation page. Existing registrations are not retroactively emailed by this change.
