@@ -11,7 +11,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
-app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"2mb"}));
+app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"15mb"}));
 const uploadDirectory=path.resolve(process.cwd(),"uploads");
 app.use("/uploads",(req,res,next)=>{res.setHeader("Cross-Origin-Resource-Policy","cross-origin");next()},express.static(uploadDirectory,{fallthrough:false,maxAge:"7d",immutable:true}));
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."}});
@@ -93,7 +93,7 @@ app.post("/api/organization/logo",requireDb,requireAuth,async(req,res)=>{
  const match=dataUrl.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+=*)$/);
  if(!match)return res.status(400).json({error:"Choose a PNG, JPG or WEBP image."});
  const buffer=Buffer.from(match[2],"base64");
- if(!buffer.length||buffer.length>1400000)return res.status(413).json({error:"Logo image must be smaller than 1.4 MB."});
+ if(!buffer.length||buffer.length>10*1024*1024)return res.status(413).json({error:"Logo image must be 10 MB or smaller."});
  const signatures={png:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]),jpeg:Buffer.from([0xff,0xd8,0xff]),webp:Buffer.from("RIFF")};
  const ext=match[1],sig=signatures[ext];
  if(ext==="webp"?(buffer.length<12||!buffer.subarray(0,4).equals(sig)||buffer.toString("ascii",8,12)!=="WEBP"):!buffer.subarray(0,sig.length).equals(sig))return res.status(400).json({error:"The image file contents do not match its format."});
