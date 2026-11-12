@@ -169,6 +169,16 @@ app.post("/api/organization/events",requireDb,requireAuth,async(req,res)=>{
  await client.query("COMMIT");res.status(201).json({event:event.rows[0],domains:cfg.domains});
  }catch(e){await client.query("ROLLBACK");if(e.code==="23505"){console.error("Recruitment event unique constraint:",e.constraint,e.detail);return res.status(409).json({error:e.constraint?.toLowerCase().includes("slug")?"That event URL slug is already in use. Choose another.":"A domain or panel with a conflicting name already exists for this event. Check the domain and panel names, then try again."})}console.error(e);res.status(500).json({error:"Could not create recruitment event."})}finally{client.release()}
 });
+app.get("/api/organization/events/:id/candidates",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
+ const search=String(req.query.search||"").trim().slice(0,100);
+ try{
+  const org=await activeOrganizationForUser(req.auth.sub);
+  if(!org)return res.status(403).json({error:"Active organisation membership is required."});
+  const q=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at,COALESCE((SELECT json_agg(json_build_object('domain',d.name,'priority',cp.priority) ORDER BY cp.priority) FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id WHERE cp.candidate_id=c.id),'[]'::json) AS preferences FROM candidates c JOIN recruitment_events e ON e.id=c.event_id WHERE e.id=$1 AND e.organization_id=$2 AND ($3='' OR c.name ILIKE '%'||$3||'%' OR c.email ILIKE '%'||$3||'%' OR c.candidate_code ILIKE '%'||$3||'%' OR c.phone ILIKE '%'||$3||'%') ORDER BY c.created_at DESC LIMIT 500",[req.params.id,org.id,search]);
+  res.json({candidates:q.rows});
+ }catch(err){console.error(err);res.status(500).json({error:"Could not load organisation candidates."})}
+});
 app.get("/api/organization/events/:id/config",requireDb,requireAuth,async(req,res)=>{
  if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
  try{const org=await activeOrganizationForUser(req.auth.sub);if(!org)return res.status(403).json({error:"Active organisation membership is required."});const e=await pool.query("SELECT id,name,slug,description,status,starts_at,ends_at,registration_fields FROM recruitment_events WHERE id=$1 AND organization_id=$2",[req.params.id,org.id]);if(!e.rowCount)return res.status(404).json({error:"Event not found in this organisation."});const d=await pool.query("SELECT d.id,d.name,COALESCE(json_agg(json_build_object('id',p.id,'name',p.name,'active',p.active)) FILTER(WHERE p.id IS NOT NULL),'[]'::json) AS panels FROM domains d LEFT JOIN panels p ON p.domain_id=d.id AND p.event_id=d.event_id WHERE d.event_id=$1 GROUP BY d.id ORDER BY d.name",[req.params.id]);res.json({event:e.rows[0],domains:d.rows})}catch(e){console.error(e);res.status(500).json({error:"Could not load event configuration."})}
