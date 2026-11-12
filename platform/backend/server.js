@@ -221,7 +221,7 @@ async function requireOrganizationAdmin(req,res,next){
  if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
  try{const org=await activeOrganizationForUser(req.auth.sub);if(!org)return res.status(403).json({error:"Active organisation membership is required."});req.organization=org;next()}catch(e){console.error(e);res.status(500).json({error:"Could not verify organisation access."})}
 }
-const organizationStaffRoles=["Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"];
+const organizationStaffRoles=["Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"];
 app.get("/api/organization/staff",requireDb,requireAuth,requireOrganizationAdmin,async(req,res)=>{
  try{const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.active,r.name AS role,u.created_at FROM organization_memberships m JOIN users u ON u.id=m.user_id JOIN roles r ON r.id=u.role_id WHERE m.organization_id=$1 AND m.status IN ('active','suspended') AND r.name=ANY($2::text[]) ORDER BY u.created_at DESC",[req.organization.id,organizationStaffRoles]);res.json({users:q.rows.map(safeUser)})}catch(e){console.error(e);res.status(500).json({error:"Could not load organisation staff."})}
 });
