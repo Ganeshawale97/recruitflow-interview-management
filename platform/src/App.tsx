@@ -26,7 +26,7 @@ const nav:{name:Section;icon:any;group:string;roles:Role[]}[]=[
 {name:"Events",icon:CalendarDays,group:"WORKSPACE",roles:["Super Admin","Admin"]},
 {name:"Panels",icon:PanelsTopLeft,group:"OPERATIONS",roles:["Organization Admin","Super Admin","Admin","W1 Volunteer","W2 Volunteer"]},
 {name:"Interviewers",icon:UserRoundCheck,group:"OPERATIONS",roles:["Organization Admin","Super Admin","Admin"]},
-{name:"User Management",icon:UsersRound,group:"SYSTEM",roles:["Super Admin","Admin"]},
+{name:"User Management",icon:UsersRound,group:"SYSTEM",roles:["Organization Admin","Super Admin","Admin"]},
 {name:"Settings",icon:Settings,group:"SYSTEM",roles:["Super Admin","Admin"]}
 ];
 const domains=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
