@@ -219,3 +219,19 @@ body{background:#f5f7fb;color:var(--rf-ink)}
 .org-event-card-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center}
 .org-event-card-actions select{padding:8px 10px;border:1px solid #dce3ef;border-radius:8px;background:#fff;color:#34445d;font-size:11px}
 @media(max-width:650px){.org-registration-field{grid-template-columns:1fr}.org-event-card-main{flex-direction:column}.org-event-section-title{align-items:flex-start;flex-direction:column}}
+
+
+/* Public organisation registration page */
+.candidate-portal{--portal-primary:#6568e9;--portal-secondary:#898cff}
+.candidate-portal .portal-primary{background:var(--portal-primary);border-color:var(--portal-primary)}
+.candidate-portal .portal-tabs button.selected{color:var(--portal-primary);border-color:var(--portal-primary)}
+.candidate-portal .portal-domains button.chosen{border-color:var(--portal-primary);background:color-mix(in srgb,var(--portal-primary) 8%,white)}
+.portal-org-logo{display:block;max-width:150px;max-height:90px;object-fit:contain;margin:0 auto 18px}
+.candidate-portal .portal-card>label{display:grid;gap:7px;margin:12px 0;font-size:12px;font-weight:700;color:#34445d}
+.candidate-portal .portal-card>label input,.candidate-portal .portal-card>label textarea,.candidate-portal .portal-card>label select{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #dce3ef;border-radius:9px;background:#fff;color:#263550;font:13px 'DM Sans',sans-serif}
+.candidate-portal .portal-footer a{color:var(--portal-primary)}
+.org-public-registration-link{display:grid;gap:6px;padding:11px 12px;border-radius:9px;background:#f7f8fc;border:1px solid #e8ebf3}
+.org-public-registration-link>span{font-size:10px;font-weight:800;color:#7b879c;text-transform:uppercase;letter-spacing:.06em}
+.org-public-registration-link code{font-size:12px;color:#34445d;overflow-wrap:anywhere}
+.org-public-registration-link a{font-size:12px;font-weight:700;color:#555bd4;text-decoration:none}
+.org-public-registration-link small{font-size:11px;color:#8490a5}
