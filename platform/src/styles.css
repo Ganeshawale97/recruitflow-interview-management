@@ -466,3 +466,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .interviewer-time-guidance label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#59627b}
 .interviewer-time-guidance button{white-space:nowrap}
 @media(max-width:650px){.interviewer-time-guidance{align-items:flex-start;gap:14px}.interviewer-time-guidance p{flex-basis:100%}}
+
+
+.interviewer-time-guidance{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:16px 0 20px;padding:16px 18px;border:1px solid #dce3ff;border-radius:14px;background:linear-gradient(110deg,#f4f6ff,#f8fbff)}
+.interviewer-time-guidance>div{display:flex;flex-direction:column;gap:5px}
+.interviewer-time-guidance small{font-size:10px;letter-spacing:.08em;font-weight:700;color:#68718c}
+.interviewer-time-guidance b{font-size:23px;color:#333d8c}
+.interviewer-time-guidance p{flex:1;min-width:220px;margin:0;font-size:13px;color:#59627b}
+.interviewer-time-guidance label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#59627b}
+.interviewer-time-guidance input{width:110px;padding:9px 11px;border:1px solid #dfe2ec;border-radius:9px;background:#fff}
+.interviewer-time-guidance button{white-space:nowrap}
+@media(max-width:650px){.interviewer-time-guidance{align-items:flex-start;gap:14px}.interviewer-time-guidance p{flex-basis:100%}}
