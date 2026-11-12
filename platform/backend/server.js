@@ -126,6 +126,72 @@ app.patch("/api/organization/settings",requireDb,requireAuth,async(req,res)=>{
  }catch(e){console.error(e);res.status(500).json({error:"Could not save organisation settings."})}
 });
 
+
+async function activeOrganizationForUser(userId){
+ const q=await pool.query("SELECT o.id,o.name,o.slug,o.status FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' LIMIT 1",[userId]);
+ return q.rows[0]||null;
+}
+function validateEventConfig(body){
+ const name=String(body?.name||"").trim(),slug=String(body?.slug||"").trim().toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-|-$/g,""),description=String(body?.description||"").trim();
+ if(name.length<3||name.length>180||slug.length<3||slug.length>90||description.length>2000)throw new Error("Enter an event name, valid URL slug and description under 2,000 characters.");
+ const domains=Array.isArray(body?.domains)?body.domains:[];
+ if(!domains.length||domains.length>30)throw new Error("Add between 1 and 30 interview domains.");
+ const cleanDomains=[],seen=new Set();
+ for(const item of domains){
+  const domainName=String(item?.name||"").trim(),key=domainName.toLowerCase();
+  if(domainName.length<2||domainName.length>100||seen.has(key))throw new Error("Domain names must be unique and between 2 and 100 characters.");
+  seen.add(key);
+  const panels=Array.isArray(item?.panels)?item.panels:[domainName+" Panel"],cleanPanels=[],panelSeen=new Set();
+  if(!panels.length||panels.length>15)throw new Error("Each domain needs between 1 and 15 panels.");
+  for(const raw of panels){const p=String(raw||"").trim(),pk=p.toLowerCase();if(p.length<2||p.length>120||panelSeen.has(pk))throw new Error("Panel names must be unique within a domain and between 2 and 120 characters.");panelSeen.add(pk);cleanPanels.push(p)}
+  cleanDomains.push({name:domainName,panels:cleanPanels});
+ }
+ const allowedTypes=["text","email","phone","number","textarea","select","checkbox"];
+ const fields=Array.isArray(body?.registrationFields)?body.registrationFields:[];
+ if(fields.length>30)throw new Error("You can add up to 30 custom registration fields.");
+ const cleanFields=[],fieldKeys=new Set();
+ for(const f of fields){const label=String(f?.label||"").trim(),key=String(f?.key||label.toLowerCase().replace(/[^a-z0-9]+/g,"_")).trim().toLowerCase(),type=String(f?.type||"text");if(label.length<2||label.length>100||!/^[a-z][a-z0-9_]{1,49}$/.test(key)||fieldKeys.has(key)||!allowedTypes.includes(type))throw new Error("Custom registration fields need a valid unique key, label and supported field type.");fieldKeys.add(key);const options=Array.isArray(f?.options)?f.options.map(x=>String(x).trim()).filter(Boolean).slice(0,20):[];if(type==="select"&&(!options.length||options.some(x=>x.length>100)))throw new Error("Select fields need 1–20 options of at most 100 characters.");cleanFields.push({key,label,type,required:Boolean(f?.required),options})}
+ return {name,slug,description,domains:cleanDomains,registrationFields:cleanFields,startsAt:body?.startsAt||null,endsAt:body?.endsAt||null};
+}
+app.get("/api/organization/events",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
+ try{const org=await activeOrganizationForUser(req.auth.sub);if(!org)return res.status(403).json({error:"Active organisation membership is required."});const q=await pool.query("SELECT e.id,e.name,e.slug,e.description,e.status,e.starts_at,e.ends_at,e.registration_fields,e.created_at,(SELECT count(*)::int FROM candidates c WHERE c.event_id=e.id) AS candidate_count,(SELECT count(*)::int FROM domains d WHERE d.event_id=e.id AND d.active=true) AS domain_count,(SELECT count(*)::int FROM panels p WHERE p.event_id=e.id AND p.active=true) AS panel_count FROM recruitment_events e WHERE e.organization_id=$1 ORDER BY e.created_at DESC",[org.id]);res.json({events:q.rows,organization:org})}catch(e){console.error(e);res.status(500).json({error:"Could not load organisation events."})}
+});
+app.post("/api/organization/events",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
+ let cfg;try{cfg=validateEventConfig(req.body)}catch(e){return res.status(400).json({error:e.message})}
+ if(cfg.startsAt&&cfg.endsAt&&new Date(cfg.endsAt)<=new Date(cfg.startsAt))return res.status(400).json({error:"End date must be after start date."});
+ const client=await pool.connect();
+ try{await client.query("BEGIN");const org=await client.query("SELECT o.id FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' FOR UPDATE OF o",[req.auth.sub]);if(!org.rowCount){await client.query("ROLLBACK");return res.status(403).json({error:"Active organisation membership is required."})}
+ const event=await client.query("INSERT INTO recruitment_events(organization_id,name,slug,description,status,starts_at,ends_at,registration_fields) VALUES($1,$2,$3,$4,'draft',$5,$6,$7::jsonb) RETURNING id,name,slug,description,status,starts_at,ends_at,registration_fields,created_at",[org.rows[0].id,cfg.name,cfg.slug,cfg.description,cfg.startsAt,cfg.endsAt,JSON.stringify(cfg.registrationFields)]);
+ for(const d of cfg.domains){const domain=await client.query("INSERT INTO domains(event_id,name) VALUES($1,$2) RETURNING id,name",[event.rows[0].id,d.name]);for(const panelName of d.panels)await client.query("INSERT INTO panels(event_id,domain_id,name) VALUES($1,$2,$3)",[event.rows[0].id,domain.rows[0].id,panelName])}
+ await client.query("COMMIT");res.status(201).json({event:event.rows[0],domains:cfg.domains});
+ }catch(e){await client.query("ROLLBACK");if(e.code==="23505")return res.status(409).json({error:"That event URL slug is already in use. Choose another."});console.error(e);res.status(500).json({error:"Could not create recruitment event."})}finally{client.release()}
+});
+app.get("/api/organization/events/:id/config",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
+ try{const org=await activeOrganizationForUser(req.auth.sub);if(!org)return res.status(403).json({error:"Active organisation membership is required."});const e=await pool.query("SELECT id,name,slug,description,status,starts_at,ends_at,registration_fields FROM recruitment_events WHERE id=$1 AND organization_id=$2",[req.params.id,org.id]);if(!e.rowCount)return res.status(404).json({error:"Event not found in this organisation."});const d=await pool.query("SELECT d.id,d.name,COALESCE(json_agg(json_build_object('id',p.id,'name',p.name,'active',p.active)) FILTER(WHERE p.id IS NOT NULL),'[]'::json) AS panels FROM domains d LEFT JOIN panels p ON p.domain_id=d.id AND p.event_id=d.event_id WHERE d.event_id=$1 GROUP BY d.id ORDER BY d.name",[req.params.id]);res.json({event:e.rows[0],domains:d.rows})}catch(e){console.error(e);res.status(500).json({error:"Could not load event configuration."})}
+});
+app.patch("/api/organization/events/:id/config",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
+ let cfg;try{cfg=validateEventConfig(req.body)}catch(e){return res.status(400).json({error:e.message})}
+ if(cfg.startsAt&&cfg.endsAt&&new Date(cfg.endsAt)<=new Date(cfg.startsAt))return res.status(400).json({error:"End date must be after start date."});
+ const client=await pool.connect();
+ try{await client.query("BEGIN");const org=await client.query("SELECT o.id FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' LIMIT 1",[req.auth.sub]);if(!org.rowCount){await client.query("ROLLBACK");return res.status(403).json({error:"Active organisation membership is required."})}
+ const current=await client.query("SELECT id FROM recruitment_events WHERE id=$1 AND organization_id=$2 FOR UPDATE",[req.params.id,org.rows[0].id]);if(!current.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Event not found in this organisation."})}
+ const counts=await client.query("SELECT (SELECT count(*) FROM candidates WHERE event_id=$1)::int AS candidates,(SELECT count(*) FROM interviews i JOIN candidates c ON c.id=i.candidate_id WHERE c.event_id=$1)::int AS interviews",[req.params.id]);if(counts.rows[0].candidates||counts.rows[0].interviews){await client.query("ROLLBACK");return res.status(409).json({error:"Event structure is locked after candidate registration or interviews begin. You can still update event details and registration fields before registrations."})}
+ const updated=await client.query("UPDATE recruitment_events SET name=$2,slug=$3,description=$4,starts_at=$5,ends_at=$6,registration_fields=$7::jsonb,updated_at=now() WHERE id=$1 RETURNING id,name,slug,description,status,starts_at,ends_at,registration_fields",[req.params.id,cfg.name,cfg.slug,cfg.description,cfg.startsAt,cfg.endsAt,JSON.stringify(cfg.registrationFields)]);
+ await client.query("DELETE FROM panels WHERE event_id=$1",[req.params.id]);await client.query("DELETE FROM domains WHERE event_id=$1",[req.params.id]);
+ for(const d of cfg.domains){const domain=await client.query("INSERT INTO domains(event_id,name) VALUES($1,$2) RETURNING id");for(const panelName of d.panels)await client.query("INSERT INTO panels(event_id,domain_id,name) VALUES($1,$2,$3)",[req.params.id,domain.rows[0].id,panelName])}
+ await client.query("COMMIT");res.json({event:updated.rows[0],message:"Event configuration saved."});
+ }catch(e){await client.query("ROLLBACK");if(e.code==="23505")return res.status(409).json({error:"That event slug is already in use or names are duplicated."});console.error(e);res.status(500).json({error:"Could not save event configuration."})}finally{client.release()}
+});
+app.patch("/api/organization/events/:id/status",requireDb,requireAuth,async(req,res)=>{
+ if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
+ const status=String(req.body?.status||"");if(!["draft","open","live","completed","archived"].includes(status))return res.status(400).json({error:"Invalid event status."});
+ try{const org=await activeOrganizationForUser(req.auth.sub);if(!org)return res.status(403).json({error:"Active organisation membership is required."});const q=await pool.query("UPDATE recruitment_events SET status=$3,updated_at=now() WHERE id=$1 AND organization_id=$2 RETURNING id,name,slug,status",[req.params.id,org.id,status]);if(!q.rowCount)return res.status(404).json({error:"Event not found in this organisation."});res.json({event:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"Could not update event status."})}
+});
+
 app.get("/api/organization/workspace",requireDb,requireAuth,async(req,res)=>{
  if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
  try{const q=await pool.query("SELECT o.id,o.name,o.slug,o.status,o.logo_url,o.primary_color,o.secondary_color,o.branding,o.created_at,(SELECT count(*)::int FROM recruitment_events e WHERE e.organization_id=o.id) AS events,(SELECT count(*)::int FROM organization_memberships m WHERE m.organization_id=o.id AND m.status='active') AS staff,(SELECT count(*)::int FROM recruitment_events e JOIN candidates c ON c.event_id=e.id WHERE e.organization_id=o.id) AS candidates FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' LIMIT 1",[req.auth.sub]);if(!q.rowCount)return res.status(403).json({error:"Organisation membership is inactive."});res.json({organization:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"Could not load organisation workspace."})}
