@@ -368,3 +368,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .org-copy-link:hover{background:#f0f1ff;border-color:#cbd0ff}
 @media(max-width:720px){.org-event-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.org-event-stats{grid-template-columns:1fr}.org-public-registration-link{padding-right:12px;padding-top:48px}.org-copy-link{left:12px;right:auto;top:10px}}
+
+
+/* Platform Owner audit activity center */
+.audit-toolbar{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:18px 0}
+.audit-toolbar label{display:grid;gap:7px;min-width:min(100%,320px);font-size:11px;font-weight:800;color:#65728a}
+.audit-total{display:grid;gap:3px;text-align:right}
+.audit-total b{font:800 25px Manrope;color:#535ed4}
+.audit-total span{font-size:9px;letter-spacing:1px;font-weight:800;color:#8792a6}
+@media(max-width:600px){.audit-toolbar{align-items:stretch;flex-direction:column}.audit-total{text-align:left}}
