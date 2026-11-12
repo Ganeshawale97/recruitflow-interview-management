@@ -453,3 +453,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 /* Suggested interview duration: organizer controls and interviewer-only advisory. */
 .interview-limit-admin{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 18px;margin:18px 0;border:1px solid var(--border,#e5e7eb);border-radius:14px;background:var(--surface-muted,#f8fafc)}.interview-limit-admin>div{display:flex;flex-direction:column;gap:4px;flex:1;min-width:220px}.interview-limit-admin small{color:var(--muted,#64748b)}.interview-limit-admin label{display:flex;align-items:center;gap:8px;font-weight:600}.interview-limit-admin input{width:82px;padding:9px;border:1px solid var(--border,#d1d5db);border-radius:8px}.interviewer-time-guidance{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:14px 16px;margin:16px 0;border:1px solid #c7d2fe;border-radius:12px;background:#eef2ff}.interviewer-time-guidance>div{display:flex;flex-direction:column;gap:3px}.interviewer-time-guidance small{font-size:10px;letter-spacing:.08em;color:#4f46e5;font-weight:700}.interviewer-time-guidance b{font-size:22px;color:#312e81}.interviewer-time-guidance p{margin:0;color:#3730a3;font-size:13px;flex:1;min-width:220px}
+
+
+.time-limit-control{display:flex;flex-direction:column;gap:6px;margin-top:14px;max-width:320px;font-size:13px;font-weight:600;color:var(--text,#20243a)}
+.time-limit-control input,.interviewer-time-guidance input{width:110px;padding:9px 11px;border:1px solid var(--border,#dfe2ec);border-radius:9px;background:var(--surface,#fff);color:inherit}
+.time-limit-control small{font-size:11px;font-weight:400;color:var(--muted,#747b90)}
+.interviewer-time-guidance{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:16px 0 20px;padding:16px 18px;border:1px solid #dce3ff;border-radius:14px;background:linear-gradient(110deg,#f4f6ff,#f8fbff)}
+.interviewer-time-guidance>div{display:flex;flex-direction:column;gap:5px}
+.interviewer-time-guidance small{font-size:10px;letter-spacing:.08em;font-weight:700;color:#68718c}
+.interviewer-time-guidance b{font-size:23px;color:#333d8c}
+.interviewer-time-guidance p{flex:1;min-width:220px;margin:0;font-size:13px;color:#59627b}
+.interviewer-time-guidance label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#59627b}
+.interviewer-time-guidance button{white-space:nowrap}
+@media(max-width:650px){.interviewer-time-guidance{align-items:flex-start;gap:14px}.interviewer-time-guidance p{flex-basis:100%}}
