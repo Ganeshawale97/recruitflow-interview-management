@@ -17,8 +17,8 @@ app.use("/uploads",(req,res,next)=>{res.setHeader("Cross-Origin-Resource-Policy"
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."}});
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
-function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});if(req.auth.role==="Organization Admin"&&req.path!=="/api/auth/me"&&!req.path.startsWith("/api/organization/"))return res.status(403).json({error:"This workspace feature is not enabled yet. Your organisation data remains protected."});next()}catch{return res.status(401).json({error:"Session expired. Please sign in again."})}}
-function requireRole(...roles){return async(req,res,next)=>{try{if(!req.auth)return res.status(401).json({error:"Authentication required."});const q=await pool.query("SELECT u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1",[req.auth.sub]);if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"Account is unavailable."});req.auth.role=q.rows[0].role;if(!roles.includes(req.auth.role))return res.status(403).json({error:"Your current account role ("+req.auth.role+") is not permitted to perform this action."});next()}catch(e){console.error(e);res.status(500).json({error:"Could not verify account permissions."})}}}
+function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});if(req.auth.role==="Organization Admin"&&req.path!=="/api/auth/me"&&!req.path.startsWith("/api/organization/")&&!req.path.startsWith("/api/events/"))return res.status(403).json({error:"This workspace feature is not enabled yet. Your organisation data remains protected."});next()}catch{return res.status(401).json({error:"Session expired. Please sign in again."})}}
+function requireRole(...roles){return async(req,res,next)=>{try{if(!req.auth)return res.status(401).json({error:"Authentication required."});const q=await pool.query("SELECT u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1",[req.auth.sub]);if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"Account is unavailable."});req.auth.role=q.rows[0].role;const effectiveRole=req.auth.role==="Organization Admin"&&req.orgEventAuthorized?"Admin":req.auth.role;if(!roles.includes(effectiveRole))return res.status(403).json({error:"Your current account role ("+req.auth.role+") is not permitted to perform this action."});next()}catch(e){console.error(e);res.status(500).json({error:"Could not verify account permissions."})}}}
 function safeUser(r){return{id:r.id,username:r.username,email:r.email,displayName:r.display_name,role:r.role,active:r.active,createdAt:r.created_at}}
 
 async function requirePlatformOwner(req,res,next){
@@ -233,6 +233,20 @@ app.patch("/api/platform/organizations/:id/status",requireDb,requireAuth,require
   if(!q.rowCount)return res.status(404).json({error:"Organisation not found."});
   res.json({organization:q.rows[0]});
  }catch(e){console.error(e);res.status(500).json({error:"Could not update organisation status."})}
+});
+
+// Tenant boundary for event operations: organisation administrators may operate only on events owned by an active organisation membership.
+app.use("/api/events/:id",requireDb,requireAuth,async(req,res,next)=>{
+ if(req.auth?.role!=="Organization Admin")return next();
+ try{
+  const access=await pool.query(
+   "SELECT 1 FROM recruitment_events e JOIN organization_memberships m ON m.organization_id=e.organization_id JOIN organizations o ON o.id=e.organization_id WHERE e.id=$1 AND m.user_id=$2 AND m.status='active' AND o.status='active' LIMIT 1",
+   [req.params.id,req.auth.sub]
+  );
+  if(!access.rowCount)return res.status(404).json({error:"Event not found in your organisation."});
+  req.orgEventAuthorized=true;
+  next();
+ }catch(error){console.error(error);res.status(500).json({error:"Could not verify organisation event access."});}
 });
 
 const admin=["Super Admin","Admin"];
