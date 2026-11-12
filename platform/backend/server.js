@@ -24,6 +24,7 @@ async function writePlatformAudit(req){
  const method=req.method.toUpperCase();
  if(!["POST","PUT","PATCH","DELETE"].includes(method)||req.path.startsWith("/api/platform/audit"))return;
  try{
+  await pool.query("CREATE TABLE IF NOT EXISTS platform_audit_logs(id bigserial PRIMARY KEY,actor_id uuid,organization_id uuid,event_id uuid,action text NOT NULL,method text NOT NULL,path text NOT NULL,ip_address text,user_agent text,details jsonb NOT NULL DEFAULT '{}'::jsonb,created_at timestamptz NOT NULL DEFAULT now())");
   const eventMatch=req.path.match(/\/api\/events\/([^/]+)/),eventId=eventMatch?eventMatch[1]:null;
   const member=await pool.query("SELECT organization_id FROM organization_memberships WHERE user_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1",[req.auth.sub]);
   const orgId=member.rows[0]?.organization_id||null;
