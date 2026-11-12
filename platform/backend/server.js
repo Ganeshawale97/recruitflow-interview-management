@@ -6,7 +6,6 @@ import pg from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
-import nodemailer from "nodemailer";
 import QRCode from "qrcode";
 import { randomBytes, createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -361,15 +360,7 @@ app.post("/api/public/events/:slug/candidates",requireDb,async(req,res)=>{
   await client.query("INSERT INTO candidate_passes(event_id,candidate_id,pass_code) VALUES($1,$2,$3)",[ev.rows[0].id,c.rows[0].id,passCode]);
   await client.query("COMMIT");
   const qrCodeDataUrl=await QRCode.toDataURL(passCode,{errorCorrectionLevel:"M",margin:2,width:320});
-  let emailSent=false;
-  if(process.env.SMTP_HOST&&process.env.SMTP_USER&&process.env.SMTP_PASS&&process.env.MAIL_FROM){
-   try{
-    const transporter=nodemailer.createTransport({host:process.env.SMTP_HOST,port:Number(process.env.SMTP_PORT||587),secure:process.env.SMTP_SECURE==="true",auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}});
-    await transporter.sendMail({from:process.env.MAIL_FROM,to:email,subject:"Your RecruitFlow entry pass – "+ev.rows[0].event_name,text:"Hello "+name+", your registration is confirmed for "+ev.rows[0].event_name+". Candidate ID: "+c.rows[0].candidate_code+". Present the attached QR code at venue check-in. Keep this pass private.",html:"<h2>Registration confirmed</h2><p>Hello "+name.replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))+",</p><p>Your registration for <b>"+String(ev.rows[0].event_name).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))+"</b> is confirmed.</p><p>Candidate ID: <b>"+c.rows[0].candidate_code+"</b></p><p>Show the attached QR pass at venue check-in. Keep this pass private.</p><img alt='Candidate entry QR code' src='cid:recruitflow-pass' width='320' height='320'/>",attachments:[{filename:"recruitflow-entry-pass.png",content:qrCodeDataUrl.split(",")[1],encoding:"base64",cid:"recruitflow-pass"}]});
-    emailSent=true;
-   }catch(mailError){console.error("Candidate pass email delivery failed:",mailError.message)}
-  }
-  res.status(201).json({candidateId:c.rows[0].candidate_code,name:c.rows[0].name,message:"Registration completed. Your QR entry pass is ready.",qrCodeDataUrl,emailSent,emailConfigured:Boolean(process.env.SMTP_HOST&&process.env.SMTP_USER&&process.env.SMTP_PASS&&process.env.MAIL_FROM)});
+  res.status(201).json({candidateId:c.rows[0].candidate_code,name:c.rows[0].name,message:"Registration completed. Your QR entry pass is ready.",qrCodeDataUrl});
  }catch(err){await client.query("ROLLBACK");if(err.code==="23505")return res.status(409).json({error:"This email address or phone number is already registered for this event."});console.error(err);res.status(500).json({error:"Could not complete registration. Please try again."})}finally{client.release()}
 });
 app.post("/api/public/track",requireDb,async(req,res)=>{const code=String(req.body?.candidateId||"").trim().toUpperCase(),email=String(req.body?.email||"").trim().toLowerCase();if(!code||!email)return res.status(400).json({error:"Enter your Candidate ID and registered email."});try{const q=await pool.query("SELECT c.candidate_code,c.name,c.status,e.name AS event_name,c.created_at FROM candidates c JOIN recruitment_events e ON e.id=c.event_id WHERE upper(c.candidate_code)=$1 AND lower(c.email)=$2",[code,email]);if(!q.rowCount)return res.status(404).json({error:"No matching application was found. Check your details and try again."});res.json({application:q.rows[0]})}catch(err){console.error(err);res.status(500).json({error:"Could not retrieve application status."})}});
