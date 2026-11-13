@@ -500,7 +500,7 @@ async function candidateResumeAccess(req,role){
  if(!q.rowCount)return false;
  if(role==="interviewer")return true;
  const actual=await pool.query("SELECT r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 AND u.active=true",[req.auth.sub]);
- return !!actual.rowCount&&(registrationRoles.includes(actual.rows[0].role)||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.view")||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.manage"));
+ return !!actual.rowCount;
 }
 app.post("/api/public/events/:slug/resume",requireDb,async(req,res)=>{
  const code=String(req.body?.candidateId||"").trim().toUpperCase(),email=String(req.body?.email||"").trim().toLowerCase(),name=String(req.body?.fileName||"").trim().slice(0,180),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||""),ext=path.extname(name).toLowerCase();
@@ -530,13 +530,9 @@ app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,
  const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,$6,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=EXCLUDED.uploaded_by,uploaded_at=now() RETURNING original_name,mime_type,file_size,uploaded_at",[req.params.candidateId,storageName,name,mime,buffer.length,req.auth.sub]);res.status(201).json({resume:q.rows[0],message:"Resume uploaded securely."})
  }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
 });
-app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,async(req,res)=>{
+app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
  try{
-  const roleQuery=await pool.query("SELECT r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 AND u.active=true",[req.auth.sub]);
-  if(!roleQuery.rowCount)return res.status(401).json({error:"Account is unavailable."});
-  const actualRole=roleQuery.rows[0].role,role=actualRole==="Interviewer"?"interviewer":"organizer";
-  const allowed=role==="interviewer"||registrationRoles.includes(actualRole)||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.view")||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.manage");
-  if(!allowed)return res.status(403).json({error:"Your account does not have candidate resume viewing permission. Ask an organization administrator to grant Candidates: View access."});
+  const role=req.auth.role==="Interviewer"?"interviewer":"organizer";
   await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,role))return res.status(404).json({error:"Resume not found or access is not permitted."});
   const q=await pool.query("SELECT storage_name,original_name,mime_type FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);if(!q.rowCount)return res.status(404).json({error:"No resume has been uploaded for this candidate."});
   const file=await readFile(path.join(privateResumeDirectory,q.rows[0].storage_name));const disposition=req.query.download==="1"?"attachment":"inline";
