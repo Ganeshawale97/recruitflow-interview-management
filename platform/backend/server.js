@@ -530,7 +530,7 @@ app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,
  const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,$6,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=EXCLUDED.uploaded_by,uploaded_at=now() RETURNING original_name,mime_type,file_size,uploaded_at",[req.params.candidateId,storageName,name,mime,buffer.length,req.auth.sub]);res.status(201).json({resume:q.rows[0],message:"Resume uploaded securely."})
  }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
 });
-app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
+app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles,"Interviewer"),async(req,res)=>{
  try{
   const role=req.auth.role==="Interviewer"?"interviewer":"organizer";
   await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,role))return res.status(404).json({error:"Resume not found or access is not permitted."});
