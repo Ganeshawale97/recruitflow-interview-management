@@ -484,6 +484,40 @@ app.post("/api/public/events/:slug/candidates",requireDb,async(req,res)=>{
  }catch(err){await client.query("ROLLBACK");if(err.code==="23505")return res.status(409).json({error:"This email address or phone number is already registered for this event."});console.error(err);res.status(500).json({error:"Could not complete registration. Please try again."})}finally{client.release()}
 });
 app.post("/api/public/track",requireDb,async(req,res)=>{const code=String(req.body?.candidateId||"").trim().toUpperCase(),email=String(req.body?.email||"").trim().toLowerCase();if(!code||!email)return res.status(400).json({error:"Enter your Candidate ID and registered email."});try{await ensurePanelCallTable();const q=await pool.query("SELECT c.id,c.candidate_code,c.name,c.status,e.name AS event_name,c.created_at,c.checked_in_at,COALESCE((SELECT json_agg(json_build_object('domain',d.name,'priority',cp.priority,'status',CASE WHEN EXISTS(SELECT 1 FROM interviews ix WHERE ix.candidate_id=c.id AND ix.domain_id=cp.domain_id AND ix.status='completed') THEN 'completed' WHEN EXISTS(SELECT 1 FROM interviews ix WHERE ix.candidate_id=c.id AND ix.domain_id=cp.domain_id AND ix.status='in_progress') THEN 'in progress' ELSE 'pending' END) ORDER BY cp.priority) FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id WHERE cp.candidate_id=c.id),'[]'::json) AS preferences,COALESCE((SELECT json_agg(json_build_object('domain',d.name,'panel',p.name,'status',i.status,'started_at',i.started_at,'completed_at',i.completed_at,'total_score',i.total_score) ORDER BY i.started_at NULLS LAST) FROM interviews i LEFT JOIN domains d ON d.id=i.domain_id LEFT JOIN panels p ON p.id=i.panel_id WHERE i.candidate_id=c.id),'[]'::json) AS interviews,(SELECT json_build_object('domain',d.name,'panel',p.name,'status',pc.status,'created_at',pc.created_at,'sent_at',pc.sent_at) FROM panel_calls pc JOIN panels p ON p.id=pc.panel_id JOIN domains d ON d.id=p.domain_id WHERE pc.candidate_id=c.id ORDER BY pc.created_at DESC LIMIT 1) AS latest_call FROM candidates c JOIN recruitment_events e ON e.id=c.event_id WHERE upper(c.candidate_code)=$1 AND lower(c.email)=$2",[code,email]);if(!q.rowCount)return res.status(404).json({error:"No matching application was found. Check your details and try again."});res.json({application:q.rows[0]})}catch(err){console.error(err);res.status(500).json({error:"Could not retrieve application status."})}});
+async function ensureCandidateCrmTable(){
+ await pool.query(`CREATE TABLE IF NOT EXISTS candidate_crm (
+  candidate_id UUID PRIMARY KEY REFERENCES candidates(id) ON DELETE CASCADE,
+  tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  notes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+ )`);
+}
+app.get("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
+ try{
+  await ensureCandidateCrmTable();
+  const candidate=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at FROM candidates c WHERE c.id=$1 AND c.event_id=$2",[req.params.candidateId,req.params.id]);
+  if(!candidate.rowCount)return res.status(404).json({error:"Candidate not found in this event."});
+  const crm=await pool.query("SELECT tags,notes,updated_at FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
+  res.json({candidate:candidate.rows[0],tags:crm.rows[0]?.tags||[],notes:crm.rows[0]?.notes||[],updatedAt:crm.rows[0]?.updated_at||null});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load candidate profile."})}
+});
+app.put("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
+ const tags=Array.isArray(req.body?.tags)?[...new Set(req.body.tags.map(x=>String(x).trim()).filter(x=>x.length>0&&x.length<=30))].slice(0,10):[];
+ const note=String(req.body?.note||"").trim();
+ if(tags.length>10)return res.status(400).json({error:"You can add up to 10 tags."});
+ if(note.length>2000)return res.status(400).json({error:"A note can contain at most 2,000 characters."});
+ try{
+  await ensureCandidateCrmTable();
+  const exists=await pool.query("SELECT id FROM candidates WHERE id=$1 AND event_id=$2",[req.params.candidateId,req.params.id]);
+  if(!exists.rowCount)return res.status(404).json({error:"Candidate not found in this event."});
+  const previous=await pool.query("SELECT notes FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
+  const notes=previous.rows[0]?.notes||[];
+  if(note)notes.push({id:crypto.randomUUID(),text:note,author:req.auth.displayName||req.auth.username||"Staff",createdAt:new Date().toISOString()});
+  const q=await pool.query("INSERT INTO candidate_crm(candidate_id,tags,notes,updated_by,updated_at) VALUES($1,$2::jsonb,$3::jsonb,$4,now()) ON CONFLICT(candidate_id) DO UPDATE SET tags=EXCLUDED.tags,notes=EXCLUDED.notes,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING tags,notes,updated_at",[req.params.candidateId,JSON.stringify(tags),JSON.stringify(notes),req.auth.sub]);
+  res.json({tags:q.rows[0].tags,notes:q.rows[0].notes,updatedAt:q.rows[0].updated_at,message:"Candidate profile updated."});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not update candidate profile."})}
+});
 app.get("/api/events/:id/candidates",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{const search=String(req.query.search||"").trim().slice(0,100),status=String(req.query.status||"").trim();try{const q=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at,COALESCE((SELECT json_agg(json_build_object('domain',d.name,'priority',cp.priority) ORDER BY cp.priority) FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id WHERE cp.candidate_id=c.id),'[]'::json) AS preferences FROM candidates c WHERE c.event_id=$1 AND ($2='' OR c.status=$2) AND ($3='' OR c.name ILIKE '%'||$3||'%' OR c.email ILIKE '%'||$3||'%' OR c.candidate_code ILIKE '%'||$3||'%' OR c.phone ILIKE '%'||$3||'%') ORDER BY c.created_at DESC LIMIT 500",[req.params.id,status,search]);res.json({candidates:q.rows})}catch(err){console.error(err);res.status(500).json({error:"Could not load candidates."})}});
 
 
