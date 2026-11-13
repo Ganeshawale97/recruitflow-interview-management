@@ -575,3 +575,19 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 /* Personal active session management */
 .session-device-cell{max-width:320px;overflow-wrap:anywhere;line-height:1.5}.session-device-cell .table-sub{display:block;margin-top:5px}.session-current-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:30px;background:#e7f7ee;color:#26784c;font-size:10px;font-weight:800}.session-current-badge:before{content:"";width:6px;height:6px;border-radius:50%;background:#28a568}.session-revoke-note{margin-top:14px;padding:13px 15px;border:1px solid #e2eaf4;border-radius:10px;background:#f8faff;color:#63738c;font-size:11px;line-height:1.6}
 @media(max-width:700px){.session-device-cell{min-width:220px}}
+
+
+/* Account settings */
+.account-password-card{max-width:920px}
+.account-password-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:760px}
+.account-password-form label{display:grid;gap:8px;font-weight:650;color:#27324b}
+.account-password-form label:first-child{grid-column:1/-1}
+.account-password-form input{width:100%;min-width:0;padding:12px 13px;border:1px solid #dce2ee;border-radius:9px;background:#fff;color:#17213b;outline:none}
+.account-password-form input:focus{border-color:#6568e9;box-shadow:0 0 0 3px #6568e91c}
+.account-password-form small{font-size:11px;font-weight:400;color:#78839a}
+.account-password-form .primary-button{grid-column:1/-1;justify-self:start;min-width:190px}
+.account-session-shortcut{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.account-session-shortcut h2{margin:4px 0 6px}
+.account-session-shortcut p{margin:0;color:#78839a}
+.security-icon-badge{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#eaf8f2;color:#13835a}
+@media(max-width:720px){.account-password-form{grid-template-columns:1fr}.account-password-form label:first-child,.account-password-form .primary-button{grid-column:auto}.account-session-shortcut{align-items:flex-start;flex-direction:column}}
