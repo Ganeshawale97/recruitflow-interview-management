@@ -540,7 +540,7 @@ app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,a
   await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,role))return res.status(404).json({error:"Resume not found or access is not permitted."});
   const q=await pool.query("SELECT storage_name,original_name,mime_type FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);if(!q.rowCount)return res.status(404).json({error:"No resume has been uploaded for this candidate."});
   const file=await readFile(path.join(privateResumeDirectory,q.rows[0].storage_name));const disposition=req.query.download==="1"?"attachment":"inline";
-  res.setHeader("Content-Type",q.rows[0].mime_type);res.setHeader("Content-Length",file.length);res.setHeader("Content-Disposition",`${disposition}; filename="${q.rows[0].original_name.replace(/["\\\\\\r\\n]/g,"_")}"`);res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Content-Security-Policy","sandbox");res.setHeader("Cache-Control","private, no-store");res.send(file)
+  res.setHeader("Content-Type",q.rows[0].mime_type);res.setHeader("Content-Length",file.length);res.setHeader("Content-Disposition",`${disposition}; filename="${q.rows[0].original_name.replace(/["\\\\\\r\\n]/g,"_")}"`);res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Cache-Control","private, no-store");res.send(file)
  }catch(e){if(e.code==="ENOENT")return res.status(404).json({error:"Resume file is missing from private storage."});console.error(e);res.status(500).json({error:"Could not retrieve resume."})}
 });
 app.get("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
