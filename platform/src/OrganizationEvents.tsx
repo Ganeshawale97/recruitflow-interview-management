@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { CalendarPlus, RefreshCw, Settings2, Plus, Trash2, Save, X, Copy, Check, CalendarClock } from "lucide-react";
+import { CalendarPlus, RefreshCw, Settings2, Plus, Trash2, Save, X, Copy, Check, CalendarClock, Activity, Users } from "lucide-react";
 type DomainDraft={name:string;panels:string[]};
 type FieldDraft={key:string;label:string;type:string;required:boolean;options:string};
 type EventRow={id:string;name:string;slug:string;description:string;status:string;starts_at?:string;ends_at?:string;candidate_count:number;domain_count:number;panel_count:number;registration_fields?:any[]};
