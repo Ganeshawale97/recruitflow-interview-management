@@ -609,3 +609,19 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .mfa-code-grid code{padding:10px;background:#fff;border:1px solid #f0e5c9;border-radius:7px;text-align:center;font-weight:700;letter-spacing:.08em}
 .mfa-disable-form{margin-top:20px;padding-top:18px;border-top:1px solid #e7eaf2}
 @media(max-width:720px){.mfa-setup{grid-template-columns:1fr}.mfa-status-row,.mfa-action-row,.mfa-disable-form{align-items:flex-start;flex-direction:column}.mfa-code-grid{grid-template-columns:1fr}}
+
+/* Candidate CRM profile modal layout */
+.candidate-profile-modal{width:min(100%,620px);max-height:calc(100vh - 36px);overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.candidate-profile-modal>p{margin:0 0 2px}
+.candidate-profile-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;padding:14px 16px;background:#f7f8fc;border:1px solid #e9edf5;border-radius:12px}
+.candidate-profile-facts p{margin:0;font-size:13px;overflow-wrap:anywhere}
+.candidate-profile-modal>label{display:grid;gap:8px;width:100%;font-size:13px;font-weight:700;color:#34445d}
+.candidate-profile-modal input,.candidate-profile-modal textarea{display:block;width:100%;max-width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #dce3ef;border-radius:9px;font:inherit;font-weight:400;outline:none}
+.candidate-profile-modal textarea{min-height:96px;resize:vertical;line-height:1.5}
+.candidate-profile-modal input:focus,.candidate-profile-modal textarea:focus{border-color:#6878df;box-shadow:0 0 0 3px #6878df20}
+.candidate-profile-modal .invite-modal-actions{margin-top:2px}
+.candidate-profile-notes{display:grid;gap:10px;padding-top:14px;border-top:1px solid #e9edf5}
+.candidate-profile-notes>article{padding:11px 13px;border:1px solid #e9edf5;border-radius:10px;background:#fbfcfe}
+.candidate-profile-notes>article p{margin:0 0 5px;color:#34445d;white-space:pre-wrap;overflow-wrap:anywhere}
+.candidate-profile-notes>article small,.candidate-profile-notes>small{color:#77849a;font-size:11px}
+@media(max-width:560px){.candidate-profile-modal{padding:22px 18px}.candidate-profile-facts{grid-template-columns:1fr}}
