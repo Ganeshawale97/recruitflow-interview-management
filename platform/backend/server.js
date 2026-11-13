@@ -581,7 +581,7 @@ app.get("/api/events/:id/reports/candidates.csv",requireDb,requireAuth,requireRo
   const rows=await buildSelectionRows(req.params.id);
   const headers=["Candidate ID","Name","Email","College","Branch","Academic Year","Candidate Status","Completed Interviews","Preference Count","Average Score","Best Score","Strongest Domain","Recommendation"];
   const esc=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const csv=[headers,...rows.map(x=>[x.candidate_code,x.name,x.email,x.college,x.branch,x.academic_year,x.candidate_status,x.completed_count,x.preference_count,x.average_score,x.best_score,x.strongest_domain,x.recommendation])].map(row=>row.map(esc).join(",")).join("\\r\\n"));
+  const csv=[headers,...rows.map(x=>[x.candidate_code,x.name,x.email,x.college,x.branch,x.academic_year,x.candidate_status,x.completed_count,x.preference_count,x.average_score,x.best_score,x.strongest_domain,x.recommendation])].map(row=>row.map(esc).join(",")).join("\\r\\n");
   res.setHeader("Content-Type","text/csv; charset=utf-8");res.setHeader("Content-Disposition",'attachment; filename="recruitflow-candidates.csv"');res.send("\uFEFF"+csv);
  }catch(e){console.error(e);res.status(500).json({error:"Could not export candidate report."})}
 });
