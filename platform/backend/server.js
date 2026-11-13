@@ -519,7 +519,8 @@ app.get("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,
   await ensureCandidateCrmTable();
   const candidate=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at FROM candidates c WHERE c.id=$1 AND c.event_id=$2",[req.params.candidateId,req.params.id]);
   if(!candidate.rowCount)return res.status(404).json({error:"Candidate not found in this event."});
-  const crm=await pool.query("SELECT tags,notes,updated_at FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);\n  await ensureCandidateResumeTable();const resume=await pool.query("SELECT original_name,mime_type,file_size,uploaded_at FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
+  const crm=await pool.query("SELECT tags,notes,updated_at FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
+  await ensureCandidateResumeTable();const resume=await pool.query("SELECT original_name,mime_type,file_size,uploaded_at FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
   res.json({candidate:candidate.rows[0],tags:crm.rows[0]?.tags||[],notes:crm.rows[0]?.notes||[],resume:resume.rows[0]||null,updatedAt:crm.rows[0]?.updated_at||null});
  }catch(e){console.error(e);res.status(500).json({error:"Could not load candidate profile."})}
 });
@@ -528,7 +529,8 @@ app.get("/api/events/:id/candidates/:candidateId/interviewer-profile",requireDb,
   await ensureCandidateCrmTable();
   const access=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at,COALESCE((SELECT json_agg(json_build_object('domain',d.name,'priority',cp.priority) ORDER BY cp.priority) FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id WHERE cp.candidate_id=c.id),'[]'::json) AS preferences FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$3 AND pa.active=true)",[req.params.candidateId,req.params.id,req.auth.sub]);
   if(!access.rowCount)return res.status(404).json({error:"Candidate not found or you are not assigned to a panel for this event."});
-  const crm=await pool.query("SELECT tags,notes FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);\n  await ensureCandidateResumeTable();const resume=await pool.query("SELECT original_name,mime_type,file_size,uploaded_at FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
+  const crm=await pool.query("SELECT tags,notes FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
+  await ensureCandidateResumeTable();const resume=await pool.query("SELECT original_name,mime_type,file_size,uploaded_at FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
   const visibleNotes=(crm.rows[0]?.notes||[]).filter(n=>n.visibility==="interviewers");
   res.json({candidate:access.rows[0],tags:crm.rows[0]?.tags||[],notes:visibleNotes,resume:resume.rows[0]||null});
  }catch(e){console.error(e);res.status(500).json({error:"Could not load candidate profile."})}
