@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import QRCode from "qrcode";
-import { randomBytes, createHash, randomUUID } from "node:crypto";
+import { randomBytes, createHash, randomUUID, createCipheriv, createDecipheriv, createHmac, timingSafeEqual } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 const app=express(),port=Number(process.env.PORT||4000);
@@ -19,6 +19,28 @@ const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draf
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
 let authSessionSchemaReady=false,authSessionSchemaPromise=null;async function ensureAuthSessionSchema(){if(authSessionSchemaReady)return;if(!authSessionSchemaPromise)authSessionSchemaPromise=(async()=>{await pool.query("CREATE TABLE IF NOT EXISTS auth_sessions(id text PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,created_at timestamptz NOT NULL DEFAULT now(),last_seen_at timestamptz NOT NULL DEFAULT now(),expires_at timestamptz NOT NULL,revoked_at timestamptz,ip_address text,user_agent text)");await pool.query("CREATE INDEX IF NOT EXISTS auth_sessions_user_active_idx ON auth_sessions(user_id,expires_at DESC) WHERE revoked_at IS NULL");authSessionSchemaReady=true})().catch(e=>{authSessionSchemaPromise=null;throw e});await authSessionSchemaPromise}
+let mfaSchemaReady=false,mfaSchemaPromise=null;
+async function ensureMfaSchema(){
+ if(mfaSchemaReady)return;
+ if(!mfaSchemaPromise)mfaSchemaPromise=(async()=>{
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled boolean NOT NULL DEFAULT false");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_secret_encrypted text");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_pending_secret_encrypted text");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_backup_codes jsonb NOT NULL DEFAULT '[]'::jsonb");
+  mfaSchemaReady=true;
+ })().catch(e=>{mfaSchemaPromise=null;throw e});
+ await mfaSchemaPromise;
+}
+function mfaKey(){if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)throw new Error("JWT_SECRET must contain at least 32 characters.");return createHash("sha256").update("RecruitFlow MFA encryption v1:"+process.env.JWT_SECRET).digest()}
+function encryptMfaSecret(secret){const iv=randomBytes(12),cipher=createCipheriv("aes-256-gcm",mfaKey(),iv),encrypted=Buffer.concat([cipher.update(secret,"utf8"),cipher.final()]),tag=cipher.getAuthTag();return [iv,tag,encrypted].map(x=>x.toString("base64url")).join(".")}
+function decryptMfaSecret(value){const [iv,tag,data]=String(value||"").split(".").map(x=>Buffer.from(x,"base64url"));if(!iv||!tag||!data)throw new Error("Stored MFA secret is invalid.");const decipher=createDecipheriv("aes-256-gcm",mfaKey(),iv);decipher.setAuthTag(tag);return Buffer.concat([decipher.update(data),decipher.final()]).toString("utf8")}
+function base32Encode(buffer){const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";let bits=0,value=0,out="";for(const byte of buffer){value=(value<<8)|byte;bits+=8;while(bits>=5){out+=alphabet[(value>>>(bits-5))&31];bits-=5}}if(bits)out+=alphabet[(value<<(5-bits))&31];return out}
+function base32Decode(text){const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";let bits=0,value=0;const out=[];for(const ch of text.replace(/=+$/,"").toUpperCase()){const n=alphabet.indexOf(ch);if(n<0)throw new Error("Invalid authenticator secret.");value=(value<<5)|n;bits+=5;if(bits>=8){out.push((value>>>(bits-8))&255);bits-=8}}return Buffer.from(out)}
+function totpAt(secret,time=Date.now()){const counter=Math.floor(time/30000),buf=Buffer.alloc(8);buf.writeBigUInt64BE(BigInt(counter));const h=createHmac("sha1",base32Decode(secret)).update(buf).digest(),offset=h[h.length-1]&15,num=(h.readUInt32BE(offset)&0x7fffffff)%1000000;return String(num).padStart(6,"0")}
+function verifyTotp(secret,code){const clean=String(code||"").replace(/\s/g,"");if(!/^\d{6}$/.test(clean))return false;const supplied=Buffer.from(clean);for(let drift=-1;drift<=1;drift++){const expected=Buffer.from(totpAt(secret,Date.now()+drift*30000));if(supplied.length===expected.length&&timingSafeEqual(supplied,expected))return true}return false}
+function generateBackupCodes(){return Array.from({length:10},()=>randomBytes(5).toString("hex").toUpperCase().match(/.{1,5}/g).join("-"))}
+async function consumeBackupCode(userId,code,stored){const list=Array.isArray(stored)?stored:[];for(let i=0;i<list.length;i++){if(await bcrypt.compare(String(code||"").replace(/-/g,"").toUpperCase(),list[i])){const next=list.filter((_,index)=>index!==i);await pool.query("UPDATE users SET mfa_backup_codes=$1::jsonb WHERE id=$2",[JSON.stringify(next),userId]);return true}}return false}
+
 async function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});if(!req.auth.jti)return res.status(401).json({error:"Session is no longer valid. Please sign in again."});await ensureAuthSessionSchema();const session=await pool.query("SELECT s.id FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.id=$1 AND s.user_id=$2 AND s.revoked_at IS NULL AND s.expires_at>now() AND u.active=true",[req.auth.jti,req.auth.sub]);if(!session.rowCount)return res.status(401).json({error:"Session expired, revoked or account inactive. Please sign in again."});await pool.query("UPDATE auth_sessions SET last_seen_at=now() WHERE id=$1 AND last_seen_at<now()-interval '5 minutes'",[req.auth.jti]);const requestPath=req.originalUrl.split("?")[0];if(req.auth.role==="Organization Admin"&&requestPath!=="/api/auth/me"&&requestPath!=="/api/auth/sessions"&&requestPath!=="/api/auth/change-password"&&!requestPath.startsWith("/api/organization/")&&!requestPath.startsWith("/api/events/"))return res.status(403).json({error:"This workspace feature is not enabled yet. Your organisation data remains protected."});if(["POST","PUT","PATCH","DELETE"].includes(req.method.toUpperCase()))writePlatformAudit(req).finally(()=>next());else next()}catch(e){if(e.name==="JsonWebTokenError"||e.name==="TokenExpiredError")return res.status(401).json({error:"Session expired. Please sign in again."});console.error("Session verification failed:",e.message);res.status(503).json({error:"Could not verify your session."})}}
 async function ensureCustomAccessSchema(){
  await pool.query("CREATE TABLE IF NOT EXISTS organization_member_roles (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, organization_role_id uuid NOT NULL REFERENCES organization_roles(id) ON DELETE CASCADE, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(organization_id,user_id,organization_role_id))");
@@ -329,28 +351,48 @@ const admin=["Super Admin","Admin"];
 app.get("/api/health",async(_req,res)=>{let database="not_configured";if(pool){try{await pool.query("SELECT 1");database="connected"}catch{database="disconnected"}}res.json({ok:true,service:"recruitflow-api",version:"0.7.0",database,authentication:Boolean(process.env.JWT_SECRET&&process.env.JWT_SECRET.length>=32),now:new Date().toISOString()})});
 app.get("/api",(_req,res)=>res.json({name:"RecruitFlow API",version:"0.7.0",status:"Automatic panel dispatch"}));
 async function recordSecurityEvent(req,eventType,outcome,details={}){try{await pool.query("CREATE TABLE IF NOT EXISTS platform_security_events(id bigserial PRIMARY KEY,event_type text NOT NULL,outcome text NOT NULL,ip_address text,user_agent text,details jsonb NOT NULL DEFAULT '{}'::jsonb,created_at timestamptz NOT NULL DEFAULT now())");await pool.query("INSERT INTO platform_security_events(event_type,outcome,ip_address,user_agent,details) VALUES($1,$2,$3,$4,$5::jsonb)",[eventType,outcome,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500),JSON.stringify(details)])}catch(e){console.error("Security event write failed:",e.message)}}
-app.post("/api/auth/login",loginLimiter,requireDb,async(req,res)=>{try{const identity=String(req.body?.identity||"").trim().toLowerCase(),password=String(req.body?.password||"");if(!identity||!password)return res.status(400).json({error:"Enter your username or email and password."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured. Set JWT_SECRET in backend/.env."});const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.password_hash,u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE lower(u.username)=$1 OR lower(u.email)=$1 LIMIT 1",[identity]);const u=q.rows[0];if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash))){await recordSecurityEvent(req,"login","failed",{reason:"invalid_credentials_or_inactive_account"});return res.status(401).json({error:"Invalid credentials or inactive account."})}await ensureAuthSessionSchema();await pool.query("UPDATE users SET last_login_at=now() WHERE id=$1",[u.id]);const sessionId=randomUUID(),expiresAt=new Date(Date.now()+8*60*60*1000);await pool.query("INSERT INTO auth_sessions(id,user_id,expires_at,ip_address,user_agent) VALUES($1,$2,$3,$4,$5)",[sessionId,u.id,expiresAt,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500)]);await recordSecurityEvent(req,"login","success",{userId:u.id,role:u.role});const token=jwt.sign({sub:u.id,role:u.role,username:u.username,jti:sessionId},process.env.JWT_SECRET,{expiresIn:"8h",issuer:"recruitflow-api",audience:"recruitflow-platform"});const owner=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[u.id]);res.json({token,user:{...safeUser(u),role:owner.rowCount?"Platform Owner":u.role},expiresIn:28800})}catch(e){console.error(e);res.status(500).json({error:"Unable to sign in right now."})}});
-app.post("/api/auth/change-password",requireDb,requireAuth,async(req,res)=>{
- const currentPassword=String(req.body?.currentPassword||""),newPassword=String(req.body?.newPassword||"");
- if(!currentPassword||!newPassword)return res.status(400).json({error:"Enter your current password and a new password."});
- if(newPassword.length<12||newPassword.length>128)return res.status(400).json({error:"New password must contain between 12 and 128 characters."});
- if(currentPassword===newPassword)return res.status(400).json({error:"Your new password must be different from your current password."});
+app.post("/api/auth/login",loginLimiter,requireDb,async(req,res)=>{
  try{
-  await ensureAuthSessionSchema();
-  const account=await pool.query("SELECT password_hash FROM users WHERE id=$1 AND active=true",[req.auth.sub]);
-  if(!account.rowCount||!(await bcrypt.compare(currentPassword,account.rows[0].password_hash)))return res.status(400).json({error:"Current password is incorrect."});
-  const passwordHash=await bcrypt.hash(newPassword,12);
-  const client=await pool.connect();
-  try{
-   await client.query("BEGIN");
-   await client.query("UPDATE users SET password_hash=$1 WHERE id=$2",[passwordHash,req.auth.sub]);
-   await client.query("UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1 AND id<>$2 AND revoked_at IS NULL",[req.auth.sub,req.auth.jti]);
-   await client.query("COMMIT");
-  }catch(error){await client.query("ROLLBACK");throw error}finally{client.release()}
-  await recordSecurityEvent(req,"password_changed","success",{userId:req.auth.sub,otherSessionsRevoked:true});
-  res.json({message:"Password changed successfully. Other signed-in devices have been signed out."});
- }catch(error){console.error("Password change failed:",error);res.status(500).json({error:"Could not update your password right now."})}
+  const identity=String(req.body?.identity||"").trim().toLowerCase(),password=String(req.body?.password||"");
+  if(!identity||!password)return res.status(400).json({error:"Enter your username or email and password."});
+  if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured. Set JWT_SECRET in backend/.env."});
+  const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.password_hash,u.active,r.name AS role,u.mfa_enabled FROM users u JOIN roles r ON r.id=u.role_id WHERE lower(u.username)=$1 OR lower(u.email)=$1 LIMIT 1",[identity]);
+  const u=q.rows[0];
+  if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash))){await recordSecurityEvent(req,"login","failed",{reason:"invalid_credentials_or_inactive_account"});return res.status(401).json({error:"Invalid credentials or inactive account."})}
+  if(u.mfa_enabled){
+   const challengeToken=jwt.sign({sub:u.id,purpose:"mfa_challenge"},process.env.JWT_SECRET,{expiresIn:"5m",issuer:"recruitflow-api",audience:"recruitflow-mfa"});
+   return res.json({mfaRequired:true,challengeToken,expiresIn:300});
+  }
+  await createAuthenticatedSession(req,res,u);
+ }catch(e){console.error(e);res.status(500).json({error:"Unable to sign in right now."})}
 });
+async function createAuthenticatedSession(req,res,u){
+ await ensureAuthSessionSchema();await pool.query("UPDATE users SET last_login_at=now() WHERE id=$1",[u.id]);
+ const sessionId=randomUUID(),expiresAt=new Date(Date.now()+8*60*60*1000);
+ await pool.query("INSERT INTO auth_sessions(id,user_id,expires_at,ip_address,user_agent) VALUES($1,$2,$3,$4,$5)",[sessionId,u.id,expiresAt,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500)]);
+ await recordSecurityEvent(req,"login","success",{userId:u.id,role:u.role,mfa:u.mfa_enabled===true});
+ const token=jwt.sign({sub:u.id,role:u.role,username:u.username,jti:sessionId},process.env.JWT_SECRET,{expiresIn:"8h",issuer:"recruitflow-api",audience:"recruitflow-platform"});
+ const owner=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[u.id]);
+ res.json({token,user:{...safeUser(u),role:owner.rowCount?"Platform Owner":u.role},expiresIn:28800});
+}
+app.post("/api/auth/mfa/verify-login",requireDb,async(req,res)=>{
+ try{
+  const challenge=jwt.verify(String(req.body?.challengeToken||""),process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-mfa"});
+  if(challenge.purpose!=="mfa_challenge")return res.status(401).json({error:"Invalid MFA challenge."});
+  await ensureMfaSchema();
+  const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.active,u.mfa_enabled,u.mfa_secret_encrypted,u.mfa_backup_codes,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1",[challenge.sub]);
+  const u=q.rows[0];if(!u||!u.active||!u.mfa_enabled||!u.mfa_secret_encrypted)return res.status(401).json({error:"MFA is no longer enabled for this account. Sign in again."});
+  let valid=false;const code=String(req.body?.code||"").trim();
+  try{valid=verifyTotp(decryptMfaSecret(u.mfa_secret_encrypted),code)}catch{}
+  if(!valid)valid=await consumeBackupCode(u.id,code,u.mfa_backup_codes);
+  if(!valid){await recordSecurityEvent(req,"mfa_login","failed",{userId:u.id});return res.status(401).json({error:"Invalid authenticator code or recovery code."})}
+  await createAuthenticatedSession(req,res,u);
+ }catch(e){if(e.name==="JsonWebTokenError"||e.name==="TokenExpiredError")return res.status(401).json({error:"MFA challenge expired. Sign in again."});console.error("MFA login verification failed:",e);res.status(500).json({error:"Could not verify the authenticator code."})}
+});
+app.get("/api/auth/mfa/status",requireDb,requireAuth,async(req,res)=>{try{await ensureMfaSchema();const q=await pool.query("SELECT mfa_enabled,jsonb_array_length(mfa_backup_codes) AS backup_codes_remaining FROM users WHERE id=$1",[req.auth.sub]);res.json({enabled:q.rows[0]?.mfa_enabled===true,backupCodesRemaining:Number(q.rows[0]?.backup_codes_remaining||0)})}catch(e){console.error(e);res.status(500).json({error:"Could not load MFA status."})}});
+app.post("/api/auth/mfa/setup",requireDb,requireAuth,async(req,res)=>{try{await ensureMfaSchema();const q=await pool.query("SELECT email,username,mfa_enabled FROM users WHERE id=$1 AND active=true",[req.auth.sub]);if(!q.rowCount)return res.status(404).json({error:"Account not found."});if(q.rows[0].mfa_enabled)return res.status(409).json({error:"Two-factor authentication is already enabled."});const secret=base32Encode(randomBytes(20));await pool.query("UPDATE users SET mfa_pending_secret_encrypted=$1 WHERE id=$2",[encryptMfaSecret(secret),req.auth.sub]);const label=encodeURIComponent(q.rows[0].email||q.rows[0].username),issuer=encodeURIComponent("RecruitFlow"),uri="otpauth://totp/"+issuer+":"+label+"?secret="+secret+"&issuer="+issuer+"&algorithm=SHA1&digits=6&period=30";const qrDataUrl=await QRCode.toDataURL(uri,{width:240,margin:2});res.json({secret,otpauthUrl:uri,qrDataUrl});}catch(e){console.error(e);res.status(500).json({error:"Could not create MFA setup. Try again."})}});
+app.post("/api/auth/mfa/enable",requireDb,requireAuth,async(req,res)=>{try{await ensureMfaSchema();const q=await pool.query("SELECT mfa_enabled,mfa_pending_secret_encrypted FROM users WHERE id=$1 AND active=true",[req.auth.sub]);if(!q.rowCount||q.rows[0].mfa_enabled||!q.rows[0].mfa_pending_secret_encrypted)return res.status(400).json({error:"Start authenticator setup before enabling MFA."});const secret=decryptMfaSecret(q.rows[0].mfa_pending_secret_encrypted);if(!verifyTotp(secret,req.body?.code))return res.status(400).json({error:"Authenticator code is incorrect. Check your device time and try again."});const backupCodes=generateBackupCodes(),hashes=await Promise.all(backupCodes.map(code=>bcrypt.hash(code.replace(/-/g,""),12)));await pool.query("UPDATE users SET mfa_enabled=true,mfa_secret_encrypted=$1,mfa_pending_secret_encrypted=NULL,mfa_backup_codes=$2::jsonb WHERE id=$3",[q.rows[0].mfa_pending_secret_encrypted,JSON.stringify(hashes),req.auth.sub]);await recordSecurityEvent(req,"mfa_enabled","success",{userId:req.auth.sub});res.json({message:"Two-factor authentication enabled.",backupCodes});}catch(e){console.error(e);res.status(500).json({error:"Could not enable two-factor authentication."})}});
+app.post("/api/auth/mfa/disable",requireDb,requireAuth,async(req,res)=>{try{await ensureMfaSchema();const q=await pool.query("SELECT mfa_enabled,mfa_secret_encrypted FROM users WHERE id=$1 AND active=true",[req.auth.sub]);if(!q.rowCount||!q.rows[0].mfa_enabled)return res.status(400).json({error:"Two-factor authentication is not enabled."});if(!verifyTotp(decryptMfaSecret(q.rows[0].mfa_secret_encrypted),req.body?.code))return res.status(400).json({error:"Enter a valid authenticator code to disable MFA."});await pool.query("UPDATE users SET mfa_enabled=false,mfa_secret_encrypted=NULL,mfa_pending_secret_encrypted=NULL,mfa_backup_codes='[]'::jsonb WHERE id=$1",[req.auth.sub]);await recordSecurityEvent(req,"mfa_disabled","success",{userId:req.auth.sub});res.json({message:"Two-factor authentication disabled."})}catch(e){console.error(e);res.status(500).json({error:"Could not disable two-factor authentication."})}});
 app.post("/api/auth/logout",requireDb,requireAuth,async(req,res)=>{try{await pool.query("UPDATE auth_sessions SET revoked_at=now() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL",[req.auth.jti,req.auth.sub]);await recordSecurityEvent(req,"logout","success",{userId:req.auth.sub});res.json({message:"Signed out successfully."})}catch(e){console.error(e);res.status(500).json({error:"Could not end this session."})}});
 app.get("/api/auth/sessions",requireDb,requireAuth,async(req,res)=>{try{await ensureAuthSessionSchema();const q=await pool.query("SELECT id,created_at,last_seen_at,expires_at,ip_address,user_agent,(id=$2) AS current FROM auth_sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now() ORDER BY last_seen_at DESC",[req.auth.sub,req.auth.jti]);res.json({sessions:q.rows})}catch(e){console.error(e);res.status(500).json({error:"Could not load active sessions."})}});
 app.delete("/api/auth/sessions/:id",requireDb,requireAuth,async(req,res)=>{try{const q=await pool.query("UPDATE auth_sessions SET revoked_at=now() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL RETURNING id",[req.params.id,req.auth.sub]);if(!q.rowCount)return res.status(404).json({error:"Active session not found."});await recordSecurityEvent(req,"session_revoked","success",{userId:req.auth.sub,revokedSessionId:req.params.id});res.json({message:"Session revoked."})}catch(e){console.error(e);res.status(500).json({error:"Could not revoke session."})}});
