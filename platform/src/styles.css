@@ -570,3 +570,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:560px){.tracking-facts{grid-template-columns:1fr}.tracking-live-heading{align-items:flex-start;flex-direction:column}.tracking-interview-row{align-items:flex-start;flex-direction:column}}
 
 .tracking-refresh-button{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #dce5f1;border-radius:8px;background:#fff;color:#45618b;font-size:10px;font-weight:750;cursor:pointer}.tracking-refresh-button:disabled{opacity:.55;cursor:wait}
+
+
+/* Personal active session management */
+.session-device-cell{max-width:320px;overflow-wrap:anywhere;line-height:1.5}.session-device-cell .table-sub{display:block;margin-top:5px}.session-current-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:30px;background:#e7f7ee;color:#26784c;font-size:10px;font-weight:800}.session-current-badge:before{content:"";width:6px;height:6px;border-radius:50%;background:#28a568}.session-revoke-note{margin-top:14px;padding:13px 15px;border:1px solid #e2eaf4;border-radius:10px;background:#f8faff;color:#63738c;font-size:11px;line-height:1.6}
+@media(max-width:700px){.session-device-cell{min-width:220px}}
