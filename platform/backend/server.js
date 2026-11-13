@@ -496,7 +496,11 @@ async function ensureCandidateCrmTable(){
 const privateResumeDirectory=path.resolve(process.cwd(),"private-resumes");
 async function ensureCandidateResumeTable(){await pool.query(`CREATE TABLE IF NOT EXISTS candidate_resumes(candidate_id UUID PRIMARY KEY REFERENCES candidates(id) ON DELETE CASCADE,storage_name TEXT NOT NULL,original_name TEXT NOT NULL,mime_type TEXT NOT NULL,file_size INTEGER NOT NULL,uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now())`)}
 async function candidateResumeAccess(req,role){
- const q=await pool.query(`SELECT c.id FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND (($3='organizer' AND EXISTS(SELECT 1 FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$4 AND r.name=ANY($5::text[]))) OR ($3='interviewer' AND EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$4 AND pa.active=true))`,[req.params.candidateId,req.params.id,role,req.auth.sub,registrationRoles]);return q.rowCount>0;
+ const q=await pool.query("SELECT c.id FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND ($3='organizer' OR EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$4 AND pa.active=true))",[req.params.candidateId,req.params.id,role,req.auth.sub]);
+ if(!q.rowCount)return false;
+ if(role==="interviewer")return true;
+ const actual=await pool.query("SELECT r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 AND u.active=true",[req.auth.sub]);
+ return !!actual.rowCount&&(registrationRoles.includes(actual.rows[0].role)||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.view")||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.manage"));
 }
 app.post("/api/public/events/:slug/resume",requireDb,async(req,res)=>{
  const code=String(req.body?.candidateId||"").trim().toUpperCase(),email=String(req.body?.email||"").trim().toLowerCase(),name=String(req.body?.fileName||"").trim().slice(0,180),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||""),ext=path.extname(name).toLowerCase();
