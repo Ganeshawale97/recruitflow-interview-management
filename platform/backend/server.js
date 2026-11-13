@@ -228,6 +228,21 @@ app.get("/api/events/:id/analytics",requireDb,requireAuth,requireRole(...reportR
   res.json({event:e.rows[0],summary:summary.rows[0],domains:domains.rows,recommendations:{shortlist:rows.filter(x=>x.recommendation==="Shortlist for review").length,committeeReview:rows.filter(x=>x.recommendation==="Committee review").length,furtherReview:rows.filter(x=>x.recommendation==="Further review").length,pending:rows.filter(x=>x.recommendation==="Pending interviews").length}});
  }catch(e){console.error(e);res.status(500).json({error:"Could not load event analytics."})}
 });
+app.get("/api/events/:id/live-dashboard",requireDb,requireAuth,requireRole("Super Admin","Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"),async(req,res)=>{
+ try{
+  const event=await pool.query("SELECT id,name,status FROM recruitment_events WHERE id=$1",[req.params.id]);
+  if(!event.rowCount)return res.status(404).json({error:"Event not found."});
+  const [candidates,interviews,panels,domains,recent,wait]=await Promise.all([
+   pool.query("SELECT count(*)::int AS total,count(*) FILTER(WHERE status='registered')::int AS registered,count(*) FILTER(WHERE status='waiting_1')::int AS waiting_1,count(*) FILTER(WHERE status='waiting_2')::int AS waiting_2,count(*) FILTER(WHERE status='called_to_panel')::int AS called_to_panel,count(*) FILTER(WHERE status='interviewing')::int AS interviewing,count(*) FILTER(WHERE status='interviewed')::int AS interviewed,count(*) FILTER(WHERE status='withdrawn')::int AS withdrawn FROM candidates WHERE event_id=$1",[req.params.id]),
+   pool.query("SELECT count(*) FILTER(WHERE status='completed')::int AS completed,count(*) FILTER(WHERE status='in_progress')::int AS in_progress,count(*) FILTER(WHERE status='completed' AND completed_at>=date_trunc('day',now()))::int AS completed_today FROM interviews WHERE candidate_id IN(SELECT id FROM candidates WHERE event_id=$1)",[req.params.id]),
+   pool.query("SELECT count(*) FILTER(WHERE p.active=true)::int AS total,count(*) FILTER(WHERE p.active=true AND EXISTS(SELECT 1 FROM interviews i WHERE i.panel_id=p.id AND i.status='in_progress'))::int AS busy,count(*) FILTER(WHERE p.active=true AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=p.id AND pa.active=true))::int AS assigned FROM panels p WHERE p.event_id=$1",[req.params.id]),
+   pool.query("SELECT d.name AS domain,count(i.id) FILTER(WHERE i.status='completed')::int AS completed,count(i.id) FILTER(WHERE i.status='in_progress')::int AS in_progress,round(avg(i.total_score) FILTER(WHERE i.status='completed'),1) AS average_score FROM domains d LEFT JOIN interviews i ON i.domain_id=d.id AND i.candidate_id IN(SELECT id FROM candidates WHERE event_id=$1) WHERE d.event_id=$1 GROUP BY d.id,d.name ORDER BY completed DESC,d.name",[req.params.id]),
+   pool.query("SELECT i.id,i.status,i.total_score,i.completed_at,c.name AS candidate_name,c.candidate_code,d.name AS domain,p.name AS panel_name FROM interviews i JOIN candidates c ON c.id=i.candidate_id JOIN domains d ON d.id=i.domain_id JOIN panels p ON p.id=i.panel_id WHERE c.event_id=$1 ORDER BY COALESCE(i.completed_at,i.started_at,i.created_at) DESC LIMIT 8",[req.params.id]),
+   pool.query("SELECT round(avg(EXTRACT(EPOCH FROM (now()-checked_in_at))/60)::numeric,1) AS average_wait_minutes FROM candidates WHERE event_id=$1 AND status IN('waiting_1','waiting_2') AND checked_in_at IS NOT NULL",[req.params.id])
+  ]);
+  res.json({event:event.rows[0],summary:{...candidates.rows[0],...interviews.rows[0],active_panels:panels.rows[0].total,busy_panels:panels.rows[0].busy,assigned_panels:panels.rows[0].assigned,average_wait_minutes:wait.rows[0].average_wait_minutes??0},domains:domains.rows,recent:recent.rows,updatedAt:new Date().toISOString()});
+ }catch(e){console.error("Live dashboard failed:",e);res.status(500).json({error:"Could not load live dashboard."})}
+});
 app.get("/api/events/:id/reports/candidates.csv",requireDb,requireAuth,requireRole(...reportRoles),async(req,res)=>{
  try{
   const rows=await buildSelectionRows(req.params.id);
