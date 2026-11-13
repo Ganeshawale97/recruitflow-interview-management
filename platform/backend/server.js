@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import QRCode from "qrcode";
 import { randomBytes, createHash, randomUUID, createCipheriv, createDecipheriv, createHmac, timingSafeEqual } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
@@ -493,13 +493,34 @@ async function ensureCandidateCrmTable(){
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
  )`);
 }
+const privateResumeDirectory=path.resolve(process.cwd(),"private-resumes");
+async function ensureCandidateResumeTable(){await pool.query(`CREATE TABLE IF NOT EXISTS candidate_resumes(candidate_id UUID PRIMARY KEY REFERENCES candidates(id) ON DELETE CASCADE,storage_name TEXT NOT NULL,original_name TEXT NOT NULL,mime_type TEXT NOT NULL,file_size INTEGER NOT NULL,uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now())`)}
+async function candidateResumeAccess(req,role){
+ const q=await pool.query(`SELECT c.id FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND (($3='organizer' AND EXISTS(SELECT 1 FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$4 AND r.name=ANY($5::text[]))) OR ($3='interviewer' AND EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$4 AND pa.active=true))`,[req.params.candidateId,req.params.id,role,req.auth.sub,registrationRoles]);return q.rowCount>0;
+}
+app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
+ const name=String(req.body?.fileName||"").trim().slice(0,180),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||""),ext=path.extname(name).toLowerCase();
+ if(!name||!encoded)return res.status(400).json({error:"Choose a PDF or DOCX resume to upload."});
+ if(!((ext===".pdf"&&mime==="application/pdf")||(ext===".docx"&&mime==="application/vnd.openxmlformats-officedocument.wordprocessingml.document")))return res.status(400).json({error:"Only PDF and DOCX resumes are accepted."});
+ const base64=encoded.replace(/^data:[^;]+;base64,/,"");if(!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)||base64.length>Math.ceil(5*1024*1024*4/3)+8)return res.status(413).json({error:"Resume must be a valid file no larger than 5 MB."});
+ const buffer=Buffer.from(base64,"base64");if(!buffer.length||buffer.length>5*1024*1024)return res.status(413).json({error:"Resume must be no larger than 5 MB."});
+ const valid=ext===".pdf"?buffer.subarray(0,5).toString()==="%PDF-":buffer[0]===0x50&&buffer[1]===0x4b&&buffer[2]===0x03&&buffer[3]===0x04;if(!valid)return res.status(400).json({error:"The file content does not match its selected PDF or DOCX format."});
+ try{await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,"organizer"))return res.status(404).json({error:"Candidate not found in this event."});await mkdir(privateResumeDirectory,{recursive:true});const storageName=randomUUID()+ext;await writeFile(path.join(privateResumeDirectory,storageName),buffer,{flag:"wx",mode:0o600});
+ const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,$6,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=EXCLUDED.uploaded_by,uploaded_at=now() RETURNING original_name,mime_type,file_size,uploaded_at",[req.params.candidateId,storageName,name,mime,buffer.length,req.auth.sub]);res.status(201).json({resume:q.rows[0],message:"Resume uploaded securely."})
+ }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
+});
+app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,async(req,res)=>{
+ const role=req.auth.role==="Interviewer"?"interviewer":"organizer";if(role==="organizer"&&!registrationRoles.includes(req.auth.role))return res.status(403).json({error:"You do not have permission to view candidate resumes."});
+ try{await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,role))return res.status(404).json({error:"Resume not found or access is not permitted."});const q=await pool.query("SELECT storage_name,original_name,mime_type FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);if(!q.rowCount)return res.status(404).json({error:"No resume has been uploaded for this candidate."});const file=await readFile(path.join(privateResumeDirectory,q.rows[0].storage_name));res.setHeader("Content-Type",q.rows[0].mime_type);res.setHeader("Content-Length",file.length);res.setHeader("Content-Disposition",`attachment; filename="${q.rows[0].original_name.replace(/["\\\\\r\n]/g,"_")}"`);res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Cache-Control","private, no-store");res.send(file)
+ }catch(e){if(e.code==="ENOENT")return res.status(404).json({error:"Resume file is missing from private storage."});console.error(e);res.status(500).json({error:"Could not retrieve resume."})}
+});
 app.get("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
  try{
   await ensureCandidateCrmTable();
   const candidate=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at FROM candidates c WHERE c.id=$1 AND c.event_id=$2",[req.params.candidateId,req.params.id]);
   if(!candidate.rowCount)return res.status(404).json({error:"Candidate not found in this event."});
-  const crm=await pool.query("SELECT tags,notes,updated_at FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
-  res.json({candidate:candidate.rows[0],tags:crm.rows[0]?.tags||[],notes:crm.rows[0]?.notes||[],updatedAt:crm.rows[0]?.updated_at||null});
+  const crm=await pool.query("SELECT tags,notes,updated_at FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);\n  await ensureCandidateResumeTable();const resume=await pool.query("SELECT original_name,mime_type,file_size,uploaded_at FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
+  res.json({candidate:candidate.rows[0],tags:crm.rows[0]?.tags||[],notes:crm.rows[0]?.notes||[],resume:resume.rows[0]||null,updatedAt:crm.rows[0]?.updated_at||null});
  }catch(e){console.error(e);res.status(500).json({error:"Could not load candidate profile."})}
 });
 app.get("/api/events/:id/candidates/:candidateId/interviewer-profile",requireDb,requireAuth,requireRole("Interviewer"),async(req,res)=>{
@@ -507,9 +528,9 @@ app.get("/api/events/:id/candidates/:candidateId/interviewer-profile",requireDb,
   await ensureCandidateCrmTable();
   const access=await pool.query("SELECT c.id,c.candidate_code,c.name,c.email,c.phone,c.college,c.branch,c.academic_year,c.skills,c.github_url,c.linkedin_url,c.portfolio_url,c.motivation,c.custom_answers,c.status,c.created_at,COALESCE((SELECT json_agg(json_build_object('domain',d.name,'priority',cp.priority) ORDER BY cp.priority) FROM candidate_preferences cp JOIN domains d ON d.id=cp.domain_id WHERE cp.candidate_id=c.id),'[]'::json) AS preferences FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$3 AND pa.active=true)",[req.params.candidateId,req.params.id,req.auth.sub]);
   if(!access.rowCount)return res.status(404).json({error:"Candidate not found or you are not assigned to a panel for this event."});
-  const crm=await pool.query("SELECT tags,notes FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
+  const crm=await pool.query("SELECT tags,notes FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);\n  await ensureCandidateResumeTable();const resume=await pool.query("SELECT original_name,mime_type,file_size,uploaded_at FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
   const visibleNotes=(crm.rows[0]?.notes||[]).filter(n=>n.visibility==="interviewers");
-  res.json({candidate:access.rows[0],tags:crm.rows[0]?.tags||[],notes:visibleNotes});
+  res.json({candidate:access.rows[0],tags:crm.rows[0]?.tags||[],notes:visibleNotes,resume:resume.rows[0]||null});
  }catch(e){console.error(e);res.status(500).json({error:"Could not load candidate profile."})}
 });
 app.put("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
