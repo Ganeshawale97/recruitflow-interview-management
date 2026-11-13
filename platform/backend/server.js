@@ -357,6 +357,7 @@ app.post("/api/auth/login",loginLimiter,requireDb,async(req,res)=>{
   const identity=String(req.body?.identity||"").trim().toLowerCase(),password=String(req.body?.password||"");
   if(!identity||!password)return res.status(400).json({error:"Enter your username or email and password."});
   if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured. Set JWT_SECRET in backend/.env."});
+  await ensureMfaSchema();
   const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.password_hash,u.active,r.name AS role,u.mfa_enabled FROM users u JOIN roles r ON r.id=u.role_id WHERE lower(u.username)=$1 OR lower(u.email)=$1 LIMIT 1",[identity]);
   const u=q.rows[0];
   if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash))){await recordSecurityEvent(req,"login","failed",{reason:"invalid_credentials_or_inactive_account"});return res.status(401).json({error:"Invalid credentials or inactive account."})}
