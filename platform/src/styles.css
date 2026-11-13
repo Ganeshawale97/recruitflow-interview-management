@@ -591,3 +591,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .account-session-shortcut p{margin:0;color:#78839a}
 .security-icon-badge{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#eaf8f2;color:#13835a}
 @media(max-width:720px){.account-password-form{grid-template-columns:1fr}.account-password-form label:first-child,.account-password-form .primary-button{grid-column:auto}.account-session-shortcut{align-items:flex-start;flex-direction:column}}
+
+/* Multi-factor authentication */
+.account-mfa-card{margin-top:18px}
+.mfa-status-row,.mfa-action-row,.mfa-disable-form{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.mfa-action-row p{color:#77839a;margin:0}
+.mfa-setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;margin-top:20px;padding-top:18px;border-top:1px solid #e7eaf2}
+.mfa-setup h3,.mfa-recovery h3{margin:0 0 8px}
+.mfa-setup p,.mfa-recovery p{color:#77839a;font-size:13px;line-height:1.6}
+.mfa-qr{display:block;width:240px;height:240px;max-width:100%;padding:10px;background:#fff;border:1px solid #e2e6ef;border-radius:12px}
+.mfa-secret{display:inline-block;margin-top:10px;padding:9px 12px;background:#f1f3f9;border-radius:8px;overflow-wrap:anywhere;font-size:12px;letter-spacing:.08em}
+.mfa-setup form{display:flex;flex-direction:column;gap:14px}
+.mfa-setup form label,.mfa-disable-form label{display:grid;gap:7px;font-weight:600}
+.mfa-setup input,.mfa-disable-form input{padding:11px 12px;border:1px solid #dce2ee;border-radius:9px;max-width:260px}
+.mfa-recovery{margin-top:20px;padding:18px;border:1px solid #f0d89b;background:#fffaf0;border-radius:12px}
+.mfa-code-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+.mfa-code-grid code{padding:10px;background:#fff;border:1px solid #f0e5c9;border-radius:7px;text-align:center;font-weight:700;letter-spacing:.08em}
+.mfa-disable-form{margin-top:20px;padding-top:18px;border-top:1px solid #e7eaf2}
+@media(max-width:720px){.mfa-setup{grid-template-columns:1fr}.mfa-status-row,.mfa-action-row,.mfa-disable-form{align-items:flex-start;flex-direction:column}.mfa-code-grid{grid-template-columns:1fr}}
