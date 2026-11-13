@@ -498,6 +498,23 @@ async function ensureCandidateResumeTable(){await pool.query(`CREATE TABLE IF NO
 async function candidateResumeAccess(req,role){
  const q=await pool.query(`SELECT c.id FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND (($3='organizer' AND EXISTS(SELECT 1 FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$4 AND r.name=ANY($5::text[]))) OR ($3='interviewer' AND EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$4 AND pa.active=true))`,[req.params.candidateId,req.params.id,role,req.auth.sub,registrationRoles]);return q.rowCount>0;
 }
+app.post("/api/public/events/:slug/resume",requireDb,async(req,res)=>{
+ const code=String(req.body?.candidateId||"").trim().toUpperCase(),email=String(req.body?.email||"").trim().toLowerCase(),name=String(req.body?.fileName||"").trim().slice(0,180),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||""),ext=path.extname(name).toLowerCase();
+ if(!code||!email||!name||!encoded)return res.status(400).json({error:"Candidate details and a resume file are required."});
+ if(!((ext===".pdf"&&mime==="application/pdf")||(ext===".docx"&&mime==="application/vnd.openxmlformats-officedocument.wordprocessingml.document")))return res.status(400).json({error:"Only PDF and DOCX resumes are accepted."});
+ const base64=encoded.replace(/^data:[^;]+;base64,/,"");if(!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)||base64.length>Math.ceil(5*1024*1024*4/3)+8)return res.status(413).json({error:"Resume must be a valid file no larger than 5 MB."});
+ const buffer=Buffer.from(base64,"base64");if(!buffer.length||buffer.length>5*1024*1024)return res.status(413).json({error:"Resume must be no larger than 5 MB."});
+ const valid=ext===".pdf"?buffer.subarray(0,5).toString()==="%PDF-":buffer[0]===0x50&&buffer[1]===0x4b&&buffer[2]===0x03&&buffer[3]===0x04;if(!valid)return res.status(400).json({error:"The file content does not match its selected PDF or DOCX format."});
+ try{
+  await ensureCandidateResumeTable();
+  const candidate=await pool.query("SELECT c.id FROM candidates c JOIN recruitment_events e ON e.id=c.event_id WHERE upper(c.candidate_code)=$1 AND lower(c.email)=$2 AND e.slug=$3",[code,email,String(req.params.slug).toLowerCase()]);
+  if(!candidate.rowCount)return res.status(404).json({error:"Candidate registration could not be verified. Please check the event, Candidate ID and email."});
+  await mkdir(privateResumeDirectory,{recursive:true});const storageName=randomUUID()+ext;
+  await writeFile(path.join(privateResumeDirectory,storageName),buffer,{flag:"wx",mode:0o600});
+  const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,NULL,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=NULL,uploaded_at=now() RETURNING original_name,file_size,uploaded_at",[candidate.rows[0].id,storageName,name,mime,buffer.length]);
+  res.status(201).json({resume:q.rows[0],message:"Resume attached to your application."});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
+});
 app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
  const name=String(req.body?.fileName||"").trim().slice(0,180),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||""),ext=path.extname(name).toLowerCase();
  if(!name||!encoded)return res.status(400).json({error:"Choose a PDF or DOCX resume to upload."});
