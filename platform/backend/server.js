@@ -6,14 +6,27 @@ import pg from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID, createHash } from "node:crypto";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
 app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"1mb"}));
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."}});
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
-function requireAuth(req,res,next){const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return res.status(401).json({error:"Authentication required."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});try{req.auth=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});next()}catch{return res.status(401).json({error:"Session expired. Please sign in again."})}}
+async function requireAuth(req,res,next){
+ const h=req.headers.authorization||"",t=h.startsWith("Bearer ")?h.slice(7):"";
+ if(!t)return res.status(401).json({error:"Authentication required."});
+ if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured."});
+ try{
+  const payload=jwt.verify(t,process.env.JWT_SECRET,{issuer:"recruitflow-api",audience:"recruitflow-platform"});
+  if(!payload.sid)return res.status(401).json({error:"This session is no longer valid. Please sign in again."});
+  const q=await pool.query("SELECT id FROM auth_sessions WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL AND expires_at>now()",[payload.sid,payload.sub]);
+  if(!q.rowCount)return res.status(401).json({error:"Session expired or revoked. Please sign in again."});
+  req.auth=payload;
+  await pool.query("UPDATE auth_sessions SET last_seen_at=now() WHERE id=$1 AND last_seen_at<now()-interval '2 minutes'",[payload.sid]);
+  next();
+ }catch(e){if(e.name==="JsonWebTokenError"||e.name==="TokenExpiredError"||e.name==="NotBeforeError")return res.status(401).json({error:"Session expired. Please sign in again."});console.error("Session validation failed:",e);res.status(500).json({error:"Could not validate session."})}
+}
 function requireRole(...roles){return async(req,res,next)=>{try{if(!req.auth)return res.status(401).json({error:"Authentication required."});const q=await pool.query("SELECT u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1",[req.auth.sub]);if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"Account is unavailable."});req.auth.role=q.rows[0].role;if(!roles.includes(req.auth.role))return res.status(403).json({error:"Your current account role ("+req.auth.role+") is not permitted to perform this action."});next()}catch(e){console.error(e);res.status(500).json({error:"Could not verify account permissions."})}}}
 async function requirePlatformOwner(req,res,next){
  try{
@@ -26,7 +39,24 @@ function safeUser(r){return{id:r.id,username:r.username,email:r.email,displayNam
 const admin=["Super Admin","Admin"];
 app.get("/api/health",async(_req,res)=>{let database="not_configured";if(pool){try{await pool.query("SELECT 1");database="connected"}catch{database="disconnected"}}res.json({ok:true,service:"recruitflow-api",version:"0.7.0",database,authentication:Boolean(process.env.JWT_SECRET&&process.env.JWT_SECRET.length>=32),now:new Date().toISOString()})});
 app.get("/api",(_req,res)=>res.json({name:"RecruitFlow API",version:"0.7.0",status:"Automatic panel dispatch"}));
-app.post("/api/auth/login",loginLimiter,requireDb,async(req,res)=>{try{const identity=String(req.body?.identity||"").trim().toLowerCase(),password=String(req.body?.password||"");if(!identity||!password)return res.status(400).json({error:"Enter your username or email and password."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured. Set JWT_SECRET in backend/.env."});const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.password_hash,u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE lower(u.username)=$1 OR lower(u.email)=$1 LIMIT 1",[identity]);const u=q.rows[0];if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:"Invalid credentials or inactive account."});await pool.query("UPDATE users SET last_login_at=now() WHERE id=$1",[u.id]);const token=jwt.sign({sub:u.id,role:u.role,username:u.username},process.env.JWT_SECRET,{expiresIn:"8h",issuer:"recruitflow-api",audience:"recruitflow-platform"});const owner=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[u.id]);res.json({token,user:{...safeUser(u),role:owner.rowCount?"Platform Owner":u.role},expiresIn:28800})}catch(e){console.error(e);res.status(500).json({error:"Unable to sign in right now."})}});
+app.post("/api/auth/login",loginLimiter,requireDb,async(req,res)=>{try{const identity=String(req.body?.identity||"").trim().toLowerCase(),password=String(req.body?.password||"");if(!identity||!password)return res.status(400).json({error:"Enter your username or email and password."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured. Set JWT_SECRET in backend/.env."});const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.password_hash,u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE lower(u.username)=$1 OR lower(u.email)=$1 LIMIT 1",[identity]);const u=q.rows[0];if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:"Invalid credentials or inactive account."});const sessionId=randomUUID(),expiresAt=new Date(Date.now()+8*60*60*1000);await pool.query("INSERT INTO auth_sessions(id,user_id,token_fingerprint,ip_address,user_agent,expires_at) VALUES($1,$2,$3,$4,$5,$6)",[sessionId,u.id,createHash("sha256").update(sessionId).digest("hex"),req.ip, String(req.get("user-agent")||"").slice(0,500),expiresAt]);await pool.query("UPDATE users SET last_login_at=now() WHERE id=$1",[u.id]);const token=jwt.sign({sub:u.id,sid:sessionId,role:u.role,username:u.username},process.env.JWT_SECRET,{expiresIn:"8h",issuer:"recruitflow-api",audience:"recruitflow-platform"});const owner=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[u.id]);res.json({token,user:{...safeUser(u),role:owner.rowCount?"Platform Owner":u.role},expiresIn:28800,sessionId})}catch(e){console.error(e);res.status(500).json({error:"Unable to sign in right now."})}});
+app.get("/api/auth/sessions",requireDb,requireAuth,async(req,res)=>{
+ try{
+  const q=await pool.query("SELECT id,ip_address,user_agent,created_at,last_seen_at,expires_at,CASE WHEN id=$2 THEN true ELSE false END AS current FROM auth_sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now() ORDER BY last_seen_at DESC",[req.auth.sub,req.auth.sid]);
+  res.json({sessions:q.rows});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load active sessions."})}
+});
+app.delete("/api/auth/sessions/:id",requireDb,requireAuth,async(req,res)=>{
+ try{
+  const q=await pool.query("UPDATE auth_sessions SET revoked_at=now() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL RETURNING id",[req.params.id,req.auth.sub]);
+  if(!q.rowCount)return res.status(404).json({error:"Active session not found."});
+  res.json({ok:true,message:req.params.id===req.auth.sid?"Current session revoked.":"Session revoked."});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not revoke session."})}
+});
+app.post("/api/auth/logout",requireDb,requireAuth,async(req,res)=>{
+ try{await pool.query("UPDATE auth_sessions SET revoked_at=now() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL",[req.auth.sid,req.auth.sub]);res.json({ok:true,message:"Signed out successfully."})}
+ catch(e){console.error(e);res.status(500).json({error:"Could not sign out."})}
+});
 app.get("/api/auth/me",requireDb,requireAuth,async(req,res)=>{try{const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.active,rl.name AS role,u.created_at FROM users u JOIN roles rl ON rl.id=u.role_id WHERE u.id=$1",[req.auth.sub]);if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"Account is unavailable."});const owner=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[req.auth.sub]);res.json({user:{...safeUser(q.rows[0]),role:owner.rowCount?"Platform Owner":q.rows[0].role}})}catch(e){console.error(e);res.status(500).json({error:"Could not load account."})}});
 app.get("/api/auth/users",requireDb,requireAuth,requireRole(...admin),async(_req,res)=>{try{const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.active,rl.name AS role,u.created_at FROM users u JOIN roles rl ON rl.id=u.role_id ORDER BY u.created_at DESC");res.json({users:q.rows.map(safeUser)})}catch(e){console.error(e);res.status(500).json({error:"Could not load users."})}});
 app.post("/api/auth/users",requireDb,requireAuth,requireRole(...admin),async(req,res)=>{const username=String(req.body?.username||"").trim().toLowerCase(),email=String(req.body?.email||"").trim().toLowerCase(),displayName=String(req.body?.displayName||"").trim(),password=String(req.body?.password||""),role=String(req.body?.role||"");const allowed=["Admin","Registration Volunteer","Entry Volunteer","W1 Volunteer","W2 Volunteer","Interviewer"];if(!/^[a-z0-9._-]{3,30}$/.test(username))return res.status(400).json({error:"Username must be 3–30 characters (letters, numbers, dot, underscore or hyphen)."});if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});if(!displayName||password.length<12)return res.status(400).json({error:"Display name is required and password must contain at least 12 characters."});if(!allowed.includes(role))return res.status(400).json({error:"Choose a permitted staff role."});try{const hash=await bcrypt.hash(password,12);const q=await pool.query("INSERT INTO users(username,email,display_name,password_hash,role_id) SELECT $1,$2,$3,$4,id FROM roles WHERE name=$5 RETURNING id,username,email,display_name,active,created_at,(SELECT name FROM roles WHERE id=users.role_id) AS role",[username,email,displayName,hash,role]);if(!q.rowCount)return res.status(400).json({error:"Selected role does not exist."});res.status(201).json({user:safeUser(q.rows[0])})}catch(e){if(e.code==="23505")return res.status(409).json({error:"That username or email is already registered."});console.error(e);res.status(500).json({error:"Could not create account."})}});
@@ -209,4 +239,20 @@ app.get("/api/events/:id/reports/candidates.csv",requireDb,requireAuth,requireRo
 });
 
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"Internal server error"})});
-app.listen(port,()=>console.log("RecruitFlow API listening on http://localhost:"+port));
+async function ensureAuthSessionTable(){
+ if(!pool)return;
+ await pool.query(`CREATE TABLE IF NOT EXISTS auth_sessions(
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_fingerprint CHAR(64) NOT NULL,
+  ip_address INET,
+  user_agent VARCHAR(500) NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ
+ )`);
+ await pool.query("CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_active ON auth_sessions(user_id,expires_at DESC) WHERE revoked_at IS NULL");
+ await pool.query("CREATE INDEX IF NOT EXISTS idx_auth_sessions_expiry ON auth_sessions(expires_at)");
+}
+ensureAuthSessionTable().then(()=>app.listen(port,()=>console.log("RecruitFlow API listening on http://localhost:"+port))).catch(e=>{console.error("Could not initialize authentication sessions:",e);process.exit(1)});
