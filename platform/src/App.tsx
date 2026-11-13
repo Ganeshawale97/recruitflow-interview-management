@@ -6,7 +6,7 @@ import OrganizationEvents from "./OrganizationEvents";
 import OperationsHub from "./OperationsHub";
 import { Activity, ClipboardList, Users, PanelsTopLeft, UserRoundCheck, Settings, Bell, Wifi, WifiOff, LayoutDashboard, CalendarDays, ShieldCheck, Menu, LogOut, LockKeyhole, Eye, EyeOff, UserPlus, RefreshCw, Plus, CalendarCheck, UsersRound, Trash2, ToggleLeft, ToggleRight, Search, ArrowRight, CheckCircle2 } from "lucide-react";
 type Role="Platform Owner"|"Organization Admin"|"Super Admin"|"Admin"|"Registration Volunteer"|"Entry Volunteer"|"W1 Volunteer"|"W2 Volunteer"|"Interviewer";
-type Section="Overview"|"Recruitment Events"|"Organization Workspace"|"Organization Settings"|"Platform Overview"|"Organizations"|"Security Center"|"My Sessions"|"Live Activity"|"Operations Hub"|"Candidates"|"Live Operations"|"Selection & Reports"|"Events"|"Panels"|"Interviewers"|"Team Management"|"Role Tags"|"Settings";
+type Section="Account Settings"|"Overview"|"Recruitment Events"|"Organization Workspace"|"Organization Settings"|"Platform Overview"|"Organizations"|"Security Center"|"My Sessions"|"Live Activity"|"Operations Hub"|"Candidates"|"Live Operations"|"Selection & Reports"|"Events"|"Panels"|"Interviewers"|"Team Management"|"Role Tags"|"Settings";
 type User={id:string;username:string;email:string;displayName:string;role:Role;active:boolean;createdAt?:string};
 type Event={id:string;name:string;slug:string;status:string;starts_at?:string;ends_at?:string;candidate_count:number;panel_count:number};
 type Panel={id:string;name:string;domain:string;status:string;active:boolean;interviewers?:{id:string;name:string;username:string}[]};
