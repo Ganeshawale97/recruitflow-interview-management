@@ -1,0 +1,39 @@
+name: RecruitFlow Phase 3 CI
+
+on:
+  push:
+    branches: [phase-3-unified-recruitflow]
+    paths:
+      - "platform/**"
+      - ".github/workflows/recruitflow-phase3-ci.yml"
+  pull_request:
+    branches: [phase-3-unified-recruitflow]
+    paths:
+      - "platform/**"
+      - ".github/workflows/recruitflow-phase3-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+      - run: npm ci
+        working-directory: platform
+      - run: npm run build
+        working-directory: platform
+
+  backend-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check server.js
+        working-directory: platform/backend
