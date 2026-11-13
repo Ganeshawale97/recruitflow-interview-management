@@ -527,8 +527,16 @@ app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,
  }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
 });
 app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,async(req,res)=>{
- const role=req.auth.role==="Interviewer"?"interviewer":"organizer";if(role==="organizer"&&!registrationRoles.includes(req.auth.role))return res.status(403).json({error:"You do not have permission to view candidate resumes."});
- try{await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,role))return res.status(404).json({error:"Resume not found or access is not permitted."});const q=await pool.query("SELECT storage_name,original_name,mime_type FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);if(!q.rowCount)return res.status(404).json({error:"No resume has been uploaded for this candidate."});const file=await readFile(path.join(privateResumeDirectory,q.rows[0].storage_name));res.setHeader("Content-Type",q.rows[0].mime_type);res.setHeader("Content-Length",file.length);res.setHeader("Content-Disposition",`attachment; filename="${q.rows[0].original_name.replace(/["\\\\\r\n]/g,"_")}"`);res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Cache-Control","private, no-store");res.send(file)
+ try{
+  const roleQuery=await pool.query("SELECT r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 AND u.active=true",[req.auth.sub]);
+  if(!roleQuery.rowCount)return res.status(401).json({error:"Account is unavailable."});
+  const actualRole=roleQuery.rows[0].role,role=actualRole==="Interviewer"?"interviewer":"organizer";
+  const allowed=role==="interviewer"||registrationRoles.includes(actualRole)||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.view")||await hasOrganizationPermission(req.auth.sub,req.params.id,"candidates.manage");
+  if(!allowed)return res.status(403).json({error:"Your account does not have candidate resume viewing permission. Ask an organization administrator to grant Candidates: View access."});
+  await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,role))return res.status(404).json({error:"Resume not found or access is not permitted."});
+  const q=await pool.query("SELECT storage_name,original_name,mime_type FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);if(!q.rowCount)return res.status(404).json({error:"No resume has been uploaded for this candidate."});
+  const file=await readFile(path.join(privateResumeDirectory,q.rows[0].storage_name));const disposition=req.query.download==="1"?"attachment":"inline";
+  res.setHeader("Content-Type",q.rows[0].mime_type);res.setHeader("Content-Length",file.length);res.setHeader("Content-Disposition",`${disposition}; filename="${q.rows[0].original_name.replace(/["\\\\\\r\\n]/g,"_")}"`);res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Content-Security-Policy","sandbox");res.setHeader("Cache-Control","private, no-store");res.send(file)
  }catch(e){if(e.code==="ENOENT")return res.status(404).json({error:"Resume file is missing from private storage."});console.error(e);res.status(500).json({error:"Could not retrieve resume."})}
 });
 app.get("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
