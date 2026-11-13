@@ -633,3 +633,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .candidate-resume-actions input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .candidate-resume-actions label{cursor:pointer}
 @media(max-width:560px){.candidate-resume-panel,.interviewer-resume-panel{align-items:flex-start;flex-direction:column}}
+
+
+/* Inline candidate resume preview */
+.candidate-resume-preview{display:grid;gap:10px;padding:14px;border:1px solid #e5eaf3;border-radius:12px;background:#f8faff}
+.candidate-resume-preview>div{display:grid;gap:4px}
+.candidate-resume-preview small,.resume-preview-note{color:#77849a;font-size:12px}
+.candidate-resume-preview iframe{display:block;width:100%;height:min(72vh,760px);min-height:420px;border:1px solid #dce3ef;border-radius:8px;background:#fff}
