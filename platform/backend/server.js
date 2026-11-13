@@ -40,6 +40,20 @@ const admin=["Super Admin","Admin"];
 app.get("/api/health",async(_req,res)=>{let database="not_configured";if(pool){try{await pool.query("SELECT 1");database="connected"}catch{database="disconnected"}}res.json({ok:true,service:"recruitflow-api",version:"0.7.0",database,authentication:Boolean(process.env.JWT_SECRET&&process.env.JWT_SECRET.length>=32),now:new Date().toISOString()})});
 app.get("/api",(_req,res)=>res.json({name:"RecruitFlow API",version:"0.7.0",status:"Automatic panel dispatch"}));
 app.post("/api/auth/login",loginLimiter,requireDb,async(req,res)=>{try{const identity=String(req.body?.identity||"").trim().toLowerCase(),password=String(req.body?.password||"");if(!identity||!password)return res.status(400).json({error:"Enter your username or email and password."});if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)return res.status(503).json({error:"Authentication is not configured. Set JWT_SECRET in backend/.env."});const q=await pool.query("SELECT u.id,u.username,u.email,u.display_name,u.password_hash,u.active,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE lower(u.username)=$1 OR lower(u.email)=$1 LIMIT 1",[identity]);const u=q.rows[0];if(!u||!u.active||!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:"Invalid credentials or inactive account."});const sessionId=randomUUID(),expiresAt=new Date(Date.now()+8*60*60*1000);await pool.query("INSERT INTO auth_sessions(id,user_id,token_fingerprint,ip_address,user_agent,expires_at) VALUES($1,$2,$3,$4,$5,$6)",[sessionId,u.id,createHash("sha256").update(sessionId).digest("hex"),req.ip, String(req.get("user-agent")||"").slice(0,500),expiresAt]);await pool.query("UPDATE users SET last_login_at=now() WHERE id=$1",[u.id]);const token=jwt.sign({sub:u.id,sid:sessionId,role:u.role,username:u.username},process.env.JWT_SECRET,{expiresIn:"8h",issuer:"recruitflow-api",audience:"recruitflow-platform"});const owner=await pool.query("SELECT 1 FROM platform_owners WHERE user_id=$1",[u.id]);res.json({token,user:{...safeUser(u),role:owner.rowCount?"Platform Owner":u.role},expiresIn:28800,sessionId})}catch(e){console.error(e);res.status(500).json({error:"Unable to sign in right now."})}});
+app.post("/api/auth/change-password",requireDb,requireAuth,async(req,res)=>{
+ try{
+  const currentPassword=String(req.body?.currentPassword||""),newPassword=String(req.body?.newPassword||"");
+  if(!currentPassword||!newPassword)return res.status(400).json({error:"Enter your current and new password."});
+  if(newPassword.length<12||newPassword.length>128)return res.status(400).json({error:"New password must contain 12–128 characters."});
+  if(newPassword===currentPassword)return res.status(400).json({error:"Choose a password different from your current password."});
+  const q=await pool.query("SELECT password_hash FROM users WHERE id=$1 AND active=true",[req.auth.sub]);
+  if(!q.rowCount||!(await bcrypt.compare(currentPassword,q.rows[0].password_hash)))return res.status(400).json({error:"Current password is incorrect."});
+  const hash=await bcrypt.hash(newPassword,12);
+  await pool.query("UPDATE users SET password_hash=$1 WHERE id=$2",[hash,req.auth.sub]);
+  await pool.query("UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1 AND id<>$2 AND revoked_at IS NULL",[req.auth.sub,req.auth.sid]);
+  res.json({ok:true,message:"Password changed. Other active sessions have been signed out."});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not change password."})}
+});
 app.get("/api/auth/sessions",requireDb,requireAuth,async(req,res)=>{
  try{
   const q=await pool.query("SELECT id,ip_address,user_agent,created_at,last_seen_at,expires_at,CASE WHEN id=$2 THEN true ELSE false END AS current FROM auth_sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now() ORDER BY last_seen_at DESC",[req.auth.sub,req.auth.sid]);
