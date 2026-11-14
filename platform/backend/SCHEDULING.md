@@ -24,7 +24,7 @@ Interviewers can open their Interviewer workspace, select an event and add futur
 
 - A booking must match one of the candidate's remaining domain preferences.
 - The panel must be active and have an active interviewer assignment.
-- The selected interviewer must have an availability window covering the entire booking.
+- The selected interviewer must have an availability window covering the entire booking. Organizers may select a specific assigned interviewer or let RecruitFlow choose an available interviewer.
 - Interview duration is 5–120 minutes.
 - One active scheduled/confirmed booking is allowed per candidate at a time.
 - Panel, interviewer and candidate conflicts are checked in a transaction. An event-level PostgreSQL advisory lock serializes competing booking writes.
