@@ -493,8 +493,9 @@ app.post("/api/public/track/confirm-slot",requireDb,candidateTrackingLimiter,asy
  const client=await pool.connect();
  try{
   await ensureInterviewSchedulingSchema();await client.query("BEGIN");
-  const candidate=await client.query("SELECT id,event_id FROM candidates WHERE upper(candidate_code)=$1 AND lower(email)=$2",[code,email]);
+  const candidate=await client.query("SELECT id,event_id,status FROM candidates WHERE upper(candidate_code)=$1 AND lower(email)=$2",[code,email]);
   if(!candidate.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"No matching application was found."})}
+  if(candidate.rows[0].status==="withdrawn"){await client.query("ROLLBACK");return res.status(409).json({error:"A withdrawn application cannot confirm an interview booking."})}
   await lockEventSchedule(client,candidate.rows[0].event_id);
   const booking=await client.query("SELECT sl.*,p.name AS panel_name,d.name AS domain FROM interview_slots sl JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id WHERE sl.id=$1 AND sl.event_id=$2 AND sl.candidate_id=$3 FOR UPDATE OF sl",[slotId,candidate.rows[0].event_id,candidate.rows[0].id]);
   if(!booking.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Interview booking was not found for this application."})}
