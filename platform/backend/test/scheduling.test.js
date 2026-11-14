@@ -83,3 +83,7 @@ test("selects the earliest fit across unordered availability windows", () => {
   });
   assert.equal(result, at("2026-11-14T09:30:00Z"));
 });
+
+test("rejects fractional interview durations", () => {
+  assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:15:30Z", Date.parse("2026-11-14T08:00:00Z")), /whole number/);
+});
