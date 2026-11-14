@@ -997,6 +997,7 @@ app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requir
     }
    }
    if(!best){skipped++;if(!sawInterviewer)reasons.no_interviewer++;else if(!sawAvailability)reasons.no_availability++;else reasons.no_capacity++;continue}
+   const endsAt=new Date(new Date(best.startsAt).getTime()+duration*60000).toISOString();
    const inserted=await client.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,interviewer_id,starts_at,ends_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[req.params.id,candidate.id,best.panelId,best.interviewerId,best.startsAt,endsAt,req.auth.sub]);
    const when=new Date(best.startsAt).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"});
    await addScheduleNotifications(client,req.params.id,candidate.id,best.interviewerId,"Interview scheduled","Your interview is scheduled for "+when+".");
