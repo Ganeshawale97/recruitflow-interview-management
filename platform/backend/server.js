@@ -20,6 +20,7 @@ const mfaVerifyLimiter=rateLimit({windowMs:10*60*1000,limit:8,standardHeaders:"d
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many login attempts. Try again in 15 minutes."},handler:async(req,res)=>{await recordSecurityEvent(req,"login","blocked",{reason:"rate_limit"});res.status(429).json({error:"Too many login attempts. Try again in 15 minutes."})}});
 const DOMAINS=["AI","Cybersecurity","Healthcare","Web Development","App Development","Robotics","SpaceTech","Blockchain","IoT","Design","Management"];
 function requireDb(_req,res,next){if(!pool)return res.status(503).json({error:"Database is not configured."});next()}
+function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value||""))}
 let authSessionSchemaReady=false,authSessionSchemaPromise=null;async function ensureAuthSessionSchema(){if(authSessionSchemaReady)return;if(!authSessionSchemaPromise)authSessionSchemaPromise=(async()=>{await pool.query("CREATE TABLE IF NOT EXISTS auth_sessions(id text PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,created_at timestamptz NOT NULL DEFAULT now(),last_seen_at timestamptz NOT NULL DEFAULT now(),expires_at timestamptz NOT NULL,revoked_at timestamptz,ip_address text,user_agent text)");await pool.query("CREATE INDEX IF NOT EXISTS auth_sessions_user_active_idx ON auth_sessions(user_id,expires_at DESC) WHERE revoked_at IS NULL");authSessionSchemaReady=true})().catch(e=>{authSessionSchemaPromise=null;throw e});await authSessionSchemaPromise}
 let mfaSchemaReady=false,mfaSchemaPromise=null;
 async function ensureMfaSchema(){
@@ -822,12 +823,14 @@ app.get("/api/events/:id/automation/availability",requireDb,requireAuth,requireR
   const from=String(req.query.from||new Date().toISOString()),to=String(req.query.to||new Date(Date.now()+30*86400000).toISOString());
   if(!Number.isFinite(Date.parse(from))||!Number.isFinite(Date.parse(to))||new Date(to)<=new Date(from))return res.status(400).json({error:"Choose a valid availability date range."});
   const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:String(req.query.interviewerId||"");
+  if(interviewerId&&!isUuid(interviewerId))return res.status(400).json({error:"Choose a valid interviewer."});
   const q=await pool.query("SELECT a.id,a.event_id,a.interviewer_id,a.starts_at,a.ends_at,a.note,a.created_at,u.display_name AS interviewer_name,u.username FROM interviewer_availability a JOIN users u ON u.id=a.interviewer_id WHERE a.event_id=$1 AND a.starts_at<$3 AND a.ends_at>$2 AND ($4::uuid IS NULL OR a.interviewer_id=$4::uuid) ORDER BY a.starts_at LIMIT 500",[req.params.id,from,to,interviewerId||null]);
   res.json({availability:q.rows});
  }catch(e){console.error("Availability list failed:",e);res.status(500).json({error:"Could not load interviewer availability."})}
 });
 app.post("/api/events/:id/automation/availability",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
  const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:String(req.body?.interviewerId||"");
+ if(!isUuid(interviewerId))return res.status(400).json({error:"Choose a valid assigned interviewer."});
  const startsAt=new Date(req.body?.startsAt),endsAt=new Date(req.body?.endsAt),note=String(req.body?.note||"").trim().slice(0,500);
  if(!interviewerId||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt<=new Date()||endsAt<=startsAt||(endsAt-startsAt)>12*60*60*1000)return res.status(400).json({error:"Choose an assigned interviewer and a future availability window no longer than 12 hours."});
  const client=await pool.connect();
@@ -843,6 +846,7 @@ app.post("/api/events/:id/automation/availability",requireDb,requireAuth,require
  }catch(e){await client.query("ROLLBACK");console.error("Availability create failed:",e);res.status(500).json({error:"Could not save interviewer availability."})}finally{client.release()}
 });
 app.delete("/api/events/:id/automation/availability/:availabilityId",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
+ if(!isUuid(req.params.availabilityId))return res.status(400).json({error:"Invalid availability window ID."});
  try{
   await ensureInterviewSchedulingSchema();
   const q=await pool.query("DELETE FROM interviewer_availability WHERE id=$1 AND event_id=$2 AND ($3::boolean=true OR interviewer_id=$4) RETURNING id",[req.params.availabilityId,req.params.id,req.auth.role!=="Interviewer",req.auth.sub]);
@@ -874,7 +878,7 @@ app.get("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...
 app.post("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
  const candidateId=String(req.body?.candidateId||""),panelId=String(req.body?.panelId||""),startsAt=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),endsAt=new Date(startsAt.getTime()+duration*60000);
  const invalid=validateScheduleWindow(startsAt,endsAt);
- if(!candidateId||!panelId||invalid)return res.status(400).json({error:invalid||"Choose a candidate and panel."});
+ if(!isUuid(candidateId)||!isUuid(panelId)||invalid)return res.status(400).json({error:invalid||"Choose a candidate and panel."});
  const client=await pool.connect();
  try{
   await ensureInterviewSchedulingSchema();await client.query("BEGIN");await lockEventSchedule(client,req.params.id);
@@ -906,6 +910,7 @@ app.post("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(..
 });
 app.post("/api/events/:id/automation/slots/:slotId/reschedule",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
  const startsAt=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||0);
+ if(!isUuid(req.params.slotId))return res.status(400).json({error:"Invalid interview booking ID."});
  if(!Number.isFinite(startsAt.getTime())||startsAt<=new Date()||(duration&&(!Number.isInteger(duration)||duration<5||duration>120)))return res.status(400).json({error:"Choose a future start time and a duration between 5 and 120 minutes."});
  const client=await pool.connect();
  try{
@@ -969,6 +974,7 @@ app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requir
 });
 app.patch("/api/events/:id/automation/slots/:slotId",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
  const status=String(req.body?.status||"");
+ if(!isUuid(req.params.slotId))return res.status(400).json({error:"Invalid interview booking ID."});
  if(!["confirmed","completed","cancelled","no_show"].includes(status))return res.status(400).json({error:"Choose Confirm, Cancel, Complete or No-show."});
  const client=await pool.connect();
  try{
