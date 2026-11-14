@@ -3,8 +3,14 @@ ALTER TABLE interview_slots
   ADD COLUMN IF NOT EXISTS interviewer_id uuid REFERENCES users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
+-- Re-booking a previously cancelled candidate at the same start time is valid.
+ALTER TABLE interview_slots DROP CONSTRAINT IF EXISTS interview_slots_event_id_candidate_id_starts_at_key;
+
 CREATE INDEX IF NOT EXISTS interview_slots_interviewer_time_idx
   ON interview_slots(event_id, interviewer_id, starts_at, ends_at)
+  WHERE status IN ('scheduled','confirmed');
+CREATE INDEX IF NOT EXISTS interview_slots_candidate_active_idx
+  ON interview_slots(event_id,candidate_id)
   WHERE status IN ('scheduled','confirmed');
 
 CREATE TABLE IF NOT EXISTS interviewer_availability (
