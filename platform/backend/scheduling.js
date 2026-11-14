@@ -12,7 +12,7 @@ export function validateScheduleWindow(startsAt, endsAt, now = Date.now()) {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return "Choose a valid start and end time.";
   if (start <= now) return "Interview slots must start in the future.";
   const duration = (end - start) / 60000;
-  if (duration < 5 || duration > 120) return "Interview duration must be between 5 and 120 minutes.";
+  if (!Number.isInteger(duration) || duration < 5 || duration > 120) return "Interview duration must be a whole number between 5 and 120 minutes.";
   return null;
 }
 
