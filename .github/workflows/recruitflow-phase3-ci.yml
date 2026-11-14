@@ -1,5 +1,12 @@
 name: RecruitFlow Phase 3 CI
 
+permissions:
+  contents: read
+
+concurrency:
+  group: recruitflow-phase3-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [phase-3-unified-recruitflow]
@@ -16,24 +23,28 @@ on:
 jobs:
   frontend-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      - run: npm install --no-audit --no-fund
         working-directory: platform
       - run: npm run build
         working-directory: platform
 
   backend-syntax:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: node --check server.js
+        working-directory: platform/backend
+      - run: npm install --no-audit --no-fund
         working-directory: platform/backend
       - run: npm test
         working-directory: platform/backend
