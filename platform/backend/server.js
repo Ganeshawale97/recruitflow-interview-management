@@ -970,7 +970,8 @@ app.post("/api/events/:id/automation/slots/:slotId/reschedule",requireDb,require
  }catch(e){await client.query("ROLLBACK");console.error("Schedule reschedule failed:",e);res.status(500).json({error:"Could not reschedule this interview."})}finally{client.release()}
 });
 app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
- const start=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),limit=Math.min(200,Math.max(1,Number(req.body?.limit)||100));
+ const start=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),limit=req.body?.limit==null?100:Number(req.body.limit);
+ if(!Number.isInteger(limit)||limit<1||limit>200)return res.status(400).json({error:"Auto-scheduling limit must be a whole number between 1 and 200."});
  if(!Number.isFinite(start.getTime())||start<=new Date()||!Number.isInteger(duration)||duration<5||duration>120)return res.status(400).json({error:"Choose a future start time and a duration between 5 and 120 minutes."});
  const client=await pool.connect();
  try{
