@@ -859,7 +859,7 @@ app.post("/api/events/:id/automation/availability",requireDb,requireAuth,require
   await ensureInterviewSchedulingSchema();await client.query("BEGIN");
   const assigned=await client.query("SELECT u.id FROM users u JOIN roles r ON r.id=u.role_id JOIN panel_assignments pa ON pa.interviewer_id=u.id AND pa.active=true JOIN panels p ON p.id=pa.panel_id AND p.event_id=$1 AND p.active=true WHERE u.id=$2 AND u.active=true AND r.name='Interviewer' LIMIT 1",[req.params.id,interviewerId]);
   if(!assigned.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"This active interviewer is not assigned to a panel in the selected event."})}
-  await client.query("SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))",[req.params.id,interviewerId]);
+  await lockEventSchedule(client,req.params.id);
   const overlap=await client.query("SELECT 1 FROM interviewer_availability WHERE event_id=$1 AND interviewer_id=$2 AND starts_at<$4 AND ends_at>$3 LIMIT 1",[req.params.id,interviewerId,startsAt.toISOString(),endsAt.toISOString()]);
   if(overlap.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"This availability window overlaps an existing window for the interviewer."})}
   const q=await client.query("INSERT INTO interviewer_availability(event_id,interviewer_id,starts_at,ends_at,note,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",[req.params.id,interviewerId,startsAt.toISOString(),endsAt.toISOString(),note,req.auth.sub]);
@@ -874,7 +874,7 @@ app.delete("/api/events/:id/automation/availability/:availabilityId",requireDb,r
   const current=await client.query("SELECT * FROM interviewer_availability WHERE id=$1 AND event_id=$2 FOR UPDATE",[req.params.availabilityId,req.params.id]);
   if(!current.rowCount||(req.auth.role==="Interviewer"&&current.rows[0].interviewer_id!==req.auth.sub)){await client.query("ROLLBACK");return res.status(404).json({error:"Availability window not found or you cannot remove it."})}
   const window=current.rows[0];
-  await client.query("SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))",[req.params.id,window.interviewer_id]);
+  await lockEventSchedule(client,req.params.id);
   const booked=await client.query("SELECT 1 FROM interview_slots sl WHERE sl.event_id=$1 AND sl.status IN ('scheduled','confirmed') AND sl.starts_at<$4 AND sl.ends_at>$3 AND (sl.interviewer_id=$2 OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=sl.panel_id AND pa.interviewer_id=$2 AND pa.active=true))) LIMIT 1",[req.params.id,window.interviewer_id,window.starts_at,window.ends_at]);
   if(booked.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"This availability window contains an active interview booking. Reschedule or cancel the booking first."})}
   await client.query("DELETE FROM interviewer_availability WHERE id=$1",[window.id]);
