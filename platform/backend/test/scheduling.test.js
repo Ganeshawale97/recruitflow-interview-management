@@ -50,3 +50,36 @@ test("checks later availability windows after an earlier window is full", () => 
   });
   assert.equal(result, at("2026-11-14T10:00:00Z"));
 });
+
+test("skips consecutive busy intervals before allocating a slot", () => {
+  const result = findFirstAvailableStart({
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T11:00:00Z" }],
+    busy: [
+      { startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T09:20:00Z" },
+      { startsAt: "2026-11-14T09:25:00Z", endsAt: "2026-11-14T09:45:00Z" }
+    ],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 20
+  });
+  assert.equal(result, at("2026-11-14T09:45:00Z"));
+});
+
+test("returns no slot when the requested start is after all availability", () => {
+  assert.equal(findFirstAvailableStart({
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T10:00:00Z" }],
+    earliest: "2026-11-14T10:01:00Z",
+    durationMinutes: 15
+  }), null);
+});
+
+test("selects the earliest fit across unordered availability windows", () => {
+  const result = findFirstAvailableStart({
+    availability: [
+      { startsAt: "2026-11-14T11:00:00Z", endsAt: "2026-11-14T12:00:00Z" },
+      { startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T10:00:00Z" }
+    ],
+    earliest: "2026-11-14T09:30:00Z",
+    durationMinutes: 15
+  });
+  assert.equal(result, at("2026-11-14T09:30:00Z"));
+});
