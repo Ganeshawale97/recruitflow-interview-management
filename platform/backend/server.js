@@ -847,12 +847,18 @@ app.post("/api/events/:id/automation/availability",requireDb,requireAuth,require
 });
 app.delete("/api/events/:id/automation/availability/:availabilityId",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
  if(!isUuid(req.params.availabilityId))return res.status(400).json({error:"Invalid availability window ID."});
+ const client=await pool.connect();
  try{
-  await ensureInterviewSchedulingSchema();
-  const q=await pool.query("DELETE FROM interviewer_availability WHERE id=$1 AND event_id=$2 AND ($3::boolean=true OR interviewer_id=$4) RETURNING id",[req.params.availabilityId,req.params.id,req.auth.role!=="Interviewer",req.auth.sub]);
-  if(!q.rowCount)return res.status(404).json({error:"Availability window not found or you cannot remove it."});
-  res.json({message:"Availability window removed."});
- }catch(e){console.error("Availability delete failed:",e);res.status(500).json({error:"Could not remove interviewer availability."})}
+  await ensureInterviewSchedulingSchema();await client.query("BEGIN");
+  const current=await client.query("SELECT * FROM interviewer_availability WHERE id=$1 AND event_id=$2 FOR UPDATE",[req.params.availabilityId,req.params.id]);
+  if(!current.rowCount||(req.auth.role==="Interviewer"&&current.rows[0].interviewer_id!==req.auth.sub)){await client.query("ROLLBACK");return res.status(404).json({error:"Availability window not found or you cannot remove it."})}
+  const window=current.rows[0];
+  await client.query("SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))",[req.params.id,window.interviewer_id]);
+  const booked=await client.query("SELECT 1 FROM interview_slots sl WHERE sl.event_id=$1 AND sl.status IN ('scheduled','confirmed') AND sl.starts_at<$4 AND sl.ends_at>$3 AND (sl.interviewer_id=$2 OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=sl.panel_id AND pa.interviewer_id=$2 AND pa.active=true))) LIMIT 1",[req.params.id,window.interviewer_id,window.starts_at,window.ends_at]);
+  if(booked.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"This availability window contains an active interview booking. Reschedule or cancel the booking first."})}
+  await client.query("DELETE FROM interviewer_availability WHERE id=$1",[window.id]);
+  await client.query("COMMIT");res.json({message:"Availability window removed."});
+ }catch(e){await client.query("ROLLBACK");console.error("Availability delete failed:",e);res.status(500).json({error:"Could not remove interviewer availability."})}finally{client.release()}
 });
 app.get("/api/events/:id/automation/calendar",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
  try{
