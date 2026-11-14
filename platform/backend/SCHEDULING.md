@@ -29,6 +29,7 @@ Interviewers can open their Interviewer workspace, select an event and add futur
 - One active scheduled/confirmed booking is allowed per candidate at a time.
 - Panel, interviewer and candidate conflicts are checked in a transaction. An event-level PostgreSQL advisory lock serializes competing booking writes.
 - A booking stores the assigned interviewer so later assignment changes do not silently rewrite the historical booking.
+- Automatic allocation processes 1–200 candidates per request (100 by default) and skips candidates with no remaining domain preference.
 - Rescheduling rechecks availability and all conflict rules. Cancelling releases the booking window.
 
 ## API routes
