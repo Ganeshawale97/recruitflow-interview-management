@@ -45,7 +45,7 @@ All routes below require a valid RecruitFlow session and event authorization, ex
 | POST | `/api/events/:id/automation/slots/:slotId/reschedule` | Reschedule a booking |
 | PATCH | `/api/events/:id/automation/slots/:slotId` | Confirm, cancel, complete or mark no-show |
 | GET | `/api/events/:id/automation/calendar?from=ISO&to=ISO` | Read calendar bookings and availability |
-| POST | `/api/events/:id/automation/auto-schedule` | Allocate first-preference candidates into available windows |
+| POST | `/api/events/:id/automation/auto-schedule` | Allocate candidates using their highest-priority remaining domain preference |
 | GET | `/api/events/:id/automation/notifications` | List event in-app notices |
 | PATCH | `/api/events/:id/automation/notifications/:notificationId/read` | Mark the signed-in user's notice as read |
 | POST | `/api/public/track/confirm-slot` | Candidate confirms a future booking after identity verification |
