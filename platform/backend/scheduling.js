@@ -20,7 +20,7 @@ export function findFirstAvailableStart({ availability = [], busy = [], earliest
   const earliestMs = new Date(earliest).getTime();
   const durationMs = Number(durationMinutes) * 60000;
   const stepMs = Number(stepMinutes) * 60000;
-  if (![earliestMs, durationMs, stepMs].every(Number.isFinite) || durationMs <= 0 || stepMs <= 0) return null;
+  if (![earliestMs, durationMs, stepMs].every(Number.isFinite) || !Number.isInteger(Number(durationMinutes)) || !Number.isInteger(Number(stepMinutes)) || durationMs <= 0 || stepMs <= 0) return null;
 
   const windows = availability
     .map((window) => ({ start: new Date(window.startsAt).getTime(), end: new Date(window.endsAt).getTime() }))
