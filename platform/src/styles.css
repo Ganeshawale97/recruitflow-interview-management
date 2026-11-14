@@ -662,3 +662,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .tracking-candidate-notifications>article p{margin:5px 0;color:#465368}
 .tracking-candidate-notifications>article small{color:#77849a}
 @media(max-width:520px){.tracking-scheduled-slot{align-items:flex-start;flex-direction:column}}
+
+
+.interviewer-my-bookings{margin-top:18px}
+.interviewer-my-bookings article{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;margin-top:8px;border:1px solid #e4e8f1;border-radius:10px;background:#fafbff}
+.interviewer-my-bookings article div{display:grid;gap:4px;min-width:0}
+.interviewer-my-bookings article small{color:#77849a}
+@media(max-width:520px){.interviewer-my-bookings article{align-items:flex-start;flex-direction:column}}
