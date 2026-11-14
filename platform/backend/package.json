@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "create-admin": "node create-admin.js"
+    "create-admin": "node create-admin.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
