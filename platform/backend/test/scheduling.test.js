@@ -87,3 +87,18 @@ test("selects the earliest fit across unordered availability windows", () => {
 test("rejects fractional interview durations", () => {
   assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:15:30Z", Date.parse("2026-11-14T08:00:00Z")), /whole number/);
 });
+
+test("rejects fractional duration and step sizes in the slot finder", () => {
+  const availability = [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T10:00:00Z" }];
+  const base = { availability, earliest: "2026-11-14T09:00:00Z" };
+  assert.equal(findFirstAvailableStart({ ...base, durationMinutes: 15.5 }), null);
+  assert.equal(findFirstAvailableStart({ ...base, durationMinutes: 15, stepMinutes: 2.5 }), null);
+});
+
+test("returns no slot for invalid availability timestamps", () => {
+  assert.equal(findFirstAvailableStart({
+    availability: [{ startsAt: "not-a-date", endsAt: "2026-11-14T10:00:00Z" }],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 15
+  }), null);
+});
