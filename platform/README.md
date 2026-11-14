@@ -102,3 +102,7 @@ Email, SMS and WhatsApp delivery are not active without configured provider cred
 ## Automatic candidate QR entry passes
 Every successful public registration now creates a unique candidate pass code and QR image. The registration success screen displays the QR image and a download button. Email delivery is intentionally disabled; participants download the QR pass from the confirmation page.
 No SMTP credentials or email provider are needed. Participants see and download the QR pass directly from the registration confirmation page. Existing registrations are not retroactively emailed by this change.
+
+
+## Advanced interview scheduling (migration 010)
+Apply `platform/backend/migrations/010_advanced_interview_scheduling.sql` to managed databases. The API also creates the new availability table and booking columns on first scheduling use. Interviewers can add their own availability from the Interviewer workspace; event administrators can manage windows and allocate candidates from Operations Hub → Scheduling. Booking allocation checks candidate preference, interviewer availability, panel/interviewer/candidate conflicts and serializes writes per event. Reschedule/cancel/confirm actions create in-app notifications for candidates and interviewers. Candidates can see their next booking and recent updates in Track Application. No scheduling email delivery is enabled. See [backend scheduling guide](backend/SCHEDULING.md).
