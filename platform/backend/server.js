@@ -907,9 +907,10 @@ app.get("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...
  }catch(e){console.error(e);res.status(500).json({error:"Could not load interview schedule."})}
 });
 app.post("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
- const candidateId=String(req.body?.candidateId||""),panelId=String(req.body?.panelId||""),startsAt=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),endsAt=new Date(startsAt.getTime()+duration*60000);
+ const candidateId=String(req.body?.candidateId||""),panelId=String(req.body?.panelId||""),requestedInterviewerId=String(req.body?.interviewerId||""),startsAt=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),endsAt=new Date(startsAt.getTime()+duration*60000);
  const invalid=validateScheduleWindow(startsAt,endsAt);
  if(!isUuid(candidateId)||!isUuid(panelId)||invalid)return res.status(400).json({error:invalid||"Choose a candidate and panel."});
+ if(requestedInterviewerId&&!isUuid(requestedInterviewerId))return res.status(400).json({error:"Choose a valid assigned interviewer."});
  const client=await pool.connect();
  try{
   await ensureInterviewSchedulingSchema();await client.query("BEGIN");await lockEventSchedule(client,req.params.id);
@@ -919,7 +920,7 @@ app.post("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(..
   if(!panel.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Choose an active panel in this event."})}
   const preference=await client.query("SELECT 1 FROM candidate_preferences cp WHERE cp.candidate_id=$1 AND cp.domain_id=$2 AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=cp.candidate_id AND i.domain_id=cp.domain_id AND i.status IN ('in_progress','completed'))",[candidateId,panel.rows[0].domain_id]);
   if(!preference.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"This panel does not match one of the candidate's remaining domain preferences."})}
-  const assigned=await client.query("SELECT pa.interviewer_id,u.display_name FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' AND ($2::uuid IS NULL OR pa.interviewer_id=$2::uuid) AND EXISTS(SELECT 1 FROM interviewer_availability a WHERE a.event_id=$3 AND a.interviewer_id=pa.interviewer_id AND a.starts_at<=$4 AND a.ends_at>=$5) ORDER BY pa.assigned_at DESC",[panelId,req.body?.interviewerId||null,req.params.id,startsAt.toISOString(),endsAt.toISOString()]);
+  const assigned=await client.query("SELECT pa.interviewer_id,u.display_name FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' AND ($2::uuid IS NULL OR pa.interviewer_id=$2::uuid) AND EXISTS(SELECT 1 FROM interviewer_availability a WHERE a.event_id=$3 AND a.interviewer_id=pa.interviewer_id AND a.starts_at<=$4 AND a.ends_at>=$5) ORDER BY pa.assigned_at DESC",[panelId,requestedInterviewerId||null,req.params.id,startsAt.toISOString(),endsAt.toISOString()]);
   if(!assigned.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"No assigned interviewer has availability covering this time. Add interviewer availability or choose another time."})}
   let chosen=null,conflict=null;
   for(const interviewer of assigned.rows){
