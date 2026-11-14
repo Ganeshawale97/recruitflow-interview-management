@@ -16,7 +16,7 @@ psql "$DATABASE_URL" -f migrations/010_advanced_interview_scheduling.sql
 Interviewers can open their Interviewer workspace, select an event and add future availability windows. Event administrators can also add or remove windows from Operations Hub → Scheduling.
 
 - A window must be in the future and no longer than 12 hours.
-- Windows for the same interviewer cannot overlap.
+- Windows for the same interviewer cannot overlap. Availability, schedule-list and calendar queries are bounded to 31 days when a date range is supplied.
 - The interviewer must be active and assigned to an active panel in the selected event.
 - Interviewers can remove only their own windows; event scheduling administrators can manage event availability.
 
