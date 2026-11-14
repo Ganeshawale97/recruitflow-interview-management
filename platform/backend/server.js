@@ -900,7 +900,7 @@ app.get("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...
  try{
   await ensureInterviewSchedulingSchema();
   const from=String(req.query.from||""),to=String(req.query.to||"");
-  if((from&&!Number.isFinite(Date.parse(from)))||(to&&!Number.isFinite(Date.parse(to)))||(from&&to&&new Date(to)<=new Date(from)))return res.status(400).json({error:"Choose a valid schedule date range."});
+  if((from&&!Number.isFinite(Date.parse(from)))||(to&&!Number.isFinite(Date.parse(to)))||(from&&to&&(new Date(to)<=new Date(from)||(new Date(to)-new Date(from))>31*86400000)))return res.status(400).json({error:"Choose a valid schedule date range of 31 days or less."});
   const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:"";
   const q=await pool.query("SELECT sl.*,c.name AS candidate_name,c.candidate_code,p.name AS panel_name,d.name AS domain,COALESCE(u.display_name,'Unassigned') AS interviewer_name FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id LEFT JOIN users u ON u.id=sl.interviewer_id WHERE sl.event_id=$1 AND sl.status<>'cancelled' AND ($2::timestamptz IS NULL OR sl.ends_at>=$2::timestamptz) AND ($3::timestamptz IS NULL OR sl.starts_at<=$3::timestamptz) AND ($4::uuid IS NULL OR sl.interviewer_id=$4::uuid OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=sl.panel_id AND pa.interviewer_id=$4 AND pa.active=true))) ORDER BY sl.starts_at LIMIT 1000",[req.params.id,from||null,to||null,interviewerId||null]);
   res.json({slots:q.rows});
