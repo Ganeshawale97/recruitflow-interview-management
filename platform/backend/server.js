@@ -657,6 +657,7 @@ let interviewSchedulingSchemaReady=false,interviewSchedulingSchemaPromise=null;
 async function ensureInterviewSchedulingSchema(){
  if(interviewSchedulingSchemaReady)return;
  if(!interviewSchedulingSchemaPromise)interviewSchedulingSchemaPromise=(async()=>{
+  await pool.query("ALTER TABLE interviews ADD COLUMN IF NOT EXISTS expected_duration_minutes INTEGER");
   await pool.query("ALTER TABLE interview_slots ADD COLUMN IF NOT EXISTS interviewer_id uuid REFERENCES users(id) ON DELETE SET NULL");
   await pool.query("ALTER TABLE interview_slots ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()");
   await pool.query("CREATE TABLE IF NOT EXISTS interviewer_availability(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),event_id uuid NOT NULL REFERENCES recruitment_events(id) ON DELETE CASCADE,interviewer_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,starts_at timestamptz NOT NULL,ends_at timestamptz NOT NULL,note varchar(500) NOT NULL DEFAULT '',created_by uuid REFERENCES users(id) ON DELETE SET NULL,created_at timestamptz NOT NULL DEFAULT now(),CHECK(ends_at>starts_at))");
@@ -680,7 +681,7 @@ async function findSlotConflicts(db,{eventId,candidateId,panelId,interviewerId,s
    EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.panel_id=$2 AND x.status IN ('scheduled','confirmed') AND x.starts_at<$5 AND x.ends_at>$4 AND ($7::uuid IS NULL OR x.id<>$7)) AS panel_conflict,
    EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.status IN ('scheduled','confirmed') AND (x.interviewer_id=$3 OR (x.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments old_pa WHERE old_pa.panel_id=x.panel_id AND old_pa.interviewer_id=$3 AND old_pa.active=true))) AND x.starts_at<$5 AND x.ends_at>$4 AND ($7::uuid IS NULL OR x.id<>$7)) AS interviewer_conflict,
    EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.candidate_id=$6 AND x.status IN ('scheduled','confirmed') AND ($7::uuid IS NULL OR x.id<>$7)) AS candidate_conflict,
-   EXISTS(SELECT 1 FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$2 OR i.candidate_id=$6 OR i.interviewer_id=$3)) AS live_interview_conflict
+   EXISTS(SELECT 1 FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$2 OR i.candidate_id=$6 OR i.interviewer_id=$3) AND i.started_at<$5 AND COALESCE(i.started_at+(COALESCE(i.expected_duration_minutes,120)*interval '1 minute'),now()+interval '120 minutes')>$4) AS live_interview_conflict
  `,[eventId,panelId,interviewerId,startsAt,endsAt,candidateId,excludeSlotId]);
  return q.rows[0];
 }
@@ -980,13 +981,12 @@ app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requir
    if(!interviewers.rowCount){skipped++;reasons.no_interviewer++;continue}
    let best=null,sawAvailability=false,blockedByLiveInterview=false;
    for(const interviewer of interviewers.rows){
-    const active=await client.query("SELECT 1 FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$1 OR i.interviewer_id=$2 OR i.candidate_id=$3) LIMIT 1",[panel.id,interviewer.interviewer_id,candidate.id]);
-    if(active.rowCount){blockedByLiveInterview=true;continue;}
     const availability=await client.query("SELECT starts_at,ends_at FROM interviewer_availability WHERE event_id=$1 AND interviewer_id=$2 AND ends_at>$3 ORDER BY starts_at",[req.params.id,interviewer.interviewer_id,start.toISOString()]);
     if(!availability.rowCount)continue;
     sawAvailability=true;
     const busy=await client.query("SELECT sl.starts_at,sl.ends_at FROM interview_slots sl WHERE sl.event_id=$1 AND sl.status IN ('scheduled','confirmed') AND sl.ends_at>$3 AND (sl.panel_id=$4 OR sl.candidate_id=$5 OR sl.interviewer_id=$2 OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments old_pa WHERE old_pa.panel_id=sl.panel_id AND old_pa.interviewer_id=$2 AND old_pa.active=true)))",[req.params.id,interviewer.interviewer_id,start.toISOString(),panel.id,candidate.id]);
-    const starts=findFirstAvailableStart({availability:availability.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),busy:busy.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),earliest:start.toISOString(),durationMinutes:duration});
+    const liveBusy=await client.query("SELECT i.started_at AS starts_at,COALESCE(i.started_at+(COALESCE(i.expected_duration_minutes,120)*interval '1 minute'),now()+interval '120 minutes') AS ends_at FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$1 OR i.interviewer_id=$2 OR i.candidate_id=$3) AND COALESCE(i.started_at+(COALESCE(i.expected_duration_minutes,120)*interval '1 minute'),now()+interval '120 minutes')>$4",[panel.id,interviewer.interviewer_id,candidate.id,start.toISOString()]);
+    const starts=findFirstAvailableStart({availability:availability.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),busy:[...busy.rows,...liveBusy.rows].map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),earliest:start.toISOString(),durationMinutes:duration});
     if(starts&&(!best||new Date(starts)<new Date(best.startsAt)))best={interviewerId:interviewer.interviewer_id,startsAt:starts};
    }
    if(!best){skipped++;if(sawAvailability||blockedByLiveInterview)reasons.no_capacity++;else reasons.no_availability++;continue}
