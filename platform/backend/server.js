@@ -1028,7 +1028,7 @@ app.patch("/api/events/:id/automation/slots/:slotId",requireDb,requireAuth,requi
 });
 app.get("/api/events/:id/automation/notifications",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
  try{
-  const interviewerFilter=req.auth.role==="Interviewer"?req.auth.sub:null;const q=await pool.query("SELECT n.*,c.candidate_code,c.name AS candidate_name,u.display_name AS recipient_name FROM event_notifications n LEFT JOIN candidates c ON c.id=n.candidate_id LEFT JOIN users u ON u.id=n.user_id WHERE n.event_id=$1 AND ($2::uuid IS NULL OR n.user_id=$2 OR EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=n.event_id JOIN panel_assignments pa ON pa.panel_id=p.id AND pa.active=true WHERE cp.candidate_id=n.candidate_id AND pa.interviewer_id=$2)) ORDER BY n.created_at DESC LIMIT 300",[req.params.id,interviewerFilter]);
+  const interviewerFilter=req.auth.role==="Interviewer"?req.auth.sub:null;const q=await pool.query("SELECT n.*,c.candidate_code,c.name AS candidate_name,u.display_name AS recipient_name FROM event_notifications n LEFT JOIN candidates c ON c.id=n.candidate_id LEFT JOIN users u ON u.id=n.user_id WHERE n.event_id=$1 AND ($2::uuid IS NULL OR n.user_id=$2 OR EXISTS(SELECT 1 FROM interview_slots sl WHERE sl.event_id=n.event_id AND sl.candidate_id=n.candidate_id AND sl.interviewer_id=$2 AND sl.status IN ('scheduled','confirmed'))) ORDER BY n.created_at DESC LIMIT 300",[req.params.id,interviewerFilter]);
   res.json({notifications:q.rows});
  }catch(e){console.error(e);res.status(500).json({error:"Could not load notifications."})}
 });
