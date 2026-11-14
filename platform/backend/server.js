@@ -857,7 +857,7 @@ app.get("/api/events/:id/automation/calendar",requireDb,requireAuth,requireRole(
   if(!Number.isFinite(Date.parse(from))||!Number.isFinite(Date.parse(to))||new Date(to)<=new Date(from)||(new Date(to)-new Date(from))>31*86400000)return res.status(400).json({error:"Choose a valid calendar range of 31 days or less."});
   const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:"";
   const slots=await pool.query("SELECT sl.*,c.name AS candidate_name,c.candidate_code,p.name AS panel_name,d.name AS domain,COALESCE(u.display_name,'Unassigned') AS interviewer_name FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id LEFT JOIN users u ON u.id=sl.interviewer_id WHERE sl.event_id=$1 AND sl.status<>'cancelled' AND sl.starts_at<$3 AND sl.ends_at>$2 AND ($4::uuid IS NULL OR sl.interviewer_id=$4::uuid OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=sl.panel_id AND pa.interviewer_id=$4 AND pa.active=true))) ORDER BY sl.starts_at",[req.params.id,from,to,interviewerId||null]);
-  const availability=await pool.query("SELECT a.*,u.display_name AS interviewer_name FROM interviewer_availability a JOIN users u ON u.id=a.interviewer_id WHERE a.event_id=$1 AND a.starts_at<$3 AND a.ends_at>$2 AND ($4='' OR a.interviewer_id=$4::uuid) ORDER BY a.starts_at",[req.params.id,from,to,interviewerId]);
+  const availability=await pool.query("SELECT a.*,u.display_name AS interviewer_name FROM interviewer_availability a JOIN users u ON u.id=a.interviewer_id WHERE a.event_id=$1 AND a.starts_at<$3 AND a.ends_at>$2 AND ($4::uuid IS NULL OR a.interviewer_id=$4::uuid) ORDER BY a.starts_at",[req.params.id,from,to,interviewerId||null]);
   res.json({slots:slots.rows,availability:availability.rows,from,to,updatedAt:new Date().toISOString()});
  }catch(e){console.error("Scheduling calendar failed:",e);res.status(500).json({error:"Could not load the scheduling calendar."})}
 });
@@ -946,17 +946,18 @@ app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requir
    if(!panel){skipped++;reasons.no_panel++;continue}
    const interviewers=await client.query("SELECT pa.interviewer_id FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' ORDER BY pa.assigned_at DESC",[panel.id]);
    if(!interviewers.rowCount){skipped++;reasons.no_interviewer++;continue}
-   let best=null;
+   let best=null,sawAvailability=false,blockedByLiveInterview=false;
    for(const interviewer of interviewers.rows){
     const active=await client.query("SELECT 1 FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$1 OR i.interviewer_id=$2 OR i.candidate_id=$3) LIMIT 1",[panel.id,interviewer.interviewer_id,candidate.id]);
-    if(active.rowCount)continue;
+    if(active.rowCount){blockedByLiveInterview=true;continue;}
     const availability=await client.query("SELECT starts_at,ends_at FROM interviewer_availability WHERE event_id=$1 AND interviewer_id=$2 AND ends_at>$3 ORDER BY starts_at",[req.params.id,interviewer.interviewer_id,start.toISOString()]);
     if(!availability.rowCount)continue;
+    sawAvailability=true;
     const busy=await client.query("SELECT sl.starts_at,sl.ends_at FROM interview_slots sl WHERE sl.event_id=$1 AND sl.status IN ('scheduled','confirmed') AND sl.ends_at>$3 AND (sl.panel_id=$4 OR sl.candidate_id=$5 OR sl.interviewer_id=$2 OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments old_pa WHERE old_pa.panel_id=sl.panel_id AND old_pa.interviewer_id=$2 AND old_pa.active=true)))",[req.params.id,interviewer.interviewer_id,start.toISOString(),panel.id,candidate.id]);
     const starts=findFirstAvailableStart({availability:availability.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),busy:busy.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),earliest:start.toISOString(),durationMinutes:duration});
     if(starts&&(!best||new Date(starts)<new Date(best.startsAt)))best={interviewerId:interviewer.interviewer_id,startsAt:starts};
    }
-   if(!best){skipped++;reasons.no_availability++;continue}
+   if(!best){skipped++;if(sawAvailability||blockedByLiveInterview)reasons.no_capacity++;else reasons.no_availability++;continue}
    const endsAt=new Date(new Date(best.startsAt).getTime()+duration*60000).toISOString();
    const inserted=await client.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,interviewer_id,starts_at,ends_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[req.params.id,candidate.id,panel.id,best.interviewerId,best.startsAt,endsAt,req.auth.sub]);
    const when=new Date(best.startsAt).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"});
