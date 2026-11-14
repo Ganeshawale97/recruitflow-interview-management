@@ -115,3 +115,8 @@ test("rejects reversed and out-of-range interview windows", () => {
   assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:04:00Z", now), /5 and 120/);
   assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T11:01:00Z", now), /5 and 120/);
 });
+
+test("rejects a slot that starts exactly at the current instant", () => {
+  const now = Date.parse("2026-11-14T08:00:00Z");
+  assert.match(validateScheduleWindow("2026-11-14T08:00:00Z", "2026-11-14T08:15:00Z", now), /future/);
+});
