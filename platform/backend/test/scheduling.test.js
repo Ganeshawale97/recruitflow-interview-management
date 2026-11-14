@@ -120,3 +120,52 @@ test("rejects a slot that starts exactly at the current instant", () => {
   const now = Date.parse("2026-11-14T08:00:00Z");
   assert.match(validateScheduleWindow("2026-11-14T08:00:00Z", "2026-11-14T08:15:00Z", now), /future/);
 });
+
+test("invalid intervals never overlap", () => {
+  assert.equal(overlaps("not-a-date", "2026-11-14T09:15:00Z", "2026-11-14T09:00:00Z", "2026-11-14T09:30:00Z"), false);
+  assert.equal(overlaps("2026-11-14T09:30:00Z", "2026-11-14T09:00:00Z", "2026-11-14T09:00:00Z", "2026-11-14T09:30:00Z"), false);
+});
+
+test("slot finder ignores malformed and reversed availability windows", () => {
+  const result = findFirstAvailableStart({
+    availability: [
+      { startsAt: "not-a-date", endsAt: "2026-11-14T10:00:00Z" },
+      { startsAt: "2026-11-14T10:00:00Z", endsAt: "2026-11-14T09:00:00Z" },
+      { startsAt: "2026-11-14T11:00:00Z", endsAt: "2026-11-14T12:00:00Z" }
+    ],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 15
+  });
+  assert.equal(result, at("2026-11-14T11:00:00Z"));
+});
+
+test("slot finder ignores malformed busy intervals without blocking valid capacity", () => {
+  const result = findFirstAvailableStart({
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T10:00:00Z" }],
+    busy: [
+      { startsAt: "not-a-date", endsAt: "2026-11-14T09:30:00Z" },
+      { startsAt: "2026-11-14T09:45:00Z", endsAt: "2026-11-14T09:30:00Z" }
+    ],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 15
+  });
+  assert.equal(result, at("2026-11-14T09:00:00Z"));
+});
+
+test("slot finder rejects zero and negative step sizes", () => {
+  const base = {
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T10:00:00Z" }],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 15
+  };
+  assert.equal(findFirstAvailableStart({ ...base, stepMinutes: 0 }), null);
+  assert.equal(findFirstAvailableStart({ ...base, stepMinutes: -5 }), null);
+});
+
+test("slot finder rejects invalid earliest timestamps", () => {
+  assert.equal(findFirstAvailableStart({
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T10:00:00Z" }],
+    earliest: "invalid",
+    durationMinutes: 15
+  }), null);
+});
