@@ -640,3 +640,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .candidate-resume-preview>div{display:grid;gap:4px}
 .candidate-resume-preview small,.resume-preview-note{color:#77849a;font-size:12px}
 .candidate-resume-preview iframe{display:block;width:100%;height:min(72vh,760px);min-height:420px;border:1px solid #dce3ef;border-radius:8px;background:#fff}
+
+
+/* Interviewer availability management */
+.interviewer-availability{margin-top:18px}
+.interviewer-availability .user-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end}
+.interviewer-availability-list{display:grid;gap:8px;margin-top:14px}
+.interviewer-availability-list article{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid #e4e8f1;border-radius:10px;background:#fafbff}
+.interviewer-availability-list article div{display:grid;gap:4px;min-width:0}
+.interviewer-availability-list small{color:#77849a}
+@media(max-width:640px){.interviewer-availability-list article{align-items:flex-start;flex-direction:column}}
