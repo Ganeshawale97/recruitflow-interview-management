@@ -979,7 +979,7 @@ app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requir
    if(!panel){skipped++;reasons.no_panel++;continue}
    const interviewers=await client.query("SELECT pa.interviewer_id FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' ORDER BY pa.assigned_at DESC",[panel.id]);
    if(!interviewers.rowCount){skipped++;reasons.no_interviewer++;continue}
-   let best=null,sawAvailability=false,blockedByLiveInterview=false;
+   let best=null,sawAvailability=false;
    for(const interviewer of interviewers.rows){
     const availability=await client.query("SELECT starts_at,ends_at FROM interviewer_availability WHERE event_id=$1 AND interviewer_id=$2 AND ends_at>$3 ORDER BY starts_at",[req.params.id,interviewer.interviewer_id,start.toISOString()]);
     if(!availability.rowCount)continue;
@@ -989,7 +989,7 @@ app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requir
     const starts=findFirstAvailableStart({availability:availability.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),busy:[...busy.rows,...liveBusy.rows].map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),earliest:start.toISOString(),durationMinutes:duration});
     if(starts&&(!best||new Date(starts)<new Date(best.startsAt)))best={interviewerId:interviewer.interviewer_id,startsAt:starts};
    }
-   if(!best){skipped++;if(sawAvailability||blockedByLiveInterview)reasons.no_capacity++;else reasons.no_availability++;continue}
+   if(!best){skipped++;if(sawAvailability)reasons.no_capacity++;else reasons.no_availability++;continue}
    const endsAt=new Date(new Date(best.startsAt).getTime()+duration*60000).toISOString();
    const inserted=await client.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,interviewer_id,starts_at,ends_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[req.params.id,candidate.id,panel.id,best.interviewerId,best.startsAt,endsAt,req.auth.sub]);
    const when=new Date(best.startsAt).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"});
