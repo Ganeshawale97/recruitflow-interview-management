@@ -1,0 +1,52 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { findFirstAvailableStart, overlaps, validateScheduleWindow } from "../scheduling.js";
+
+const at = (value) => new Date(value).toISOString();
+
+test("adjacent bookings do not overlap", () => {
+  assert.equal(overlaps("2026-11-14T09:00:00Z", "2026-11-14T09:15:00Z", "2026-11-14T09:15:00Z", "2026-11-14T09:30:00Z"), false);
+});
+
+test("intersecting bookings overlap", () => {
+  assert.equal(overlaps("2026-11-14T09:00:00Z", "2026-11-14T09:20:00Z", "2026-11-14T09:15:00Z", "2026-11-14T09:30:00Z"), true);
+});
+
+test("schedule window requires a future duration between 5 and 120 minutes", () => {
+  const now = Date.parse("2026-11-14T08:00:00Z");
+  assert.equal(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:15:00Z", now), null);
+  assert.match(validateScheduleWindow("2026-11-14T07:00:00Z", "2026-11-14T07:15:00Z", now), /future/);
+  assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:03:00Z", now), /5 and 120/);
+  assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T11:30:00Z", now), /5 and 120/);
+  assert.match(validateScheduleWindow("not-a-date", "2026-11-14T09:15:00Z", now), /valid/);
+});
+
+test("finds the earliest available time after an existing conflict", () => {
+  const result = findFirstAvailableStart({
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T11:00:00Z" }],
+    busy: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T09:30:00Z" }],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 20
+  });
+  assert.equal(result, at("2026-11-14T09:30:00Z"));
+});
+
+test("does not place a booking outside an availability window", () => {
+  assert.equal(findFirstAvailableStart({
+    availability: [{ startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T09:10:00Z" }],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 15
+  }), null);
+});
+
+test("checks later availability windows after an earlier window is full", () => {
+  const result = findFirstAvailableStart({
+    availability: [
+      { startsAt: "2026-11-14T09:00:00Z", endsAt: "2026-11-14T09:20:00Z" },
+      { startsAt: "2026-11-14T10:00:00Z", endsAt: "2026-11-14T11:00:00Z" }
+    ],
+    earliest: "2026-11-14T09:00:00Z",
+    durationMinutes: 30
+  });
+  assert.equal(result, at("2026-11-14T10:00:00Z"));
+});
