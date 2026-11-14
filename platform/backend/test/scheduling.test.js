@@ -102,3 +102,16 @@ test("returns no slot for invalid availability timestamps", () => {
     durationMinutes: 15
   }), null);
 });
+
+test("accepts the minimum and maximum supported interview durations", () => {
+  const now = Date.parse("2026-11-14T08:00:00Z");
+  assert.equal(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:05:00Z", now), null);
+  assert.equal(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T11:00:00Z", now), null);
+});
+
+test("rejects reversed and out-of-range interview windows", () => {
+  const now = Date.parse("2026-11-14T08:00:00Z");
+  assert.match(validateScheduleWindow("2026-11-14T09:10:00Z", "2026-11-14T09:00:00Z", now), /5 and 120/);
+  assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T09:04:00Z", now), /5 and 120/);
+  assert.match(validateScheduleWindow("2026-11-14T09:00:00Z", "2026-11-14T11:01:00Z", now), /5 and 120/);
+});
