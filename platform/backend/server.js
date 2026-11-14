@@ -657,7 +657,7 @@ async function findSlotConflicts(db,{eventId,candidateId,panelId,interviewerId,s
   SELECT
    EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.panel_id=$2 AND x.status IN ('scheduled','confirmed') AND x.starts_at<$5 AND x.ends_at>$4 AND ($7::uuid IS NULL OR x.id<>$7)) AS panel_conflict,
    EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.status IN ('scheduled','confirmed') AND (x.interviewer_id=$3 OR (x.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments old_pa WHERE old_pa.panel_id=x.panel_id AND old_pa.interviewer_id=$3 AND old_pa.active=true))) AND x.starts_at<$5 AND x.ends_at>$4 AND ($7::uuid IS NULL OR x.id<>$7)) AS interviewer_conflict,
-   EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.candidate_id=$6 AND x.status IN ('scheduled','confirmed') AND x.starts_at<$5 AND x.ends_at>$4 AND ($7::uuid IS NULL OR x.id<>$7)) AS candidate_conflict,
+   EXISTS(SELECT 1 FROM interview_slots x WHERE x.event_id=$1 AND x.candidate_id=$6 AND x.status IN ('scheduled','confirmed') AND ($7::uuid IS NULL OR x.id<>$7)) AS candidate_conflict,
    EXISTS(SELECT 1 FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$2 OR i.candidate_id=$6 OR i.interviewer_id=$3)) AS live_interview_conflict
  `,[eventId,panelId,interviewerId,startsAt,endsAt,candidateId,excludeSlotId]);
  return q.rows[0];
@@ -850,9 +850,157 @@ app.delete("/api/events/:id/automation/availability/:availabilityId",requireDb,r
   res.json({message:"Availability window removed."});
  }catch(e){console.error("Availability delete failed:",e);res.status(500).json({error:"Could not remove interviewer availability."})}
 });
-app.get("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{try{const q=await pool.query("SELECT sl.*,c.name AS candidate_name,c.candidate_code,p.name AS panel_name,d.name AS domain FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id WHERE sl.event_id=$1 AND sl.status<>'cancelled' ORDER BY sl.starts_at LIMIT 1000",[req.params.id]);res.json({slots:q.rows})}catch(e){console.error(e);res.status(500).json({error:"Could not load interview schedule."})}});
-app.post("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{const candidateId=String(req.body?.candidateId||""),panelId=String(req.body?.panelId||""),startsAt=new Date(req.body?.startsAt),duration=Math.min(120,Math.max(5,Number(req.body?.durationMinutes)||15));if(!candidateId||!panelId||Number.isNaN(startsAt.getTime())||startsAt<=new Date())return res.status(400).json({error:"Choose a candidate, panel and future start time."});const endsAt=new Date(startsAt.getTime()+duration*60000);try{const q=await pool.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,starts_at,ends_at,created_by) SELECT $1,c.id,p.id,$4,$5,$6 FROM candidates c JOIN panels p ON p.id=$3 AND p.event_id=c.event_id AND p.active=true WHERE c.id=$2 AND c.event_id=$1 AND NOT EXISTS(SELECT 1 FROM interview_slots x WHERE x.panel_id=p.id AND x.status IN ('scheduled','confirmed') AND x.starts_at<$5 AND x.ends_at>$4) RETURNING *",[req.params.id,candidateId,panelId,startsAt.toISOString(),endsAt.toISOString(),req.auth.sub]);if(!q.rowCount)return res.status(409).json({error:"Candidate or panel not found, or this panel already has a booking at that time."});await pool.query("INSERT INTO event_notifications(event_id,candidate_id,title,message) VALUES($1,$2,'Interview scheduled',$3)",[req.params.id,candidateId,"Your interview has been scheduled for "+startsAt.toLocaleString("en-IN")+"."]);res.status(201).json({slot:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"Could not create interview slot."})}});
-app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{const start=new Date(req.body?.startsAt),duration=Math.min(120,Math.max(5,Number(req.body?.durationMinutes)||15)),limit=Math.min(200,Math.max(1,Number(req.body?.limit)||100));if(Number.isNaN(start.getTime())||start<=new Date())return res.status(400).json({error:"Provide a future start time."});const client=await pool.connect();try{await client.query("BEGIN");const candidates=await client.query("SELECT c.id,cp.domain_id FROM candidates c JOIN candidate_preferences cp ON cp.candidate_id=c.id AND cp.priority=1 WHERE c.event_id=$1 AND c.status IN ('registered','waiting_1','waiting_2') AND NOT EXISTS(SELECT 1 FROM interview_slots sl WHERE sl.candidate_id=c.id AND sl.status IN ('scheduled','confirmed')) ORDER BY CASE c.status WHEN 'waiting_2' THEN 0 WHEN 'waiting_1' THEN 1 ELSE 2 END,c.created_at LIMIT $2 FOR UPDATE OF c SKIP LOCKED",[req.params.id,limit]);const panels=await client.query("SELECT p.id,p.domain_id FROM panels p WHERE p.event_id=$1 AND p.active=true ORDER BY p.name",[req.params.id]);let created=0,skipped=0;const next=new Map();for(const c of candidates.rows){const panel=panels.rows.find(p=>p.domain_id===c.domain_id);if(!panel){skipped++;continue}let at=new Date(Math.max(start.getTime(),next.get(panel.id)||start.getTime()));let free=true;for(let n=0;n<200;n++){const end=new Date(at.getTime()+duration*60000);const conflict=await client.query("SELECT 1 FROM interview_slots WHERE panel_id=$1 AND status IN ('scheduled','confirmed') AND starts_at<$3 AND ends_at>$2 LIMIT 1",[panel.id,at.toISOString(),end.toISOString()]);if(!conflict.rowCount){await client.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,starts_at,ends_at,created_by) VALUES($1,$2,$3,$4,$5,$6)",[req.params.id,c.id,panel.id,at.toISOString(),end.toISOString(),req.auth.sub]);next.set(panel.id,end.getTime());created++;free=false;break}at=new Date(at.getTime()+duration*60000)}if(free)skipped++}await client.query("COMMIT");res.json({created,skipped,message:"Automatic scheduling completed. Review all suggested slots before notifying candidates."})}catch(e){await client.query("ROLLBACK");console.error(e);res.status(500).json({error:"Could not auto-schedule interviews."})}finally{client.release()}});
+app.get("/api/events/:id/automation/calendar",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
+ try{
+  await ensureInterviewSchedulingSchema();
+  const from=String(req.query.from||new Date(Date.now()-86400000).toISOString()),to=String(req.query.to||new Date(Date.now()+7*86400000).toISOString());
+  if(!Number.isFinite(Date.parse(from))||!Number.isFinite(Date.parse(to))||new Date(to)<=new Date(from)||(new Date(to)-new Date(from))>31*86400000)return res.status(400).json({error:"Choose a valid calendar range of 31 days or less."});
+  const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:"";
+  const slots=await pool.query("SELECT sl.*,c.name AS candidate_name,c.candidate_code,p.name AS panel_name,d.name AS domain,COALESCE(u.display_name,'Unassigned') AS interviewer_name FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id LEFT JOIN users u ON u.id=sl.interviewer_id WHERE sl.event_id=$1 AND sl.status<>'cancelled' AND sl.starts_at<$3 AND sl.ends_at>$2 AND ($4='' OR sl.interviewer_id=$4::uuid OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=sl.panel_id AND pa.interviewer_id=$4 AND pa.active=true))) ORDER BY sl.starts_at",[req.params.id,from,to,interviewerId]);
+  const availability=await pool.query("SELECT a.*,u.display_name AS interviewer_name FROM interviewer_availability a JOIN users u ON u.id=a.interviewer_id WHERE a.event_id=$1 AND a.starts_at<$3 AND a.ends_at>$2 AND ($4='' OR a.interviewer_id=$4::uuid) ORDER BY a.starts_at",[req.params.id,from,to,interviewerId]);
+  res.json({slots:slots.rows,availability:availability.rows,from,to,updatedAt:new Date().toISOString()});
+ }catch(e){console.error("Scheduling calendar failed:",e);res.status(500).json({error:"Could not load the scheduling calendar."})}
+});
+app.get("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
+ try{
+  await ensureInterviewSchedulingSchema();
+  const from=String(req.query.from||""),to=String(req.query.to||"");
+  if((from&&!Number.isFinite(Date.parse(from)))||(to&&!Number.isFinite(Date.parse(to)))||(from&&to&&new Date(to)<=new Date(from)))return res.status(400).json({error:"Choose a valid schedule date range."});
+  const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:"";
+  const q=await pool.query("SELECT sl.*,c.name AS candidate_name,c.candidate_code,p.name AS panel_name,d.name AS domain,COALESCE(u.display_name,'Unassigned') AS interviewer_name FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id LEFT JOIN users u ON u.id=sl.interviewer_id WHERE sl.event_id=$1 AND sl.status<>'cancelled' AND ($2='' OR sl.ends_at>=$2::timestamptz) AND ($3='' OR sl.starts_at<=$3::timestamptz) AND ($4='' OR sl.interviewer_id=$4::uuid OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments pa WHERE pa.panel_id=sl.panel_id AND pa.interviewer_id=$4 AND pa.active=true))) ORDER BY sl.starts_at LIMIT 1000",[req.params.id,from,to,interviewerId]);
+  res.json({slots:q.rows});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load interview schedule."})}
+});
+app.post("/api/events/:id/automation/slots",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
+ const candidateId=String(req.body?.candidateId||""),panelId=String(req.body?.panelId||""),startsAt=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),endsAt=new Date(startsAt.getTime()+duration*60000);
+ const invalid=validateScheduleWindow(startsAt,endsAt);
+ if(!candidateId||!panelId||invalid)return res.status(400).json({error:invalid||"Choose a candidate and panel."});
+ const client=await pool.connect();
+ try{
+  await ensureInterviewSchedulingSchema();await client.query("BEGIN");await lockEventSchedule(client,req.params.id);
+  const candidate=await client.query("SELECT id,name,candidate_code,status FROM candidates WHERE id=$1 AND event_id=$2 FOR UPDATE",[candidateId,req.params.id]);
+  if(!candidate.rowCount||candidate.rows[0].status==="withdrawn"){await client.query("ROLLBACK");return res.status(404).json({error:"Candidate not found in this event or no longer eligible."})}
+  const panel=await client.query("SELECT p.id,p.domain_id,d.name AS domain FROM panels p JOIN domains d ON d.id=p.domain_id WHERE p.id=$1 AND p.event_id=$2 AND p.active=true",[panelId,req.params.id]);
+  if(!panel.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Choose an active panel in this event."})}
+  const preference=await client.query("SELECT 1 FROM candidate_preferences cp WHERE cp.candidate_id=$1 AND cp.domain_id=$2 AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=cp.candidate_id AND i.domain_id=cp.domain_id AND i.status IN ('in_progress','completed'))",[candidateId,panel.rows[0].domain_id]);
+  if(!preference.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"This panel does not match one of the candidate's remaining domain preferences."})}
+  const assigned=await client.query("SELECT pa.interviewer_id,u.display_name FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' AND ($2='' OR pa.interviewer_id=$2::uuid) AND EXISTS(SELECT 1 FROM interviewer_availability a WHERE a.event_id=$3 AND a.interviewer_id=pa.interviewer_id AND a.starts_at<=$4 AND a.ends_at>=$5) ORDER BY pa.assigned_at DESC",[panelId,String(req.body?.interviewerId||""),req.params.id,startsAt.toISOString(),endsAt.toISOString()]);
+  if(!assigned.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"No assigned interviewer has availability covering this time. Add interviewer availability or choose another time."})}
+  let chosen=null,conflict=null;
+  for(const interviewer of assigned.rows){
+   const conflicts=await findSlotConflicts(client,{eventId:req.params.id,candidateId,panelId,interviewerId:interviewer.interviewer_id,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString()});
+   if(!conflicts.panel_conflict&&!conflicts.interviewer_conflict&&!conflicts.candidate_conflict&&!conflicts.live_interview_conflict){chosen=interviewer;break}
+   conflict=conflicts;
+  }
+  if(!chosen){
+   await client.query("ROLLBACK");
+   const reason=conflict?.candidate_conflict?"This candidate already has another active booking.":conflict?.panel_conflict?"This panel is already booked during that time.":conflict?.interviewer_conflict?"The assigned interviewer already has another booking.":"The candidate, panel or interviewer is currently in an active interview.";
+   return res.status(409).json({error:reason+" Choose another time."});
+  }
+  const inserted=await client.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,interviewer_id,starts_at,ends_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",[req.params.id,candidateId,panelId,chosen.interviewer_id,startsAt.toISOString(),endsAt.toISOString(),req.auth.sub]);
+  const when=startsAt.toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"});
+  await addScheduleNotifications(client,req.params.id,candidateId,chosen.interviewer_id,"Interview scheduled","Your "+panel.rows[0].domain+" interview is scheduled for "+when+".");
+  await client.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'interview_slot_created','candidate',$3,$4)",[req.params.id,req.auth.sub,candidateId,JSON.stringify({slotId:inserted.rows[0].id,panelId,interviewerId:chosen.interviewer_id,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString()})]);
+  await client.query("COMMIT");res.status(201).json({slot:inserted.rows[0],interviewer:chosen,message:"Interview slot scheduled and in-app notifications queued."});
+ }catch(e){await client.query("ROLLBACK");if(e.code==="23505")return res.status(409).json({error:"A conflicting interview booking already exists. Refresh the calendar and try again."});console.error("Schedule create failed:",e);res.status(500).json({error:"Could not schedule this interview."})}finally{client.release()}
+});
+app.post("/api/events/:id/automation/slots/:slotId/reschedule",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
+ const startsAt=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||0);
+ if(!Number.isFinite(startsAt.getTime())||startsAt<=new Date()||(duration&&(!Number.isInteger(duration)||duration<5||duration>120)))return res.status(400).json({error:"Choose a future start time and a duration between 5 and 120 minutes."});
+ const client=await pool.connect();
+ try{
+  await ensureInterviewSchedulingSchema();await client.query("BEGIN");await lockEventSchedule(client,req.params.id);
+  const current=await client.query("SELECT sl.*,c.name AS candidate_name,c.candidate_code,p.domain_id,d.name AS domain FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id WHERE sl.id=$1 AND sl.event_id=$2 FOR UPDATE OF sl",[req.params.slotId,req.params.id]);
+  if(!current.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Interview booking not found."})}
+  const slot=current.rows[0];
+  if(!["scheduled","confirmed"].includes(slot.status)){await client.query("ROLLBACK");return res.status(409).json({error:"Only scheduled or confirmed interviews can be rescheduled."})}
+  const endsAt=new Date(startsAt.getTime()+(duration||Math.round((new Date(slot.ends_at)-new Date(slot.starts_at))/60000))*60000),invalid=validateScheduleWindow(startsAt,endsAt);
+  if(invalid){await client.query("ROLLBACK");return res.status(400).json({error:invalid})}
+  const assigned=await client.query("SELECT pa.interviewer_id,u.display_name FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' AND ($2::uuid IS NULL OR pa.interviewer_id=$2) AND EXISTS(SELECT 1 FROM interviewer_availability a WHERE a.event_id=$3 AND a.interviewer_id=pa.interviewer_id AND a.starts_at<=$4 AND a.ends_at>=$5) ORDER BY pa.assigned_at DESC",[slot.panel_id,slot.interviewer_id,req.params.id,startsAt.toISOString(),endsAt.toISOString()]);
+  if(!assigned.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"The assigned interviewer is not available at the new time. Add availability or choose another time."})}
+  let chosen=null,conflict=null;
+  for(const interviewer of assigned.rows){
+   const conflicts=await findSlotConflicts(client,{eventId:req.params.id,candidateId:slot.candidate_id,panelId:slot.panel_id,interviewerId:interviewer.interviewer_id,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),excludeSlotId:slot.id});
+   if(!conflicts.panel_conflict&&!conflicts.interviewer_conflict&&!conflicts.candidate_conflict&&!conflicts.live_interview_conflict){chosen=interviewer;break}
+   conflict=conflicts;
+  }
+  if(!chosen){await client.query("ROLLBACK");return res.status(409).json({error:conflict?.panel_conflict?"The panel is booked at the selected time.":conflict?.interviewer_conflict?"The interviewer is booked at the selected time.":conflict?.candidate_conflict?"The candidate already has another active booking.":"A live interview prevents this reschedule."})}
+  const updated=await client.query("UPDATE interview_slots SET interviewer_id=$3,starts_at=$4,ends_at=$5,updated_at=now() WHERE id=$1 AND event_id=$2 RETURNING *",[slot.id,req.params.id,chosen.interviewer_id,startsAt.toISOString(),endsAt.toISOString()]);
+  const when=startsAt.toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"});
+  await addScheduleNotifications(client,req.params.id,slot.candidate_id,chosen.interviewer_id,"Interview rescheduled","Your "+slot.domain+" interview has been moved to "+when+".");
+  await client.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'interview_slot_rescheduled','candidate',$3,$4)",[req.params.id,req.auth.sub,slot.candidate_id,JSON.stringify({slotId:slot.id,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString()})]);
+  await client.query("COMMIT");res.json({slot:updated.rows[0],message:"Interview rescheduled and in-app notifications queued."});
+ }catch(e){await client.query("ROLLBACK");console.error("Schedule reschedule failed:",e);res.status(500).json({error:"Could not reschedule this interview."})}finally{client.release()}
+});
+app.post("/api/events/:id/automation/auto-schedule",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
+ const start=new Date(req.body?.startsAt),duration=Number(req.body?.durationMinutes||15),limit=Math.min(200,Math.max(1,Number(req.body?.limit)||100));
+ if(!Number.isFinite(start.getTime())||start<=new Date()||!Number.isInteger(duration)||duration<5||duration>120)return res.status(400).json({error:"Choose a future start time and a duration between 5 and 120 minutes."});
+ const client=await pool.connect();
+ try{
+  await ensureInterviewSchedulingSchema();await client.query("BEGIN");await lockEventSchedule(client,req.params.id);
+  const candidates=await client.query("SELECT c.id,c.name,c.candidate_code,cp.domain_id FROM candidates c JOIN candidate_preferences cp ON cp.candidate_id=c.id AND cp.priority=1 WHERE c.event_id=$1 AND c.status IN ('registered','waiting_1','waiting_2') AND NOT EXISTS(SELECT 1 FROM interview_slots sl WHERE sl.candidate_id=c.id AND sl.status IN ('scheduled','confirmed')) AND NOT EXISTS(SELECT 1 FROM interviews i WHERE i.candidate_id=c.id AND i.status='in_progress') ORDER BY CASE c.status WHEN 'waiting_2' THEN 0 WHEN 'waiting_1' THEN 1 ELSE 2 END,c.checked_in_at NULLS LAST,c.created_at LIMIT $2 FOR UPDATE OF c SKIP LOCKED",[req.params.id,limit]);
+  const panels=await client.query("SELECT p.id,p.domain_id FROM panels p WHERE p.event_id=$1 AND p.active=true ORDER BY p.name",[req.params.id]);
+  let created=0,skipped=0;const reasons={no_panel:0,no_interviewer:0,no_availability:0,no_capacity:0};
+  for(const candidate of candidates.rows){
+   const panel=panels.rows.find(p=>p.domain_id===candidate.domain_id);
+   if(!panel){skipped++;reasons.no_panel++;continue}
+   const interviewers=await client.query("SELECT pa.interviewer_id FROM panel_assignments pa JOIN users u ON u.id=pa.interviewer_id JOIN roles r ON r.id=u.role_id WHERE pa.panel_id=$1 AND pa.active=true AND u.active=true AND r.name='Interviewer' ORDER BY pa.assigned_at DESC",[panel.id]);
+   if(!interviewers.rowCount){skipped++;reasons.no_interviewer++;continue}
+   let best=null;
+   for(const interviewer of interviewers.rows){
+    const active=await client.query("SELECT 1 FROM interviews i WHERE i.status='in_progress' AND (i.panel_id=$1 OR i.interviewer_id=$2 OR i.candidate_id=$3) LIMIT 1",[panel.id,interviewer.interviewer_id,candidate.id]);
+    if(active.rowCount)continue;
+    const availability=await client.query("SELECT starts_at,ends_at FROM interviewer_availability WHERE event_id=$1 AND interviewer_id=$2 AND ends_at>$3 ORDER BY starts_at",[req.params.id,interviewer.interviewer_id,start.toISOString()]);
+    if(!availability.rowCount)continue;
+    const busy=await client.query("SELECT sl.starts_at,sl.ends_at FROM interview_slots sl WHERE sl.event_id=$1 AND sl.status IN ('scheduled','confirmed') AND sl.ends_at>$3 AND (sl.panel_id=$4 OR sl.candidate_id=$5 OR sl.interviewer_id=$2 OR (sl.interviewer_id IS NULL AND EXISTS(SELECT 1 FROM panel_assignments old_pa WHERE old_pa.panel_id=sl.panel_id AND old_pa.interviewer_id=$2 AND old_pa.active=true)))",[req.params.id,interviewer.interviewer_id,start.toISOString(),panel.id,candidate.id]);
+    const starts=findFirstAvailableStart({availability:availability.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),busy:busy.rows.map(x=>({startsAt:x.starts_at,endsAt:x.ends_at})),earliest:start.toISOString(),durationMinutes:duration});
+    if(starts&&(!best||new Date(starts)<new Date(best.startsAt)))best={interviewerId:interviewer.interviewer_id,startsAt:starts};
+   }
+   if(!best){skipped++;reasons.no_availability++;continue}
+   const endsAt=new Date(new Date(best.startsAt).getTime()+duration*60000).toISOString();
+   const inserted=await client.query("INSERT INTO interview_slots(event_id,candidate_id,panel_id,interviewer_id,starts_at,ends_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[req.params.id,candidate.id,panel.id,best.interviewerId,best.startsAt,endsAt,req.auth.sub]);
+   const when=new Date(best.startsAt).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"});
+   await addScheduleNotifications(client,req.params.id,candidate.id,best.interviewerId,"Interview scheduled","Your interview is scheduled for "+when+".");
+   created++;
+  }
+  await client.query("COMMIT");res.json({created,skipped,reasons,message:"Availability-aware scheduling completed. Review all allocated slots before the event."});
+ }catch(e){await client.query("ROLLBACK");console.error("Auto-schedule failed:",e);res.status(500).json({error:"Could not auto-schedule interviews."})}finally{client.release()}
+});
+app.patch("/api/events/:id/automation/slots/:slotId",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{
+ const status=String(req.body?.status||"");
+ if(!["confirmed","completed","cancelled","no_show"].includes(status))return res.status(400).json({error:"Choose Confirm, Cancel, Complete or No-show."});
+ const client=await pool.connect();
+ try{
+  await ensureInterviewSchedulingSchema();await client.query("BEGIN");await lockEventSchedule(client,req.params.id);
+  const current=await client.query("SELECT sl.*,c.name AS candidate_name,p.name AS panel_name,d.name AS domain FROM interview_slots sl JOIN candidates c ON c.id=sl.candidate_id JOIN panels p ON p.id=sl.panel_id JOIN domains d ON d.id=p.domain_id WHERE sl.id=$1 AND sl.event_id=$2 FOR UPDATE OF sl",[req.params.slotId,req.params.id]);
+  if(!current.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Interview booking not found."})}
+  const slot=current.rows[0];
+  if(status==="confirmed"&&slot.status!=="scheduled"){await client.query("ROLLBACK");return res.status(409).json({error:"Only a scheduled interview can be confirmed."})}
+  if(status==="cancelled"&&!["scheduled","confirmed"].includes(slot.status)){await client.query("ROLLBACK");return res.status(409).json({error:"Only a scheduled or confirmed interview can be cancelled."})}
+  if(["completed","no_show"].includes(status)&&(slot.status!=="confirmed"||new Date(slot.ends_at)>new Date())){await client.query("ROLLBACK");return res.status(409).json({error:"An interview can be completed or marked no-show only after its confirmed end time."})}
+  const updated=await client.query("UPDATE interview_slots SET status=$3,updated_at=now() WHERE id=$1 AND event_id=$2 RETURNING *",[slot.id,req.params.id,status]);
+  if(status==="confirmed"||status==="cancelled"){
+   const title=status==="confirmed"?"Interview confirmed":"Interview cancelled";
+   const message=status==="confirmed"?"Your "+slot.domain+" interview booking is confirmed for "+new Date(slot.starts_at).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"})+".":"Your "+slot.domain+" interview booking has been cancelled. Please contact the event organizers for a new time.";
+   await addScheduleNotifications(client,req.params.id,slot.candidate_id,slot.interviewer_id,title,message);
+  }
+  await client.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,$3,'candidate',$4,$5)",[req.params.id,req.auth.sub,"interview_slot_"+status,slot.candidate_id,JSON.stringify({slotId:slot.id})]);
+  await client.query("COMMIT");res.json({slot:updated.rows[0],message:"Interview booking updated."});
+ }catch(e){await client.query("ROLLBACK");console.error("Schedule status update failed:",e);res.status(500).json({error:"Could not update interview booking."})}finally{client.release()}
+});
+app.get("/api/events/:id/automation/notifications",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
+ try{
+  const q=await pool.query("SELECT n.*,c.candidate_code,c.name AS candidate_name,u.display_name AS recipient_name FROM event_notifications n LEFT JOIN candidates c ON c.id=n.candidate_id LEFT JOIN users u ON u.id=n.user_id WHERE n.event_id=$1 ORDER BY n.created_at DESC LIMIT 300",[req.params.id]);
+  res.json({notifications:q.rows});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not load notifications."})}
+});
+app.patch("/api/events/:id/automation/notifications/:notificationId/read",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{
+ try{
+  const q=await pool.query("UPDATE event_notifications SET status='read',read_at=now() WHERE id=$1 AND event_id=$2 AND user_id=$3 RETURNING id,status,read_at",[req.params.notificationId,req.params.id,req.auth.sub]);
+  if(!q.rowCount)return res.status(404).json({error:"Your in-app notification was not found."});
+  res.json({notification:q.rows[0]});
+ }catch(e){console.error(e);res.status(500).json({error:"Could not mark notification as read."})}
+});
 app.post("/api/events/:id/automation/qr-check-in",requireDb,requireAuth,requireRole("Super Admin","Admin","Entry Volunteer"),async(req,res)=>{const code=String(req.body?.passCode||"").trim();if(!code||code.length>100)return res.status(400).json({error:"Scan or enter a valid candidate pass code."});try{const q=await pool.query("UPDATE candidates c SET status='waiting_1',checked_in_at=COALESCE(c.checked_in_at,now()) FROM candidate_passes p WHERE p.event_id=$1 AND p.pass_code=$2 AND p.candidate_id=c.id AND c.event_id=$1 AND p.revoked_at IS NULL AND c.status='registered' RETURNING c.id,c.candidate_code,c.name,c.status,c.checked_in_at",[req.params.id,code]);if(!q.rowCount)return res.status(409).json({error:"Pass is invalid, revoked, or candidate is already checked in."});await pool.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'candidate_qr_checked_in','candidate',$3,$4)",[req.params.id,req.auth.sub,q.rows[0].id,JSON.stringify({candidateCode:q.rows[0].candidate_code})]);await pool.query("INSERT INTO event_notifications(event_id,candidate_id,title,message) VALUES($1,$2,'Venue check-in complete','Your venue check-in is complete. Please wait in Waiting Room 1.')",[req.params.id,q.rows[0].id]);await dispatchNextForEvent(req.params.id);res.json({candidate:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"QR check-in failed."})}});
 app.get("/api/events/:id/automation/notifications",requireDb,requireAuth,requireRole(...opsRoles),async(req,res)=>{try{const q=await pool.query("SELECT n.*,c.candidate_code,c.name AS candidate_name FROM event_notifications n LEFT JOIN candidates c ON c.id=n.candidate_id WHERE n.event_id=$1 ORDER BY n.created_at DESC LIMIT 200",[req.params.id]);res.json({notifications:q.rows})}catch(e){console.error(e);res.status(500).json({error:"Could not load notifications."})}});
 app.patch("/api/events/:id/automation/slots/:slotId",requireDb,requireAuth,requireRole(...automationAdmin),async(req,res)=>{const status=String(req.body?.status||"");if(!["confirmed","completed","cancelled","no_show"].includes(status))return res.status(400).json({error:"Invalid slot status."});try{const q=await pool.query("UPDATE interview_slots SET status=$3::varchar WHERE event_id=$1 AND id=$2 RETURNING *",[req.params.id,req.params.slotId,status]);if(!q.rowCount)return res.status(404).json({error:"Schedule slot not found."});res.json({slot:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"Could not update schedule slot."})}});
