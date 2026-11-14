@@ -846,7 +846,7 @@ app.get("/api/events/:id/automation/availability",requireDb,requireAuth,requireR
  try{
   await ensureInterviewSchedulingSchema();
   const from=String(req.query.from||new Date().toISOString()),to=String(req.query.to||new Date(Date.now()+30*86400000).toISOString());
-  if(!Number.isFinite(Date.parse(from))||!Number.isFinite(Date.parse(to))||new Date(to)<=new Date(from))return res.status(400).json({error:"Choose a valid availability date range."});
+  if(!Number.isFinite(Date.parse(from))||!Number.isFinite(Date.parse(to))||new Date(to)<=new Date(from)||(new Date(to)-new Date(from))>31*86400000)return res.status(400).json({error:"Choose a valid availability date range of 31 days or less."});
   const interviewerId=req.auth.role==="Interviewer"?req.auth.sub:String(req.query.interviewerId||"");
   if(interviewerId&&!isUuid(interviewerId))return res.status(400).json({error:"Choose a valid interviewer."});
   const q=await pool.query("SELECT a.id,a.event_id,a.interviewer_id,a.starts_at,a.ends_at,a.note,a.created_at,u.display_name AS interviewer_name,u.username FROM interviewer_availability a JOIN users u ON u.id=a.interviewer_id WHERE a.event_id=$1 AND a.starts_at<$3 AND a.ends_at>$2 AND ($4::uuid IS NULL OR a.interviewer_id=$4::uuid) ORDER BY a.starts_at LIMIT 500",[req.params.id,from,to,interviewerId||null]);
