@@ -352,6 +352,12 @@ app.use("/api/events/:id",requireDb,requireAuth,async(req,res,next)=>{
 });
 
 const admin=["Super Admin","Admin"];
+app.get("/api/health/ready",async(_req,res)=>{
+ const checks={database:"not_configured",authentication:Boolean(process.env.JWT_SECRET&&process.env.JWT_SECRET.length>=32)};
+ if(!pool)return res.status(503).json({ready:false,checks});
+ try{await pool.query("SELECT 1");checks.database="connected";if(!checks.authentication)return res.status(503).json({ready:false,checks});res.json({ready:true,checks})}
+ catch{checks.database="disconnected";res.status(503).json({ready:false,checks})}
+});
 app.get("/api/health",async(_req,res)=>{let database="not_configured";if(pool){try{await pool.query("SELECT 1");database="connected"}catch{database="disconnected"}}res.json({ok:true,service:"recruitflow-api",version:"0.7.0",database,authentication:Boolean(process.env.JWT_SECRET&&process.env.JWT_SECRET.length>=32),now:new Date().toISOString()})});
 app.get("/api",(_req,res)=>res.json({name:"RecruitFlow API",version:"0.7.0",status:"Automatic panel dispatch"}));
 async function recordSecurityEvent(req,eventType,outcome,details={}){try{await pool.query("CREATE TABLE IF NOT EXISTS platform_security_events(id bigserial PRIMARY KEY,event_type text NOT NULL,outcome text NOT NULL,ip_address text,user_agent text,details jsonb NOT NULL DEFAULT '{}'::jsonb,created_at timestamptz NOT NULL DEFAULT now())");await pool.query("INSERT INTO platform_security_events(event_type,outcome,ip_address,user_agent,details) VALUES($1,$2,$3,$4,$5::jsonb)",[eventType,outcome,String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].slice(0,100),String(req.headers["user-agent"]||"").slice(0,500),JSON.stringify(details)])}catch(e){console.error("Security event write failed:",e.message)}}
