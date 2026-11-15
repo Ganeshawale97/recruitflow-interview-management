@@ -450,7 +450,8 @@ app.get("/api/public/events/:slug",requireDb,async(req,res)=>{
   const row=e.rows[0];res.json({event:{id:row.id,name:row.name,slug:row.slug,description:row.description,registrationFields:row.registration_fields||[],organization:{name:row.organization_name,logoUrl:row.logo_url,primaryColor:row.primary_color,secondaryColor:row.secondary_color,branding:row.branding||{}}},domains:d.rows});
  }catch(err){console.error(err);res.status(500).json({error:"Could not load registration details."})}
 });
-app.post("/api/public/events/:slug/candidates",requireDb,async(req,res)=>{
+const candidateRegistrationLimiter=rateLimit({windowMs:60*60*1000,limit:20,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many registrations from this connection. Please try again later."}});
+app.post("/api/public/events/:slug/candidates",requireDb,candidateRegistrationLimiter,async(req,res)=>{
  const b=req.body||{},name=String(b.name||"").trim(),email=normalizeEmail(b.email),phone=normalizePhone(b.phone),college=String(b.college||"").trim(),branch=String(b.branch||"").trim(),academicYear=String(b.academicYear||"").trim(),rollNumber=String(b.rollNumber||"").trim(),skills=String(b.skills||"").trim(),githubUrl=String(b.githubUrl||"").trim(),linkedinUrl=String(b.linkedinUrl||"").trim(),portfolioUrl=String(b.portfolioUrl||"").trim(),motivation=String(b.motivation||"").trim(),preferences=Array.isArray(b.preferences)?b.preferences.slice(0,4):[];
  if(name.length<2||name.length>160||!isValidEmail(email)||phone.length<8||phone.length>20||!college||!branch||!academicYear)return res.status(400).json({error:"Complete all required personal and academic details with a valid email and phone number."});
  if(preferences.length<1||new Set(preferences).size!==preferences.length)return res.status(400).json({error:"Choose between 1 and 4 different domain preferences in priority order."});
