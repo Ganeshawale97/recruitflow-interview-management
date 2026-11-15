@@ -1059,4 +1059,19 @@ app.patch("/api/events/:id/automation/notifications/:notificationId/read",requir
 app.post("/api/events/:id/automation/qr-check-in",requireDb,requireAuth,requireRole("Super Admin","Admin","Entry Volunteer"),async(req,res)=>{const code=String(req.body?.passCode||"").trim();if(!code||code.length>100)return res.status(400).json({error:"Scan or enter a valid candidate pass code."});try{const q=await pool.query("UPDATE candidates c SET status='waiting_1',checked_in_at=COALESCE(c.checked_in_at,now()) FROM candidate_passes p WHERE p.event_id=$1 AND p.pass_code=$2 AND p.candidate_id=c.id AND c.event_id=$1 AND p.revoked_at IS NULL AND c.status='registered' RETURNING c.id,c.candidate_code,c.name,c.status,c.checked_in_at",[req.params.id,code]);if(!q.rowCount)return res.status(409).json({error:"Pass is invalid, revoked, or candidate is already checked in."});await pool.query("INSERT INTO audit_logs(event_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'candidate_qr_checked_in','candidate',$3,$4)",[req.params.id,req.auth.sub,q.rows[0].id,JSON.stringify({candidateCode:q.rows[0].candidate_code})]);await pool.query("INSERT INTO event_notifications(event_id,candidate_id,title,message) VALUES($1,$2,'Venue check-in complete','Your venue check-in is complete. Please wait in Waiting Room 1.')",[req.params.id,q.rows[0].id]);await dispatchNextForEvent(req.params.id);res.json({candidate:q.rows[0]})}catch(e){console.error(e);res.status(500).json({error:"QR check-in failed."})}});
 
 app.use((err,_req,res,_next)=>{if(err?.type==="entity.too.large")return res.status(413).json({error:"Request body exceeds the 15 MB limit."});if(err?.type==="entity.parse.failed")return res.status(400).json({error:"Request body must contain valid JSON."});console.error(err);res.status(500).json({error:"Internal server error"})});
-app.listen(port,()=>console.log("RecruitFlow API listening on http://localhost:"+port));
+const server=app.listen(port,()=>console.log("RecruitFlow API listening on http://localhost:"+port));
+let shutdownStarted=false;
+function shutdown(signal){
+ if(shutdownStarted)return;
+ shutdownStarted=true;
+ console.log("RecruitFlow API received "+signal+"; closing gracefully.");
+ const forceClose=setTimeout(()=>{console.error("Graceful shutdown timed out; closing remaining connections.");server.closeAllConnections?.()},10000);
+ forceClose.unref();
+ server.close(async(error)=>{
+  clearTimeout(forceClose);
+  if(error){console.error("HTTP server shutdown failed:",error);process.exitCode=1}
+  try{await pool?.end()}catch(e){console.error("Database pool shutdown failed:",e);process.exitCode=1}
+ });
+}
+process.on("SIGTERM",()=>shutdown("SIGTERM"));
+process.on("SIGINT",()=>shutdown("SIGINT"));
