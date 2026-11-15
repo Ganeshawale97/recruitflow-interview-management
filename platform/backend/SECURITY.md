@@ -37,6 +37,11 @@ This document records the security controls currently implemented by the API and
 - Resume download requires an authenticated organizer or an interviewer with an active assignment relevant to the candidate.
 - Replacing a resume removes the previous stored file after the new database record is committed. Failed database writes remove the newly written file.
 
+## Health checks
+
+- `GET /api/health` is a liveness/status endpoint and reports whether PostgreSQL is configured and reachable.
+- `GET /api/health/ready` is a readiness endpoint. It returns HTTP 503 until PostgreSQL is reachable and authentication is configured.
+
 ## Deployment checklist
 
 1. Set a unique random `JWT_SECRET` of at least 32 characters.
