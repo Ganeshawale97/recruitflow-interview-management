@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import QRCode from "qrcode";
 import { randomBytes, createHash, randomUUID, createCipheriv, createDecipheriv, createHmac, timingSafeEqual } from "node:crypto";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { findFirstAvailableStart, validateScheduleWindow } from "./scheduling.js";
 import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, normalizeEmail, normalizePhone, validateInterviewScores } from "./input-validation.js";
@@ -534,15 +534,20 @@ app.post("/api/public/events/:slug/resume",requireDb,resumeUploadLimiter,async(r
  const upload=decodeResumeUpload({fileName:name,mimeType:mime,fileBase64:encoded});
  if(upload.error)return res.status(upload.error.includes("no larger")?413:400).json({error:upload.error});
  const {buffer,extension:ext,fileName:safeName,mimeType:verifiedMime}=upload;
+ let newFilePath=null;
  try{
   await ensureCandidateResumeTable();
   const candidate=await pool.query("SELECT c.id FROM candidates c JOIN recruitment_events e ON e.id=c.event_id WHERE upper(c.candidate_code)=$1 AND lower(c.email)=$2 AND e.slug=$3",[code,email,String(req.params.slug).toLowerCase()]);
   if(!candidate.rowCount)return res.status(404).json({error:"Candidate registration could not be verified. Please check the event, Candidate ID and email."});
+  const previous=await pool.query("SELECT storage_name FROM candidate_resumes WHERE candidate_id=$1",[candidate.rows[0].id]);
   await mkdir(privateResumeDirectory,{recursive:true});const storageName=randomUUID()+ext;
-  await writeFile(path.join(privateResumeDirectory,storageName),buffer,{flag:"wx",mode:0o600});
+  newFilePath=path.join(privateResumeDirectory,storageName);
+  await writeFile(newFilePath,buffer,{flag:"wx",mode:0o600});
   const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,NULL,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=NULL,uploaded_at=now() RETURNING original_name,file_size,uploaded_at",[candidate.rows[0].id,storageName,safeName,verifiedMime,buffer.length]);
+  newFilePath=null;
+  if(previous.rows[0]?.storage_name)await unlink(path.join(privateResumeDirectory,previous.rows[0].storage_name)).catch(()=>{});
   res.status(201).json({resume:q.rows[0],message:"Resume attached to your application."});
- }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
+ }catch(e){if(newFilePath)await unlink(newFilePath).catch(()=>{});console.error(e);res.status(500).json({error:"Could not upload resume."})}
 });
 app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,resumeUploadLimiter,requireRole(...registrationRoles),async(req,res)=>{
  const name=String(req.body?.fileName||"").trim(),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||"");
