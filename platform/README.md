@@ -18,6 +18,9 @@ npm run dev
 ```
 Keep your existing local `.env`. Never commit it or share its secrets.
 
+## Security and deployment
+- Backend security controls, resume handling, public endpoint rate limits and production deployment checks are documented in [backend/SECURITY.md](backend/SECURITY.md).
+
 ## Database
 The Phase 1 schema already includes recruitment_events, event_users, domains, panels and panel_assignments. If you have not applied it yet:
 ```powershell
