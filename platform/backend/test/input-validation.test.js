@@ -259,3 +259,27 @@ test("serializes nullish CSV values as empty cells", () => {
   assert.equal(escapeCsvCell(null), '""');
   assert.equal(escapeCsvCell(undefined), '""');
 });
+
+test("accepts a PDF supplied as a data URL", () => {
+  const result = decodeResumeUpload({ fileName: "resume.pdf", mimeType: "application/pdf", fileBase64: "data:application/pdf;base64," + pdf });
+  assert.equal(result.error, undefined);
+  assert.equal(result.buffer.subarray(0, 5).toString(), "%PDF-");
+});
+
+test("normalizes uppercase resume extensions and MIME types", () => {
+  const result = decodeResumeUpload({ fileName: "RESUME.PDF", mimeType: "APPLICATION/PDF", fileBase64: pdf });
+  assert.equal(result.extension, ".pdf");
+  assert.equal(result.mimeType, "application/pdf");
+});
+
+test("accepts a file exactly at a custom byte limit", () => {
+  const bytes = Buffer.from("%PDF-12345678901");
+  const result = decodeResumeUpload({ fileName: "resume.pdf", mimeType: "application/pdf", fileBase64: bytes.toString("base64"), maxBytes: bytes.length });
+  assert.equal(result.error, undefined);
+});
+
+test("rejects a file one byte over a custom byte limit", () => {
+  const bytes = Buffer.from("%PDF-123456789012");
+  const result = decodeResumeUpload({ fileName: "resume.pdf", mimeType: "application/pdf", fileBase64: bytes.toString("base64"), maxBytes: bytes.length - 1 });
+  assert.match(result.error, /valid file/);
+});
