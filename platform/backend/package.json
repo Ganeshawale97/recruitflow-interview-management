@@ -7,7 +7,9 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "create-admin": "node create-admin.js",
-    "test": "node --test"
+    "test": "node --test",
+    "check": "node --check server.js && node --check scheduling.js && node --check input-validation.js",
+    "test:watch": "node --test --watch"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
