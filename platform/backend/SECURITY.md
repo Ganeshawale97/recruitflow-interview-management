@@ -41,6 +41,7 @@ This document records the security controls currently implemented by the API and
 
 - `GET /api/health` is a liveness/status endpoint and reports whether PostgreSQL is configured and reachable.
 - `GET /api/health/ready` is a readiness endpoint. It returns HTTP 503 until PostgreSQL is reachable and authentication is configured.
+- The API handles `SIGINT` and `SIGTERM` by stopping new HTTP connections, waiting for active requests, and then closing the PostgreSQL pool. Remaining HTTP connections are force-closed after a 10-second grace period.
 
 ## Deployment checklist
 
