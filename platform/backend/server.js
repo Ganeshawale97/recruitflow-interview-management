@@ -554,9 +554,19 @@ app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,
  const upload=decodeResumeUpload({fileName:name,mimeType:mime,fileBase64:encoded});
  if(upload.error)return res.status(upload.error.includes("no larger")?413:400).json({error:upload.error});
  const {buffer,extension:ext,fileName:safeName,mimeType:verifiedMime}=upload;
- try{await ensureCandidateResumeTable();if(!await candidateResumeAccess(req,"organizer"))return res.status(404).json({error:"Candidate not found in this event."});await mkdir(privateResumeDirectory,{recursive:true});const storageName=randomUUID()+ext;await writeFile(path.join(privateResumeDirectory,storageName),buffer,{flag:"wx",mode:0o600});
- const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,$6,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=EXCLUDED.uploaded_by,uploaded_at=now() RETURNING original_name,mime_type,file_size,uploaded_at",[req.params.candidateId,storageName,safeName,verifiedMime,buffer.length,req.auth.sub]);res.status(201).json({resume:q.rows[0],message:"Resume uploaded securely."})
- }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
+ let newFilePath=null;
+ try{
+  await ensureCandidateResumeTable();
+  if(!await candidateResumeAccess(req,"organizer"))return res.status(404).json({error:"Candidate not found in this event."});
+  const previous=await pool.query("SELECT storage_name FROM candidate_resumes WHERE candidate_id=$1",[req.params.candidateId]);
+  await mkdir(privateResumeDirectory,{recursive:true});const storageName=randomUUID()+ext;
+  newFilePath=path.join(privateResumeDirectory,storageName);
+  await writeFile(newFilePath,buffer,{flag:"wx",mode:0o600});
+  const q=await pool.query("INSERT INTO candidate_resumes(candidate_id,storage_name,original_name,mime_type,file_size,uploaded_by,uploaded_at) VALUES($1,$2,$3,$4,$5,$6,now()) ON CONFLICT(candidate_id) DO UPDATE SET storage_name=EXCLUDED.storage_name,original_name=EXCLUDED.original_name,mime_type=EXCLUDED.mime_type,file_size=EXCLUDED.file_size,uploaded_by=EXCLUDED.uploaded_by,uploaded_at=now() RETURNING original_name,mime_type,file_size,uploaded_at",[req.params.candidateId,storageName,safeName,verifiedMime,buffer.length,req.auth.sub]);
+  newFilePath=null;
+  if(previous.rows[0]?.storage_name)await unlink(path.join(privateResumeDirectory,previous.rows[0].storage_name)).catch(()=>{});
+  res.status(201).json({resume:q.rows[0],message:"Resume uploaded securely."});
+ }catch(e){if(newFilePath)await unlink(newFilePath).catch(()=>{});console.error(e);res.status(500).json({error:"Could not upload resume."})}
 });
 app.get("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles,"Interviewer"),async(req,res)=>{
  try{
