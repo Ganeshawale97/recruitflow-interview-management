@@ -31,6 +31,44 @@ export function isValidHttpsUrl(value, maxLength = 500) {
   }
 }
 
+export function validateCustomAnswers(fields = [], answers = {}) {
+  const source = answers && typeof answers === "object" && !Array.isArray(answers) ? answers : {};
+  const cleanAnswers = {};
+  for (const field of Array.isArray(fields) ? fields : []) {
+    const value = source[field.key];
+    let normalized;
+    if (field.type === "checkbox") {
+      if (value == null) normalized = false;
+      else if (typeof value === "boolean") normalized = value;
+      else return { error: "Choose a valid checkbox value for " + field.label + "." };
+    } else if (value == null) normalized = "";
+    else if (typeof value === "string") normalized = value.trim();
+    else if (typeof value === "number" && Number.isFinite(value)) normalized = String(value);
+    else return { error: "Enter a valid answer for " + field.label + "." };
+
+    if (field.required && (normalized === "" || normalized === false)) {
+      return { error: "Please complete the required field: " + field.label };
+    }
+    if (typeof normalized === "string" && normalized.length > 2000) {
+      return { error: "The answer for " + field.label + " is too long." };
+    }
+    if (field.type === "email" && normalized !== "" && !isValidEmail(normalized)) {
+      return { error: "Enter a valid email address for " + field.label + "." };
+    }
+    if (field.type === "phone" && normalized !== "" && !isValidPhone(normalized)) {
+      return { error: "Enter a valid phone number for " + field.label + "." };
+    }
+    if (field.type === "number" && normalized !== "" && !Number.isFinite(Number(normalized))) {
+      return { error: "Enter a valid number for " + field.label + "." };
+    }
+    if (field.type === "select" && normalized !== "" && !(Array.isArray(field.options) ? field.options : []).includes(normalized)) {
+      return { error: "Choose a valid option for " + field.label + "." };
+    }
+    cleanAnswers[field.key] = normalized;
+  }
+  return { answers: cleanAnswers };
+}
+
 export function validateDateRange(startsAt, endsAt) {
   const start = startsAt ? Date.parse(startsAt) : null;
   const end = endsAt ? Date.parse(endsAt) : null;
