@@ -11,7 +11,7 @@ import { randomBytes, createHash, randomUUID, createCipheriv, createDecipheriv, 
 import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { findFirstAvailableStart, validateScheduleWindow } from "./scheduling.js";
-import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, normalizeEmail, normalizePhone, validateInterviewScores } from "./input-validation.js";
+import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, isValidPhone, normalizeEmail, normalizePhone, validateInterviewScores } from "./input-validation.js";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
 app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"15mb"}));
@@ -453,7 +453,7 @@ app.get("/api/public/events/:slug",requireDb,async(req,res)=>{
 const candidateRegistrationLimiter=rateLimit({windowMs:60*60*1000,limit:20,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many registrations from this connection. Please try again later."}});
 app.post("/api/public/events/:slug/candidates",requireDb,candidateRegistrationLimiter,async(req,res)=>{
  const b=req.body||{},name=String(b.name||"").trim(),email=normalizeEmail(b.email),phone=normalizePhone(b.phone),college=String(b.college||"").trim(),branch=String(b.branch||"").trim(),academicYear=String(b.academicYear||"").trim(),rollNumber=String(b.rollNumber||"").trim(),skills=String(b.skills||"").trim(),githubUrl=String(b.githubUrl||"").trim(),linkedinUrl=String(b.linkedinUrl||"").trim(),portfolioUrl=String(b.portfolioUrl||"").trim(),motivation=String(b.motivation||"").trim(),preferences=Array.isArray(b.preferences)?b.preferences.slice(0,4):[];
- if(name.length<2||name.length>160||!isValidEmail(email)||phone.length<8||phone.length>20||!college||!branch||!academicYear)return res.status(400).json({error:"Complete all required personal and academic details with a valid email and phone number."});
+ if(name.length<2||name.length>160||!isValidEmail(email)||!isValidPhone(phone)||!college||!branch||!academicYear)return res.status(400).json({error:"Complete all required personal and academic details with a valid email and phone number."});
  if(preferences.length<1||new Set(preferences).size!==preferences.length)return res.status(400).json({error:"Choose between 1 and 4 different domain preferences in priority order."});
  for(const url of [githubUrl,linkedinUrl,portfolioUrl])if(!isValidHttpsUrl(url))return res.status(400).json({error:"Portfolio links must be valid HTTPS URLs."});
  const client=await pool.connect();
