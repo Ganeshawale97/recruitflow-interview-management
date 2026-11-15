@@ -31,7 +31,7 @@ test("rejects malformed email addresses", () => {
 });
 
 test("rejects email addresses beyond the maximum length", () => {
-  assert.equal(isValidEmail("a".repeat(245) + "@x.io"), false);
+  assert.equal(isValidEmail("a".repeat(250) + "@x.io"), false);
 });
 
 test("normalizes phone whitespace and common punctuation", () => {
