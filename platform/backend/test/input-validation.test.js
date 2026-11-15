@@ -5,6 +5,7 @@ import {
   decodeResumeUpload,
   isValidEmail,
   isValidHttpsUrl,
+  isValidPhone,
   normalizeEmail,
   normalizePhone,
   validateInterviewScores
@@ -33,6 +34,27 @@ test("rejects email addresses beyond the maximum length", () => {
 
 test("normalizes phone whitespace and common punctuation", () => {
   assert.equal(normalizePhone(" +91 (987) 654-3210 "), "+919876543210");
+});
+
+test("accepts normalized international phone numbers", () => {
+  assert.equal(isValidPhone(" +91 (987) 654-3210 "), true);
+});
+
+test("accepts phone numbers without a country prefix", () => {
+  assert.equal(isValidPhone("9876543210"), true);
+});
+
+test("rejects phone numbers containing letters", () => {
+  assert.equal(isValidPhone("98765ABCDE"), false);
+});
+
+test("rejects phone numbers with misplaced plus signs", () => {
+  assert.equal(isValidPhone("98+76543210"), false);
+});
+
+test("rejects phone numbers outside the supported length", () => {
+  assert.equal(isValidPhone("1234567"), false);
+  assert.equal(isValidPhone("1".repeat(21)), false);
 });
 
 test("accepts empty optional profile links", () => {
