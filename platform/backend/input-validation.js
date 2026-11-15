@@ -31,6 +31,15 @@ export function isValidHttpsUrl(value, maxLength = 500) {
   }
 }
 
+export function validateDateRange(startsAt, endsAt) {
+  const start = startsAt ? Date.parse(startsAt) : null;
+  const end = endsAt ? Date.parse(endsAt) : null;
+  if (startsAt && !Number.isFinite(start)) return "Enter a valid event start date.";
+  if (endsAt && !Number.isFinite(end)) return "Enter a valid event end date.";
+  if (start !== null && end !== null && end <= start) return "End date must be after start date.";
+  return null;
+}
+
 export function validateInterviewScores(body = {}) {
   const keys = ["technical", "communication", "problemSolving", "domainKnowledge"];
   const scores = keys.map((key) => Number(body[key]));
