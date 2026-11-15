@@ -16,6 +16,8 @@ This document records the security controls currently implemented by the API and
 - Organization workspace routes verify active organization membership and event ownership.
 - Interviewer candidate data and resume access are scoped to candidates with a domain represented by one of the interviewer's active panel assignments.
 - Database queries use parameterized values for user-supplied data.
+- Candidate CSV exports quote cell values and neutralize spreadsheet formula prefixes to reduce formula-injection risk.
+- MFA backup-code consumption uses a conditional database update so one backup code cannot be redeemed successfully by concurrent requests.
 
 ## Public endpoint abuse controls
 
