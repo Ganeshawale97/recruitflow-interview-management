@@ -24,6 +24,7 @@ This document records the security controls currently implemented by the API and
 - Login and MFA verification have separate request limits.
 - Candidate registration is limited to 20 requests per IP per hour.
 - Candidate registration validates email and phone formats, HTTPS profile links, domain preference count and identifiers, and custom registration field types before database writes.
+- Account creation, administrator invitations, organization applications and candidate tracking share the same normalized email validator, including a 254-character ceiling.
 - Resume uploads are limited to 5 requests per IP per hour.
 - Candidate application tracking uses a 20-request per IP / 15-minute limiter.
 - These limits use the process-local default store. Multi-instance deployments should configure a shared rate-limit store and trusted proxy settings before exposing the API publicly.
