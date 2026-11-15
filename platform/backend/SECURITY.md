@@ -44,7 +44,7 @@ This document records the security controls currently implemented by the API and
 5. Configure a shared rate-limit store when running more than one API instance.
 6. Keep `private-resumes/`, `.env`, database backups and runtime logs out of public static hosting and source control.
 7. Verify database migrations, backups, restore procedures, access logs and alerting before launch.
-8. Run backend tests and the frontend production build in CI before deployment.
+8. Run `npm run check` and `npm test` in `platform/backend`, plus the frontend production build, before deployment.
 
 ## Scope and limitations
 
