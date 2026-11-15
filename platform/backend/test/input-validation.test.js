@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   MAX_RESUME_BYTES,
   decodeResumeUpload,
+  escapeCsvCell,
   isValidEmail,
   isValidHttpsUrl,
   isValidPhone,
@@ -233,4 +234,28 @@ test("rejects custom answers longer than 2,000 characters", () => {
 test("does not accept arrays as custom answer objects", () => {
   const field = [{ key: "name", label: "Name", type: "text", required: true }];
   assert.match(validateCustomAnswers(field, ["unexpected"]).error, /Name/);
+});
+
+test("escapes ordinary CSV values", () => {
+  assert.equal(escapeCsvCell("RecruitFlow"), '"RecruitFlow"');
+});
+
+test("escapes embedded quotes in CSV values", () => {
+  assert.equal(escapeCsvCell('A "great" event'), '"A ""great"" event"');
+});
+
+test("protects CSV cells that begin with formula operators", () => {
+  for (const value of ["=1+1", "+SUM(A1:A2)", "-2+3", "@HYPERLINK(1)"]) {
+    assert.equal(escapeCsvCell(value).startsWith('"\''), true, value);
+  }
+});
+
+test("protects formula operators after leading whitespace and control characters", () => {
+  assert.equal(escapeCsvCell("  =1+1"), '"\'  =1+1"');
+  assert.equal(escapeCsvCell("\t@SUM(A1)"), '"\'\t@SUM(A1)"');
+});
+
+test("serializes nullish CSV values as empty cells", () => {
+  assert.equal(escapeCsvCell(null), '""');
+  assert.equal(escapeCsvCell(undefined), '""');
 });
