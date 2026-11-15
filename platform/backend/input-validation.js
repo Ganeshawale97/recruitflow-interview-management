@@ -121,6 +121,6 @@ export function decodeResumeUpload({ fileName, mimeType, fileBase64, maxBytes = 
 
 export function escapeCsvCell(value) {
   const raw = String(value ?? "");
-  const formulaSafe = /^[\\s\\u0000-\\u001f]*[=+\\-@]/.test(raw) ? "'" + raw : raw;
+  const formulaSafe = /^[\s\u0000-\u001f]*[=+\-@]/.test(raw) ? "'" + raw : raw;
   return '"' + formulaSafe.replace(/"/g, '""') + '"';
 }
