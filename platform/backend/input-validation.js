@@ -16,7 +16,7 @@ export function normalizePhone(value) {
 }
 
 export function isValidPhone(value) {
-  return /^\\+?\\d{8,20}$/.test(normalizePhone(value));
+  return /^\+?\d{8,20}$/.test(normalizePhone(value));
 }
 
 export function isValidHttpsUrl(value, maxLength = 500) {
