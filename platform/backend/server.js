@@ -13,6 +13,8 @@ import path from "node:path";
 import { findFirstAvailableStart, validateScheduleWindow } from "./scheduling.js";
 import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, isValidPhone, normalizeEmail, validateCustomAnswers, normalizePhone, validateDateRange, validateInterviewScores } from "./input-validation.js";
 const app=express(),port=Number(process.env.PORT||4000);
+if(!Number.isInteger(port)||port<1||port>65535)throw new Error("PORT must be a valid TCP port between 1 and 65535.");
+if(process.env.NODE_ENV==="production"&&(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32))throw new Error("Production requires a JWT_SECRET containing at least 32 characters.");
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
 app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"15mb"}));
 const uploadDirectory=path.resolve(process.cwd(),"uploads");
