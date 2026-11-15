@@ -45,7 +45,7 @@ This document records the security controls currently implemented by the API and
 
 ## Deployment checklist
 
-1. Set a unique random `JWT_SECRET` of at least 32 characters.
+1. Set a unique random `JWT_SECRET` of at least 32 characters. The API refuses to start in production if this requirement is not met.
 2. Set `DATABASE_URL` and verify the database user has only the permissions required by the application.
 3. Set `CORS_ORIGIN` to the exact production frontend origins; do not use a wildcard for an authenticated deployment.
 4. Terminate TLS at a trusted reverse proxy and configure Express trusted-proxy behavior only for known proxy hops.
