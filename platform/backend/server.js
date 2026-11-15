@@ -11,7 +11,7 @@ import { randomBytes, createHash, randomUUID, createCipheriv, createDecipheriv, 
 import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { findFirstAvailableStart, validateScheduleWindow } from "./scheduling.js";
-import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, isValidPhone, normalizeEmail, normalizePhone, validateInterviewScores } from "./input-validation.js";
+import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, isValidPhone, normalizeEmail, normalizePhone, validateDateRange, validateInterviewScores } from "./input-validation.js";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
 app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"15mb"}));
@@ -221,7 +221,7 @@ app.get("/api/organization/events",requireDb,requireAuth,async(req,res)=>{
 app.post("/api/organization/events",requireDb,requireAuth,async(req,res)=>{
  if(req.auth.role!=="Organization Admin")return res.status(403).json({error:"Organisation administrator access required."});
  let cfg;try{cfg=validateEventConfig(req.body)}catch(e){return res.status(400).json({error:e.message})}
- if(cfg.startsAt&&cfg.endsAt&&new Date(cfg.endsAt)<=new Date(cfg.startsAt))return res.status(400).json({error:"End date must be after start date."});
+ const dateError=validateDateRange(cfg.startsAt,cfg.endsAt);if(dateError)return res.status(400).json({error:dateError});
  const duplicateSlug=await pool.query("SELECT id FROM recruitment_events WHERE lower(slug)=lower($1) LIMIT 1",[cfg.slug]);if(duplicateSlug.rowCount)return res.status(409).json({error:"The URL slug \""+cfg.slug+"\" is already used by an existing event (including legacy events). Choose a completely different slug."});
  const client=await pool.connect();
  try{await client.query("BEGIN");const org=await client.query("SELECT o.id FROM organizations o JOIN organization_memberships m ON m.organization_id=o.id WHERE m.user_id=$1 AND m.status='active' AND o.status='active' FOR UPDATE OF o",[req.auth.sub]);if(!org.rowCount){await client.query("ROLLBACK");return res.status(403).json({error:"Active organisation membership is required."})}
