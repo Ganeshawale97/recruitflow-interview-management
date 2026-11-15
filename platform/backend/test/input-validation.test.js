@@ -8,6 +8,7 @@ import {
   isValidPhone,
   normalizeEmail,
   normalizePhone,
+  validateCustomAnswers,
   validateDateRange,
   validateInterviewScores
 } from "../input-validation.js";
@@ -178,4 +179,58 @@ test("rejects invalid event end dates", () => {
 test("rejects an event end date equal to or before its start", () => {
   assert.match(validateDateRange("2026-12-01T09:00:00Z", "2026-12-01T09:00:00Z"), /after start/);
   assert.match(validateDateRange("2026-12-01T10:00:00Z", "2026-12-01T09:00:00Z"), /after start/);
+});
+
+test("normalizes optional custom text answers", () => {
+  const result = validateCustomAnswers([{ key: "bio", label: "Biography", type: "textarea" }], { bio: "  Hello  " });
+  assert.deepEqual(result.answers, { bio: "Hello" });
+});
+
+test("requires configured mandatory custom answers", () => {
+  const result = validateCustomAnswers([{ key: "department", label: "Department", type: "text", required: true }], {});
+  assert.match(result.error, /Department/);
+});
+
+test("preserves an explicitly unchecked optional checkbox", () => {
+  const result = validateCustomAnswers([{ key: "consent", label: "Consent", type: "checkbox" }], { consent: false });
+  assert.deepEqual(result.answers, { consent: false });
+});
+
+test("rejects string values for checkbox fields", () => {
+  const result = validateCustomAnswers([{ key: "consent", label: "Consent", type: "checkbox" }], { consent: "false" });
+  assert.match(result.error, /checkbox value/);
+});
+
+test("validates custom select answers against configured options", () => {
+  const field = [{ key: "year", label: "Year", type: "select", options: ["First", "Second"] }];
+  assert.deepEqual(validateCustomAnswers(field, { year: "Second" }).answers, { year: "Second" });
+  assert.match(validateCustomAnswers(field, { year: "Third" }).error, /valid option/);
+});
+
+test("validates custom email answers", () => {
+  const field = [{ key: "contact", label: "Contact email", type: "email" }];
+  assert.deepEqual(validateCustomAnswers(field, { contact: "user@example.com" }).answers, { contact: "user@example.com" });
+  assert.match(validateCustomAnswers(field, { contact: "not-an-email" }).error, /valid email/);
+});
+
+test("validates custom phone answers", () => {
+  const field = [{ key: "mobile", label: "Mobile", type: "phone" }];
+  assert.deepEqual(validateCustomAnswers(field, { mobile: "+91 9876543210" }).answers, { mobile: "+919876543210" });
+  assert.match(validateCustomAnswers(field, { mobile: "letters-only" }).error, /valid phone/);
+});
+
+test("rejects non-numeric custom number answers", () => {
+  const field = [{ key: "experience", label: "Experience", type: "number" }];
+  assert.deepEqual(validateCustomAnswers(field, { experience: "2.5" }).answers, { experience: "2.5" });
+  assert.match(validateCustomAnswers(field, { experience: "many" }).error, /valid number/);
+});
+
+test("rejects custom answers longer than 2,000 characters", () => {
+  const field = [{ key: "details", label: "Details", type: "textarea" }];
+  assert.match(validateCustomAnswers(field, { details: "x".repeat(2001) }).error, /too long/);
+});
+
+test("does not accept arrays as custom answer objects", () => {
+  const field = [{ key: "name", label: "Name", type: "text", required: true }];
+  assert.match(validateCustomAnswers(field, ["unexpected"]).error, /Name/);
 });
