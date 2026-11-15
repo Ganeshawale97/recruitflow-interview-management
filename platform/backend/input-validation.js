@@ -55,6 +55,7 @@ export function validateCustomAnswers(fields = [], answers = {}) {
     if (field.type === "email" && normalized !== "" && !isValidEmail(normalized)) {
       return { error: "Enter a valid email address for " + field.label + "." };
     }
+    if (field.type === "phone" && normalized !== "") normalized = normalizePhone(normalized);
     if (field.type === "phone" && normalized !== "" && !isValidPhone(normalized)) {
       return { error: "Enter a valid phone number for " + field.label + "." };
     }
