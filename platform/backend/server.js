@@ -11,7 +11,7 @@ import { randomBytes, createHash, randomUUID, createCipheriv, createDecipheriv, 
 import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { findFirstAvailableStart, validateScheduleWindow } from "./scheduling.js";
-import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, isValidPhone, normalizeEmail, normalizePhone, validateDateRange, validateInterviewScores } from "./input-validation.js";
+import { decodeResumeUpload, isValidEmail, isValidHttpsUrl, isValidPhone, normalizeEmail, validateCustomAnswers, normalizePhone, validateDateRange, validateInterviewScores } from "./input-validation.js";
 const app=express(),port=Number(process.env.PORT||4000);
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:false}:undefined}):null;
 app.use(helmet());app.use(cors({origin:(process.env.CORS_ORIGIN||"http://localhost:5173").split(",").map(x=>x.trim()),methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],allowedHeaders:["Content-Type","Authorization"]}));app.use(express.json({limit:"15mb"}));
@@ -463,19 +463,9 @@ app.post("/api/public/events/:slug/candidates",requireDb,candidateRegistrationLi
   const ev=await client.query("SELECT e.id,e.name AS event_name,e.registration_fields FROM recruitment_events e JOIN organizations o ON o.id=e.organization_id WHERE e.slug=$1 AND e.status IN ('open','live') AND o.status='active' FOR SHARE OF e",[String(req.params.slug).toLowerCase()]);
   if(!ev.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Registration is not available for this event."})}
   const fieldDefs=Array.isArray(ev.rows[0].registration_fields)?ev.rows[0].registration_fields:[];
-  const answers=b.customAnswers&&typeof b.customAnswers==="object"&&!Array.isArray(b.customAnswers)?b.customAnswers:{};
-  const cleanAnswers={};
-  for(const field of fieldDefs){
-   const value=answers[field.key];let normalized=value;
-   if(field.type==="checkbox")normalized=Boolean(value);
-   else if(typeof value==="string")normalized=value.trim();
-   else if(value==null)normalized="";
-   else normalized=String(value);
-   if(field.required&&(normalized===""||normalized===false)) {await client.query("ROLLBACK");return res.status(400).json({error:"Please complete the required field: "+field.label})}
-   if(typeof normalized==="string"&&normalized.length>2000){await client.query("ROLLBACK");return res.status(400).json({error:"The answer for "+field.label+" is too long."})}
-   if(field.type==="select"&&normalized!==""&&!(field.options||[]).includes(normalized)){await client.query("ROLLBACK");return res.status(400).json({error:"Choose a valid option for "+field.label})}
-   cleanAnswers[field.key]=normalized;
-  }
+  const customValidation=validateCustomAnswers(fieldDefs,b.customAnswers);
+  if(customValidation.error){await client.query("ROLLBACK");return res.status(400).json({error:customValidation.error})}
+  const cleanAnswers=customValidation.answers;
   const valid=await client.query("SELECT id FROM domains WHERE event_id=$1 AND active=true AND id=ANY($2::uuid[])",[ev.rows[0].id,preferences]);
   if(valid.rowCount!==preferences.length){await client.query("ROLLBACK");return res.status(400).json({error:"One or more selected domains are not available for this event."})}
   const code="RF-"+new Date().getFullYear()+"-"+randomBytes(4).toString("hex").toUpperCase();
