@@ -519,6 +519,7 @@ async function ensureCandidateCrmTable(){
  )`);
 }
 const privateResumeDirectory=path.resolve(process.cwd(),"private-resumes");
+const resumeUploadLimiter=rateLimit({windowMs:60*60*1000,limit:5,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Too many resume uploads from this connection. Try again in one hour."}});
 async function ensureCandidateResumeTable(){await pool.query(`CREATE TABLE IF NOT EXISTS candidate_resumes(candidate_id UUID PRIMARY KEY REFERENCES candidates(id) ON DELETE CASCADE,storage_name TEXT NOT NULL,original_name TEXT NOT NULL,mime_type TEXT NOT NULL,file_size INTEGER NOT NULL,uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now())`)}
 async function candidateResumeAccess(req,role){
  const q=await pool.query("SELECT c.id FROM candidates c WHERE c.id=$1 AND c.event_id=$2 AND ($3='organizer' OR EXISTS(SELECT 1 FROM candidate_preferences cp JOIN panels p ON p.domain_id=cp.domain_id AND p.event_id=c.event_id JOIN panel_assignments pa ON pa.panel_id=p.id WHERE cp.candidate_id=c.id AND pa.interviewer_id=$4 AND pa.active=true))",[req.params.candidateId,req.params.id,role,req.auth.sub]);
@@ -527,7 +528,7 @@ async function candidateResumeAccess(req,role){
  const actual=await pool.query("SELECT r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 AND u.active=true",[req.auth.sub]);
  return !!actual.rowCount;
 }
-app.post("/api/public/events/:slug/resume",requireDb,async(req,res)=>{
+app.post("/api/public/events/:slug/resume",requireDb,resumeUploadLimiter,async(req,res)=>{
  const code=String(req.body?.candidateId||"").trim().toUpperCase(),email=normalizeEmail(req.body?.email),name=String(req.body?.fileName||"").trim(),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||"");
  if(!code||!isValidEmail(email))return res.status(400).json({error:"Enter a valid Candidate ID and registered email."});
  const upload=decodeResumeUpload({fileName:name,mimeType:mime,fileBase64:encoded});
@@ -543,7 +544,7 @@ app.post("/api/public/events/:slug/resume",requireDb,async(req,res)=>{
   res.status(201).json({resume:q.rows[0],message:"Resume attached to your application."});
  }catch(e){console.error(e);res.status(500).json({error:"Could not upload resume."})}
 });
-app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
+app.post("/api/events/:id/candidates/:candidateId/resume",requireDb,requireAuth,resumeUploadLimiter,requireRole(...registrationRoles),async(req,res)=>{
  const name=String(req.body?.fileName||"").trim(),mime=String(req.body?.mimeType||""),encoded=String(req.body?.fileBase64||"");
  const upload=decodeResumeUpload({fileName:name,mimeType:mime,fileBase64:encoded});
  if(upload.error)return res.status(upload.error.includes("no larger")?413:400).json({error:upload.error});
