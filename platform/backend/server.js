@@ -591,17 +591,19 @@ app.get("/api/events/:id/candidates/:candidateId/interviewer-profile",requireDb,
  }catch(e){console.error(e);res.status(500).json({error:"Could not load candidate profile."})}
 });
 app.put("/api/events/:id/candidates/:candidateId/profile",requireDb,requireAuth,requireRole(...registrationRoles),async(req,res)=>{
- const tags=Array.isArray(req.body?.tags)?[...new Set(req.body.tags.map(x=>String(x).trim()).filter(x=>x.length>0&&x.length<=30))].slice(0,10):[];
+ const rawTags=Array.isArray(req.body?.tags)?req.body.tags:[];
  const note=String(req.body?.note||"").trim();
- if(tags.length>10)return res.status(400).json({error:"You can add up to 10 tags."});
+ if(rawTags.length>10)return res.status(400).json({error:"You can add up to 10 tags."});
+ if(rawTags.some(tag=>typeof tag!=="string"||tag.trim().length<1||tag.trim().length>30))return res.status(400).json({error:"Each candidate tag must contain 1–30 characters."});
+ const tags=[...new Set(rawTags.map(tag=>tag.trim()))];
  if(note.length>2000)return res.status(400).json({error:"A note can contain at most 2,000 characters."});
  try{
   await ensureCandidateCrmTable();
   const exists=await pool.query("SELECT id FROM candidates WHERE id=$1 AND event_id=$2",[req.params.candidateId,req.params.id]);
   if(!exists.rowCount)return res.status(404).json({error:"Candidate not found in this event."});
   const previous=await pool.query("SELECT notes FROM candidate_crm WHERE candidate_id=$1",[req.params.candidateId]);
-  const notes=previous.rows[0]?.notes||[];
-  if(note)notes.push({id:crypto.randomUUID(),text:note,author:req.auth.displayName||req.auth.username||"Staff",createdAt:new Date().toISOString(),visibility:req.body?.noteVisibility==="interviewers"?"interviewers":"organizers"});
+  const notes=Array.isArray(previous.rows[0]?.notes)?previous.rows[0].notes:[];
+  if(note){if(notes.length>=100)notes.splice(0,notes.length-99);notes.push({id:randomUUID(),text:note,author:req.auth.displayName||req.auth.username||"Staff",createdAt:new Date().toISOString(),visibility:req.body?.noteVisibility==="interviewers"?"interviewers":"organizers"});}
   const q=await pool.query("INSERT INTO candidate_crm(candidate_id,tags,notes,updated_by,updated_at) VALUES($1,$2::jsonb,$3::jsonb,$4,now()) ON CONFLICT(candidate_id) DO UPDATE SET tags=EXCLUDED.tags,notes=EXCLUDED.notes,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING tags,notes,updated_at",[req.params.candidateId,JSON.stringify(tags),JSON.stringify(notes),req.auth.sub]);
   res.json({tags:q.rows[0].tags,notes:q.rows[0].notes,updatedAt:q.rows[0].updated_at,message:"Candidate profile updated."});
  }catch(e){console.error(e);res.status(500).json({error:"Could not update candidate profile."})}
