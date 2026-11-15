@@ -8,6 +8,7 @@ import {
   isValidPhone,
   normalizeEmail,
   normalizePhone,
+  validateDateRange,
   validateInterviewScores
 } from "../input-validation.js";
 
@@ -156,4 +157,25 @@ test("rejects resumes larger than the configured maximum", () => {
 test("strips path components from uploaded resume names", () => {
   const result = decodeResumeUpload({ fileName: "../../private/resume.pdf", mimeType: "application/pdf", fileBase64: pdf });
   assert.equal(result.fileName, "resume.pdf");
+});
+
+test("accepts event date ranges when both dates are omitted", () => {
+  assert.equal(validateDateRange(null, null), null);
+});
+
+test("accepts a valid event date range", () => {
+  assert.equal(validateDateRange("2026-12-01T09:00:00Z", "2026-12-01T18:00:00Z"), null);
+});
+
+test("rejects invalid event start dates", () => {
+  assert.match(validateDateRange("not-a-date", "2026-12-01T18:00:00Z"), /start date/);
+});
+
+test("rejects invalid event end dates", () => {
+  assert.match(validateDateRange("2026-12-01T09:00:00Z", "not-a-date"), /end date/);
+});
+
+test("rejects an event end date equal to or before its start", () => {
+  assert.match(validateDateRange("2026-12-01T09:00:00Z", "2026-12-01T09:00:00Z"), /after start/);
+  assert.match(validateDateRange("2026-12-01T10:00:00Z", "2026-12-01T09:00:00Z"), /after start/);
 });
